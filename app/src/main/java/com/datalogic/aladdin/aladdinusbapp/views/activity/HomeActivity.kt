@@ -1,0 +1,164 @@
+package com.datalogic.aladdin.aladdinusbapp.views.activity
+
+import android.content.Context
+import android.hardware.usb.UsbDevice
+import android.os.Bundle
+import android.util.Log
+import android.widget.Toast
+import androidx.activity.compose.setContent
+import androidx.activity.viewModels
+import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import com.datalogic.aladdin.aladdinusbapp.R
+import com.datalogic.aladdin.aladdinusbapp.utils.CommonUtils
+import com.datalogic.aladdin.aladdinusbapp.viewmodel.HomeViewModel
+import com.datalogic.aladdin.aladdinusbapp.views.theme.AladdinUSBAppTheme
+import com.datalogic.aladdin.aladdinusbscannersdk.usbaccess.USBDeviceManager
+import com.datalogic.aladdin.aladdinusbscannersdk.model.UsbScanData
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.AladdinConstants.CLAIM_FAILURE
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.AladdinConstants.ENABLE_FAILURE
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.AladdinConstants.OPEN_FAILURE
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.StatusListener
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbListener
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbScanListener
+
+val LocalHomeViewModel = staticCompositionLocalOf<HomeViewModel> {
+    error("No HomeViewModel provided")
+}
+
+class HomeActivity : AppCompatActivity() {
+
+    private var TAG = HomeActivity::class.java.simpleName
+    private lateinit var usbDeviceManager: USBDeviceManager
+    private lateinit var usbListener: UsbListener
+    private lateinit var scanEvent: UsbScanListener
+    private lateinit var statusListener: StatusListener
+
+    private val homeViewModel: HomeViewModel by viewModels {
+        MyViewModelFactory(usbDeviceManager, applicationContext)
+    }
+
+    class MyViewModelFactory(
+        private val usbDeviceManager: USBDeviceManager,
+        private val context: Context
+    ) : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            if (modelClass.isAssignableFrom(HomeViewModel::class.java)) {
+                @Suppress("UNCHECKED_CAST")
+                return HomeViewModel(usbDeviceManager, context) as T
+            }
+            throw IllegalArgumentException("Unknown ViewModel class")
+        }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        supportActionBar?.hide()
+        usbDeviceManager = USBDeviceManager()
+        usbListener = object : UsbListener {
+            override fun onDeviceAttachedListener(device: UsbDevice) {
+                Log.d("Anitha", "Device attached: $device")
+                homeViewModel.checkConnectedDevice()
+                homeViewModel.deviceReAttached(device)
+            }
+
+            override fun onDeviceDetachedListener(device: UsbDevice) {
+                homeViewModel.setDeviceStatus("Detached ${device.productName}")
+                Log.d("Anitha", "Device detached: $device")
+                homeViewModel.handleDeviceDisconnection(device)
+            }
+        }
+        usbDeviceManager.registerUsbListener(usbListener)
+
+        scanEvent = object : UsbScanListener {
+            override fun onScan(scanData: UsbScanData) {
+                homeViewModel.setScannedData(scanData)
+            }
+        }
+        usbDeviceManager.registerUsbScanListener(scanEvent)
+
+        statusListener = object : StatusListener {
+
+            override fun onStatus(productId: String, status: DeviceStatus) {
+                homeViewModel.setStatus(productId, status, true)
+            }
+
+            override fun onError(errorStatus: Int) {
+                try {
+                    when (errorStatus) {
+                        OPEN_FAILURE, CLAIM_FAILURE, ENABLE_FAILURE ->
+                            Toast.makeText(applicationContext, "Please try once again...", Toast.LENGTH_LONG).show()
+                            //homeViewModel.errorHandling()
+                    }
+
+                    Log.d(TAG, "Receiving event: $errorStatus")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Receiving event: ", e)
+                }
+            }
+        }
+        usbDeviceManager.registerStatusListener(statusListener)
+
+
+        setContent {
+            AladdinUSBAppTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = Color.White
+                ) {
+                    CompositionLocalProvider(LocalHomeViewModel provides homeViewModel) {
+                        Navigation()
+                    }
+                }
+            }
+        }
+
+        requestedOrientation = CommonUtils.orientation
+
+        Log.d(
+            TAG,
+            "UI falls under: " + (resources.getDimension(R.dimen.test) / resources.displayMetrics.density).toInt()
+        )
+        Log.d(TAG, "UI screen dimension: " + CommonUtils.getScreenResolution(this))
+
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    }
+
+    override fun onResume() {
+        Log.d(TAG, "Resume called")
+        super.onResume()
+        homeViewModel.checkConnectedDevice()
+        homeViewModel.appInForeground()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        Log.d(TAG, "onStop called")
+        homeViewModel.appInBackground()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        Log.d(TAG, "Destroy called")
+        homeViewModel.disable()
+        usbDeviceManager.unregisterUsbListener(usbListener)
+        usbDeviceManager.unregisterUsbScanListener(scanEvent)
+        usbDeviceManager.unregisterStatusListener(statusListener)
+    }
+
+}
