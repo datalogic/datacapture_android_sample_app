@@ -174,7 +174,6 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
      */
     fun setStatus(productId: String, status: DeviceStatus, reattached: Boolean) {
         usbDeviceStatus[productId] = Pair(status, reattached)
-        Log.d("ANITHA", "setStatus {$status}")
         _status.postValue(status)
     }
 
@@ -234,13 +233,10 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
 
         selectedDevice.value?.let {
             CoroutineScope(Dispatchers.IO).launch {
-              //  _isLoading.postValue(true)
                 val isAttached = checkDeviceReattached(it)
                 val response = if (isAttached) {
-                    Log.d("ANITHA", "claimed: deviceReConnect")
                     usbDeviceManager.deviceReConnect(it, context)
                 } else {
-                    Log.d("ANITHA", "claimed: claimUsbInterface")
                     usbDeviceManager.claimUsbInterface(it.usbDevice, context)
                 }
                 when (response) {
@@ -280,7 +276,6 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
         val deferredResult = CompletableDeferred<Boolean>()
         selectedDevice.value?.let {
             CoroutineScope(Dispatchers.IO).launch {
-               // _isLoading.postValue(true)
                 val success = when (usbDeviceManager.releaseUsbInterface(it.usbDevice)) {
                     USBConstants.SUCCESS -> {
                         Log.d(TAG, "Interface released")
@@ -305,10 +300,9 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
         selectedDevice.value?.let {
             usbDeviceManager.handleDeviceDisconnection(it.usbDevice)
             CoroutineScope(Dispatchers.IO).launch {
-                Log.d("ANITHA", "errorHandling deviceReConnect")
                 val response = usbDeviceManager.deviceReConnect(it, context)
                 if (response == AladdinConstants.SUCCESS) {
-                    Log.d("ANITHA", "errorHandling Sucess")
+                    Log.d(TAG, "errorHandling Sucess")
                 }
             }
         }
@@ -322,10 +316,8 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
             CoroutineScope(Dispatchers.IO).launch {
                 //_isLoading.postValue(true)
                 val response = if (checkDeviceReattached(it)) {
-                    Log.d("ANITHA", "enabled deviceReConnect")
                     usbDeviceManager.deviceReConnect(it, context)
                 } else {
-                    Log.d("ANITHA", "enabled enableScanner")
                     usbDeviceManager.enableScanner(it, context)
                 }
                 when (response) {
@@ -430,7 +422,6 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
 
     override fun onCleared() {
         super.onCleared()
-        Log.d("Chethan", "onCleared called")
         usbDeviceManager.unregisterReceiver(context)
     }
 

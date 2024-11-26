@@ -32,10 +32,8 @@ object CommonUtils {
         isTablet = context.resources.configuration.smallestScreenWidthDp >= 600
         if (isTablet) {
             orientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-            Log.d("Chethan", "Tablet")
         } else {
             orientation =ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-            Log.d("Chethan", "Phone")
         }
     }
 }

@@ -65,14 +65,14 @@ class HomeActivity : AppCompatActivity() {
         usbDeviceManager = USBDeviceManager()
         usbListener = object : UsbListener {
             override fun onDeviceAttachedListener(device: UsbDevice) {
-                Log.d("Anitha", "Device attached: $device")
+                Log.d(TAG, "Device attached: $device")
                 homeViewModel.checkConnectedDevice()
                 homeViewModel.deviceReAttached(device)
             }
 
             override fun onDeviceDetachedListener(device: UsbDevice) {
                 homeViewModel.setDeviceStatus("Detached ${device.productName}")
-                Log.d("Anitha", "Device detached: $device")
+                Log.d(TAG, "Device detached: $device")
                 homeViewModel.handleDeviceDisconnection(device)
             }
         }
