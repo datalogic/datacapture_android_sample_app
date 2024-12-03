@@ -1,0 +1,22 @@
+<resources>
+    <string name="app_name">Aladdin USB App</string>
+    <string name="alert_dialog_title">USB Permission Required</string>
+    <string name="alert_dialog_text">This application requires permission to access USB devices. Please grant permission.</string>
+    <string name="cancel">Cancel</string>
+    <string name="home">Home</string>
+    <string name="configuration">Configuration</string>
+    <string name="direct_io">Direct I/O</string>
+    <string name="scanner_data">Scanner Data</string>
+    <string name="scan_data">Scan Data</string>
+    <string name="scan_data_label">Scan Data Label</string>
+    <string name="clear_fields">Clear Fields</string>
+    <string name="open">Open</string>
+    <string name="close">Close</string>
+    <string name="claim">Claim</string>
+    <string name="release">Release</string>
+    <string name="enable">Enable</string>
+    <string name="disable">Disable</string>
+    <string name="status_label">STATUS:</string>
+    <string name="no_devices_connected">No devices connected</string>
+    <string name="no_other_devices">No other devices</string>
+</resources>
