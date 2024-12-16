@@ -21,24 +21,35 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.compose.BottomNavigationRow
-import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils
+import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.FooterImageView
+import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.HeaderImageView
+import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.ShowLoading
+import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.ShowPopup
 
 @Composable
 fun HomeScreenLayoutPortrait() {
     val homeViewModel = LocalHomeViewModel.current
     val deviceStatus = homeViewModel.deviceStatus.observeAsState("").value
     val selectedTab by homeViewModel.selectedTabIndex.observeAsState(0)
+    var isLoading = homeViewModel.isLoading.observeAsState().value
+
+    ShowPopup(homeViewModel.enableAlert, onDismiss = { homeViewModel.enableAlert = false }, stringResource(id = R.string.alert_message_for_enable_device))
+    ShowPopup(homeViewModel.oemAlert, onDismiss = { homeViewModel.oemAlert = false }, stringResource(id = R.string.alert_message_for_oem_configuration))
+    ShowPopup(homeViewModel.connectDeviceAlert, onDismiss = { homeViewModel.connectDeviceAlert = false }, stringResource(id = R.string.alert_message_for_connect_device))
+
+    if (isLoading!!) {
+        ShowLoading(onDismiss = { isLoading = false })
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize(),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        ComposableUtils.HeaderImageView(
+        HeaderImageView(
             modifier = Modifier
                 .fillMaxWidth()
                 .wrapContentHeight()
@@ -56,15 +67,15 @@ fun HomeScreenLayoutPortrait() {
         ) {
             when (selectedTab) {
                 0 -> HomeTabPortrait()
-                1 -> ConfigurationTab()
-                2 -> DirectIOTab()
+                1 -> ConfigurationTabPortrait()
+                2 -> DirectIOTabPortrait()
             }
         }
 
         Card(
-            shape = RoundedCornerShape(10.dp),
+            shape = RoundedCornerShape(dimensionResource(id = R.dimen._10sdp)),
             colors = CardDefaults.cardColors(colorResource(id = R.color.bottom_nav_selected_background)),
-            elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = dimensionResource(id = R.dimen._10sdp)),
             modifier = Modifier
                 .fillMaxWidth()
                 .wrapContentHeight()
@@ -75,13 +86,16 @@ fun HomeScreenLayoutPortrait() {
                     .semantics { contentDescription = "status_msg"}
                     .fillMaxWidth()
                     .height(dimensionResource(id = R.dimen._35sdp))
-                    .padding(vertical = dimensionResource(id = R.dimen._5sdp), horizontal = dimensionResource(id = R.dimen._15sdp)),
+                    .padding(
+                        vertical = dimensionResource(id = R.dimen._5sdp),
+                        horizontal = dimensionResource(id = R.dimen._15sdp)
+                    ),
                 text = stringResource(id = R.string.status_label) + deviceStatus,
                 overflow = TextOverflow.Ellipsis
             )
         }
 
-        ComposableUtils.FooterImageView(
+        FooterImageView(
             modifier = Modifier
                 .fillMaxWidth()
                 .wrapContentHeight()

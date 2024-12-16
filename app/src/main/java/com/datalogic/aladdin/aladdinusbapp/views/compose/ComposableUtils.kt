@@ -10,12 +10,20 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,11 +32,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.datalogic.aladdin.aladdinusbapp.R
+import kotlinx.coroutines.delay
 
 object ComposableUtils {
 
@@ -36,7 +46,7 @@ object ComposableUtils {
     fun HeaderImageView(modifier: Modifier) {
         Row (
             modifier
-                .semantics { contentDescription = "app_logo"}
+                .semantics { contentDescription = "app_logo" }
                 .fillMaxWidth()
                 .padding(top = dimensionResource(id = R.dimen._5sdp)),
             Arrangement.Center,
@@ -53,14 +63,14 @@ object ComposableUtils {
     fun FooterImageView(modifier: Modifier) {
         Row (
             modifier
-                .semantics { contentDescription = "datalogic_logo"}
+                .semantics { contentDescription = "datalogic_logo" }
                 .fillMaxWidth()
                 .padding(vertical = dimensionResource(id = R.dimen._15sdp)),
             Arrangement.Center
         ){
             Image(
                 painter = painterResource(id = R.drawable.ic_datalogic_logo),
-                contentDescription = "app_logo"
+                contentDescription = "datalogic_logo"
             )
         }
     }
@@ -78,7 +88,7 @@ object ComposableUtils {
                 containerColor = colorResource(id = R.color.colorPrimary),
                 disabledContainerColor = Color.White
             ),
-            elevation = ButtonDefaults.buttonElevation(disabledElevation = dimensionResource(id = R.dimen._50sdp), pressedElevation = dimensionResource(id = R.dimen._50sdp)),
+            elevation = ButtonDefaults.buttonElevation(disabledElevation = dimensionResource(id = R.dimen._10sdp), pressedElevation = dimensionResource(id = R.dimen._10sdp)),
             interactionSource = remember { MutableInteractionSource() }
         ) {
             Text(
@@ -91,24 +101,77 @@ object ComposableUtils {
     }
 
     @Composable
-    fun ShowPopup(onDismiss: () -> Unit) {
-        Dialog(onDismissRequest = onDismiss) {
-            Surface(
-                shape = MaterialTheme.shapes.medium,
-                color = Color.White
-            ) {
-                Column(
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
+    fun ShowPopup(alert: Boolean, onDismiss: () -> Unit, msg: String) {
+        if (alert) {
+            Dialog(onDismissRequest = onDismiss) {
+                Surface(
+                    shape = MaterialTheme.shapes.medium,
+                    color = Color.White
                 ) {
-                    Text(text = "Alert!", style = MaterialTheme.typography.headlineLarge)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(text = "The selected device type is not supported. Select OEM device", style = MaterialTheme.typography.labelLarge)
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Column(
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = stringResource(id = R.string.alert),
+                            style = MaterialTheme.typography.headlineLarge
+                        )
+                        Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen._8sdp)))
+                        Text(text = msg, style = MaterialTheme.typography.labelLarge)
+                        Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen._16sdp)))
+                    }
                 }
             }
+            LaunchedEffect(Unit) {
+                delay(2000)
+                onDismiss()
+            }
         }
+    }
+
+    @Composable
+    fun ShowLoading(onDismiss: () -> Unit) {
+        Dialog(onDismissRequest = onDismiss) {
+            Column(
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                CircularProgressIndicator(
+                    color = Color.Blue,
+                    strokeWidth = dimensionResource(id = R.dimen._4sdp)
+                )
+                Text(text = stringResource(id = R.string.processing))
+            }
+        }
+    }
+
+    @Composable
+    fun CustomSwitch(checkedState: Boolean, onClick: (Boolean) -> Unit) {
+        Switch(
+            modifier = Modifier
+                .padding(dimensionResource(id = R.dimen._4sdp))
+                .height(dimensionResource(id = R.dimen._25sdp))
+                .width(dimensionResource(id = R.dimen._46sdp)),
+            checked = checkedState,
+            onCheckedChange = { newState -> onClick(newState) },
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = colorResource(id = R.color.white),
+                checkedBorderColor = colorResource(id = R.color.border_green),
+                checkedTrackColor = colorResource(id = R.color.track_green),
+                uncheckedThumbColor = colorResource(id = R.color.white),
+                uncheckedBorderColor = colorResource(id = R.color.border_red),
+                uncheckedTrackColor = colorResource(id = R.color.track_red)
+            ),
+            thumbContent = {
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    tint = colorResource(id = R.color.white),
+                    contentDescription = null,
+                    modifier = Modifier.padding(2.dp)
+                )
+            },
+        )
     }
 }

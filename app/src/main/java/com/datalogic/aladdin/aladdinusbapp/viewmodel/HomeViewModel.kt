@@ -9,17 +9,24 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.utils.USBConstants
 import com.datalogic.aladdin.aladdinusbscannersdk.model.UsbDeviceList
 import com.datalogic.aladdin.aladdinusbscannersdk.model.UsbScanData
 import com.datalogic.aladdin.aladdinusbscannersdk.usbaccess.USBDeviceManager
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.AladdinConstants
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.USBConstants.USB_COM
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.USBConstants.USB_OEM
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ConfigurationFeature
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DIOCmdValue
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
+import java.util.Locale
 
 class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : ViewModel() {
     private var usbDeviceManager: USBDeviceManager
@@ -36,10 +43,10 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
     private val _scanLabel = MutableLiveData("")
     val scanLabel: LiveData<String> = _scanLabel
 
-    private val _scanData = MutableLiveData("")
-    val scanData: LiveData<String> = _scanData
+    private val _isLoading = MutableLiveData(false)
+    val isLoading: LiveData<Boolean> = _isLoading
 
-    private val selectedDevice: MutableLiveData<UsbDeviceList?> = MutableLiveData(null)
+    val selectedDevice: MutableLiveData<UsbDeviceList?> = MutableLiveData(null)
 
     private val _selectedTabIndex = MutableLiveData(0)
     val selectedTabIndex: LiveData<Int> = _selectedTabIndex
@@ -47,10 +54,32 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
     private var TAG: String = HomeViewModel::class.java.simpleName
     private var context: Context
 
-
     val usbDeviceStatus: HashMap<String, Pair<DeviceStatus?, Boolean>> = HashMap()
-    var comPopup by mutableStateOf(false)
+
+    var enableAlert by mutableStateOf(false)
+    var oemAlert by mutableStateOf(false)
+    var connectDeviceAlert by mutableStateOf(false)
+
     private var isScanEnable: Boolean = false
+
+    private val _dioStatus = MutableLiveData("")
+    val dioStatus: LiveData<String> = _dioStatus
+
+    private val _selectedCommand = MutableLiveData(DIOCmdValue.IDENTIFICATION)
+    var selectedCommand: LiveData<DIOCmdValue> = _selectedCommand
+
+    private val _scanData = MutableLiveData("")
+    val scanData: LiveData<String> = _scanData
+
+    private val _dioData = MutableLiveData("")
+    val dioData: LiveData<String> = _dioData
+
+    private val _readConfigData = MutableLiveData<HashMap<ConfigurationFeature, Boolean>>(hashMapOf())
+    val readConfigData : LiveData<HashMap<ConfigurationFeature, Boolean>> = _readConfigData
+
+    var writeConfigData : HashMap<ConfigurationFeature, String> = hashMapOf()
+
+    val resultLiveData = MutableLiveData< String>()
 
     init {
         this.usbDeviceManager = usbDeviceManager
@@ -59,20 +88,20 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
     }
 
     /**
-     *  Function to update the selected tab index
+     * Function to update the selected tab index
      **/
     fun setSelectedTabIndex(index: Int) {
         _selectedTabIndex.value = index
     }
 
-    /** setting the selected device to variable _selectedDevice
+    /**
+     * Setting the selected device to variable _selectedDevice
      * @param device is the selected device
      */
     fun setSelectedDevice(device: UsbDeviceList?) {
         selectedDevice.value = device
-        selectedDevice.value?.let {
+        selectedDevice.value?.let { it ->
             val productId = it.usbDevice.productId.toString()
-
             setDeviceStatus("Attached ${it.usbDevice.productName}")
             usbDeviceStatus[productId].let {
                 it?.let {
@@ -80,10 +109,13 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
                 }
             }
         }
+        selectedCommand.value?.let { selectedCommand -> updateSelectedDIOCommand(selectedCommand)  }
+        _readConfigData.postValue(hashMapOf())
     }
 
 
-    /** Function to add a new key-value pair to the HashMap if the key does not exist
+    /**
+     * Function to add a new key-value pair to the HashMap if the key does not exist
      * @param map is the Hashmap usbDeviceStatus
      * @param key is the productId as key
      * @param value is the scanner status as value
@@ -98,7 +130,8 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
         }
     }
 
-    /** function to check for the connected devices
+    /**
+     * Function to check for the connected devices
      */
     fun checkConnectedDevice() {
         val usbDevices = usbDeviceManager.checkConnectedDevice(context)
@@ -116,25 +149,35 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
         _deviceList.postValue(usbDevicelist)
     }
 
-    /** function to handle application when the device is detached
+    /**
+     * Function to handle application when the device is detached
      * @param device is the disconnected device
      */
     fun handleDeviceDisconnection(device: UsbDevice) {
         clearScanData()
+        selectedDevice.value?.let {
+            if(device.productId == it.usbDevice.productId) {
+                clearDIOStatus()
+                _dioData.postValue("")
+                _isLoading.postValue(false)
+            }
+        }
         usbDeviceManager.handleDeviceDisconnection(device)
 
         _status.postValue(DeviceStatus.NONE)
         checkConnectedDevice()
     }
 
-    /** function to set device status message
+    /**
+     * Function to set device status message
      * @param status is status message
      */
     fun setDeviceStatus(status: String) {
         _deviceStatus.postValue(status)
     }
 
-    /** function to set scanned data
+    /**
+     * Function to set scanned data
      * @param scannedData is scanned data
      */
     fun setScannedData(scannedData: UsbScanData) {
@@ -142,18 +185,19 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
         _scanLabel.postValue(scannedData.barcodeType)
     }
 
-    /** function to clear scanned data and label
+    /**
+     * Function to clear scanned data and label
      */
     fun clearScanData() {
         _scanLabel.postValue("")
         _scanData.postValue("")
     }
 
-    /** function to handle when device is reattached
+    /**
+     * Function to handle when device is reattached
      * @param device is the reattached device
      */
     fun deviceReAttached(device: UsbDevice) {
-//        _deviceReAttached.value = true
 
         usbDeviceStatus[device.productId.toString()]?.let {
             it.let {
@@ -167,7 +211,8 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
 
     }
 
-    /** function to set the device status in Hashmap
+    /**
+     * Function to set the device status in Hashmap
      * @param productId is the key
      * @param status is value1
      * @param reattached is value2
@@ -182,40 +227,31 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
      * Open the USB connection once permission is granted.
      */
     fun openUsbConnection() {
-        if (selectedDevice.value?.deviceType == "OEM") {
-            selectedDevice.value?.let { targetDevice ->
-                CoroutineScope(Dispatchers.IO).launch {
-                    //_isLoading.postValue(true)
-                    when (usbDeviceManager.openConnection(targetDevice, context)) {
-                        USBConstants.SUCCESS -> {
-                            Log.d(
-                                TAG,
-                                "USB Connection opened for device: ${targetDevice.displayName}"
-                            )
-                            usbDeviceStatus[targetDevice.usbDevice.productId.toString()] =
-                                Pair(DeviceStatus.OPENED, false)
-                            _status.postValue(DeviceStatus.OPENED)
-                        }
+        selectedDevice.value?.let { targetDevice ->
+            CoroutineScope(Dispatchers.IO).launch {
+                when (usbDeviceManager.openConnection(targetDevice, context)) {
+                    USBConstants.SUCCESS -> {
+                        Log.d(TAG, "USB Connection opened for device: ${targetDevice.displayName}")
+                        usbDeviceStatus[targetDevice.usbDevice.productId.toString()] = Pair(DeviceStatus.OPENED, false)
+                        _status.postValue(DeviceStatus.OPENED)
+                    }
 
-                        USBConstants.USB_CONNECTION_FAILURE -> {
-                            Log.e(TAG, "Failed to open USB connection.")
-                        }
+                    USBConstants.USB_CONNECTION_FAILURE -> {
+                        Log.e(TAG, "Failed to open USB connection.")
+                    }
 
-                        else -> {
-                            Log.e(TAG, "No permission to open USB connection.")
-                        }
+                    else -> {
+                        Log.e(TAG, "No permission to open USB connection.")
                     }
                 }
             }
-        } else {
-            comPopup = true
         }
     }
 
     /**
-     * function to check and return whether the device is reattached or not
-     * @param usbDeviceList is the device to be checked
-     * @return true if the device is reattached and false if not
+     * Function to check and return whether the device is reattached or not.
+     * @param usbDeviceList is the device to be checked.
+     * @return true if the device is reattached and false if not.
      */
     private fun checkDeviceReattached(usbDeviceList: UsbDeviceList): Boolean {
         usbDeviceStatus[usbDeviceList.usbDevice.productId.toString()]?.let {
@@ -237,7 +273,7 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
                 val response = if (isAttached) {
                     usbDeviceManager.deviceReConnect(it, context)
                 } else {
-                    usbDeviceManager.claimUsbInterface(it.usbDevice, context)
+                    usbDeviceManager.claimUsbInterface(it, context)
                 }
                 when (response) {
                     USBConstants.SUCCESS -> {
@@ -292,7 +328,6 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
             }
         } ?: deferredResult.complete(false)
 
-        // Blocking the current thread to wait for the result
         return runBlocking { deferredResult.await() }
     }
 
@@ -302,7 +337,6 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
             CoroutineScope(Dispatchers.IO).launch {
                 val response = usbDeviceManager.deviceReConnect(it, context)
                 if (response == AladdinConstants.SUCCESS) {
-                    Log.d(TAG, "errorHandling Sucess")
                 }
             }
         }
@@ -314,7 +348,6 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
     fun enabled() {
         selectedDevice.value?.let {
             CoroutineScope(Dispatchers.IO).launch {
-                //_isLoading.postValue(true)
                 val response = if (checkDeviceReattached(it)) {
                     usbDeviceManager.deviceReConnect(it, context)
                 } else {
@@ -322,13 +355,9 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
                 }
                 when (response) {
                     USBConstants.SUCCESS -> {
-                        Log.d(
-                            TAG,
-                            "Scanner enabled successfully"
-                        )
+                        Log.d(TAG, "Scanner enabled successfully")
                         _status.postValue(DeviceStatus.ENABLED)
-//                        usbDeviceStatus[it.usbDevice.productId.toString()] =  Pair(DeviceStatus.ENABLED, false)
-//                        _deviceReAttached.postValue(false)
+                        usbDeviceStatus[it.usbDevice.productId.toString()] =  Pair(DeviceStatus.ENABLED, checkDeviceReattached(it))
                     }
 
                     else -> {
@@ -346,23 +375,19 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
         val deferredResult = CompletableDeferred<Boolean>()
         if (!isScanEnable) {
             clearScanData()
+            clearDIOStatus()
         }
 
         selectedDevice.value?.let {
             CoroutineScope(Dispatchers.IO).launch {
-                //_isLoading.postValue(true)
                 val success = when (usbDeviceManager.disableScanner(it)) {
                     USBConstants.SUCCESS -> {
 
-                        Log.d(
-                            TAG,
-                            "Scanner disable successfully"
-                        )
+                        Log.d(TAG, "Scanner disable successfully")
                         if (!isScanEnable) {
                             _status.postValue(DeviceStatus.DISABLE)
                             usbDeviceStatus[it.usbDevice.productId.toString()] =
                                 Pair(DeviceStatus.DISABLE, false)
-                            //_deviceReAttached.postValue(false)
                         } else {
                             isScanEnable = false
                         }
@@ -380,15 +405,20 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
             }
         } ?: deferredResult.complete(false)
 
-        // Blocking the current thread to wait for the result
         return runBlocking { deferredResult.await() }
     }
 
+    /**
+     * Select device from the Dropdown.
+     * @param currentDevice is the device in use.
+     * @return false if the current device is closed and close() if it is not closed.
+     */
     fun setDropdownSelectedDevice(
         currentDevice: UsbDeviceList?,
     ): Boolean {
         usbDeviceStatus[currentDevice?.usbDevice?.productId.toString()]?.let {
             it.let {
+                _selectedCommand.postValue(DIOCmdValue.IDENTIFICATION)
                 when (it.first) {
                     DeviceStatus.OPENED,
                     DeviceStatus.RELEASED -> {
@@ -416,7 +446,6 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
                 }
             }
         }
-
         return false
     }
 
@@ -425,6 +454,9 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
         usbDeviceManager.unregisterReceiver(context)
     }
 
+    /**
+     * Function keeps the scanner enabled when application is resumed without stop or pause.
+     */
     fun appInForeground() {
         selectedDevice.value?.let {
             usbDeviceStatus[selectedDevice.value?.usbDevice?.productId.toString()].let {
@@ -435,6 +467,9 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
         }
     }
 
+    /**
+     * Function disable the scanner when application is brought to foreground from background.
+     */
     fun appInBackground() {
         selectedDevice.value?.let {
             usbDeviceStatus[selectedDevice.value?.usbDevice?.productId.toString()].let {
@@ -442,6 +477,193 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
                     isScanEnable = true
                     disable()
                 }
+            }
+        }
+    }
+
+    /**
+     * Function updates the DIO Data field with newData.
+     * @param newData is the typed data in text field.
+     */
+    fun updateDIODataField(newData: String) {
+        _dioData.postValue(newData)
+    }
+
+    /**
+     * Function updates the DIO dropdown field and Data field with the command selected from the dropdown.
+     * @param command is the selected command.
+     */
+    fun updateSelectedDIOCommand(command: DIOCmdValue) {
+        selectedDevice.value?.let {
+            CoroutineScope(Dispatchers.IO).launch {
+                val sb = java.lang.StringBuilder()
+                val cmd =
+                    if (it.deviceType == USB_OEM) command.oemValue else command.comValue
+                if (it.deviceType == USB_OEM) {
+                    for (data in cmd) {
+                        sb.append(String.format(" 0x%02X", data))
+                    }
+                    _dioData.postValue(sb.toString().trim().split(" ").joinToString(","))
+                } else {
+                    sb.append(cmd)
+                    _dioData.postValue(cmd.joinToString(", ") { it.toInt().toString() })
+                }
+            }
+        }
+        _selectedCommand.postValue(command)
+    }
+
+    /**
+     * Function to execute the selected command.
+     */
+    fun executeDIOCommand() {
+        selectedDevice.value?.let {
+            _isLoading.postValue(true)
+            CoroutineScope(Dispatchers.IO).launch {
+                selectedCommand.value?.let {
+                    val validCmd = validationDio()
+                    if (!validCmd) {
+                        _dioStatus.postValue(context.getString(R.string.not_a_valid_command) )
+                        _isLoading.postValue(false)
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Function to validate the typed DIOData.
+     * @return true if data is matching with command, false if not.
+     */
+    private fun validationDio(): Boolean {
+        selectedDevice.value?.let {
+            var validation: Boolean
+            DIOCmdValue.entries.map { dioCmd ->
+                val command = if (it.deviceType == USB_OEM) dioCmd.oemValue else dioCmd.comValue
+                if (it.deviceType == USB_COM) {
+                    val cmdByteArray: ByteArray
+                    try {
+                        cmdByteArray = dioData.value?.split(", ")!!.map { it.toInt().toByte() }.toByteArray()
+                    } catch (e: NumberFormatException) {
+                        return false
+                    }
+                    validation = cmdByteArray.contentEquals(command)
+                    if(validation) {
+                        _selectedCommand.postValue(dioCmd)
+                        val output =  usbDeviceManager.dioCommand(it.deviceType, dioCmd, dioData.value.toString(), context)
+                        _dioStatus.postValue(output.replace(",",",\n"))
+                        _isLoading.postValue(false)
+                        return true
+                    }
+                } else {
+                    val normalizedCmd: String
+                    try {
+                        normalizedCmd = dioData.value?.split(",")!!.joinToString(",") {
+                            val value = it.trim()
+                            if (value.startsWith("0x")) value
+                            else "0x" + value.toInt().toString(16).uppercase(Locale.ROOT).padStart(2, '0')
+                        }
+                    } catch (e: NumberFormatException) {
+                        return false
+                    }
+
+                    validation = command.joinToString(",") { String.format("0x%02X", it) } == normalizedCmd
+                    if(validation) {
+                        _selectedCommand.postValue(dioCmd)
+                        val output =  usbDeviceManager.dioCommand(it.deviceType, dioCmd, dioData.value.toString(), context)
+                        _dioStatus.postValue(output.replace(",",",\n"))
+                        _isLoading.postValue(false)
+                        return true
+                    }
+                }
+            }
+            return false
+        }
+        return false
+    }
+
+    /**
+     * Function to clear DIO status field.
+     */
+    fun clearDIOStatus() {
+        _dioStatus.postValue("")
+    }
+
+    /**
+     * Function to convert HashMap<ConfigurationFeature, String> to HashMap<ConfigurationFeature, Boolean>.
+     * @param map is HashMap<ConfigurationFeature, String>.
+     * @return createMap is HashMap<ConfigurationFeature, Boolean>
+     */
+    private fun convertToBoolean(map: HashMap<ConfigurationFeature, String>) :  HashMap<ConfigurationFeature, Boolean> {
+        val createMap : HashMap<ConfigurationFeature, Boolean> = hashMapOf()
+        for ((feature, value) in map) {
+            if (value == "00") {
+                createMap[feature] = false
+            } else if(value == "01"){
+                createMap[feature] = true
+            } else{
+
+            }
+        }
+        return createMap
+    }
+
+    /**
+     * Function to update writeConfigData hashmap.
+     * @param feature is ConfigurationFeature.
+     * @param value is the switch state.
+     * @param add is a boolean to add or remove <ConfigurationFeature, Boolean> from the writeConfigData.
+     */
+    fun updateWriteConfigData(feature: ConfigurationFeature, value: Boolean, add: Boolean) {
+        if (add) {
+            writeConfigData[feature] = if (value) "01" else "00"
+        } else {
+            writeConfigData.remove(feature)
+        }
+    }
+
+    /**
+     * Function to apply the modified Configuration to the scanner.
+     */
+    fun applyConfiguration() {
+        selectedDevice.value?.let { device ->
+            CoroutineScope(Dispatchers.IO).launch {
+                _isLoading.postValue(true)
+                val writeResult = withContext(Dispatchers.IO) {
+                    usbDeviceManager.writeConfig(device.deviceType, writeConfigData)
+                }
+
+                var failure = ""
+                if (writeResult.isNotEmpty()) {
+                    for ((feature, value) in writeResult) {
+                        if (value != ">") failure = failure + feature.featureName + ","
+                    }
+                } else failure = context.getString(R.string.configuration_save_failure)
+                _isLoading.postValue(false)
+
+                readConfigData()
+                writeConfigData= hashMapOf()
+                resultLiveData.postValue(failure)
+            }
+        } ?: resultLiveData.postValue("")
+    }
+
+    /**
+     * Function to read Configuration of the scanner.
+     */
+    fun readConfigData() {
+        selectedDevice.value?.let { device ->
+            CoroutineScope(Dispatchers.IO).launch {
+                _isLoading.postValue(true)
+                val readResult = withContext(Dispatchers.IO) {
+                    usbDeviceManager.readConfig(device.deviceType)
+                }
+                if (readResult.isNotEmpty()) {
+                    val createMap = convertToBoolean(readResult)
+                    _readConfigData.postValue(createMap)
+                    clearScanData()
+                }
+                _isLoading.postValue(false)
             }
         }
     }

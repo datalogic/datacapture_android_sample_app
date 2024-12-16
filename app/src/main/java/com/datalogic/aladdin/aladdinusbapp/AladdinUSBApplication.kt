@@ -2,7 +2,6 @@ package com.datalogic.aladdin.aladdinusbapp
 
 import android.app.Application
 import com.datalogic.aladdin.aladdinusbapp.utils.CommonUtils
-import com.datalogic.aladdin.aladdinusbapp.utils.SharedPreferenceUtil
 import com.datalogic.aladdin.aladdinusbscannersdk.usbaccess.USBDeviceManager
 
 class AladdinUSBApplication : Application() {
@@ -14,7 +13,6 @@ class AladdinUSBApplication : Application() {
         super.onCreate()
 
         CommonUtils.initialize(this)
-        SharedPreferenceUtil.initSharedPreference(this)
 
         usbDeviceManager = USBDeviceManager()
         usbDeviceManager.register(applicationContext)

@@ -4,7 +4,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -30,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.compose.DeviceDropdown
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 
 @Composable
 fun HomeTabLandscape() {
@@ -38,6 +38,8 @@ fun HomeTabLandscape() {
     val deviceList = homeViewModel.deviceList.observeAsState(ArrayList()).value
     val scanLabel = homeViewModel.scanLabel.observeAsState("").value
     val scanData = homeViewModel.scanData.observeAsState("").value
+    val status = homeViewModel.status.observeAsState(DeviceStatus.NONE).value
+    val selectedDevice = homeViewModel.selectedDevice.observeAsState(null).value
 
     Column(
         modifier = Modifier
@@ -46,21 +48,21 @@ fun HomeTabLandscape() {
                 start = dimensionResource(id = R.dimen._35sdp),
                 top = dimensionResource(id = R.dimen._20sdp),
             )
-            .fillMaxWidth(0.8f)
-            .fillMaxHeight()
     ) {
         DeviceDropdown(
             modifier = Modifier
                 .semantics { contentDescription = "device_list_dropdown" }
-                .padding(bottom = dimensionResource(id = R.dimen._30sdp))
+                .padding(bottom = dimensionResource(id = R.dimen._20sdp))
                 .fillMaxWidth()
                 .wrapContentHeight(),
             deviceList,
             onDeviceSelected = {
                 homeViewModel.setSelectedDevice(it)
             },
-            homeViewModel.status.value!!
+            status,
+            selectedDevice
         )
+
         Column(
             modifier = Modifier
                 .semantics { contentDescription = "scanner_data" }
@@ -71,10 +73,7 @@ fun HomeTabLandscape() {
                 modifier = Modifier
                     .semantics { contentDescription = "lbl_scanner_data" }
                     .fillMaxWidth()
-                    .padding(
-                        start = dimensionResource(id = R.dimen._10sdp),
-                        bottom = dimensionResource(id = R.dimen._5sdp)
-                    ),
+                    .padding(bottom = dimensionResource(id = R.dimen._5sdp)),
                 text = stringResource(id = R.string.scanner_data),
                 style = MaterialTheme.typography.headlineLarge
             )

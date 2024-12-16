@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
@@ -20,12 +21,20 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.viewmodel.HomeViewModel
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.USBConstants.USB_OEM
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 
 @Composable
 fun BottomNavigationRow(modifier: Modifier, homeViewModel: HomeViewModel) {
     val items = listOf(stringResource(id = R.string.home), stringResource(id = R.string.configuration), stringResource(id = R.string.direct_io))
-    val selectedItem by homeViewModel.selectedTabIndex.observeAsState(0)
+    val selectedTab by homeViewModel.selectedTabIndex.observeAsState(0)
+    val status = homeViewModel.status.observeAsState(DeviceStatus.DISABLE).value
 
+    LaunchedEffect(status) {
+        if (status != DeviceStatus.ENABLED) {
+            homeViewModel.setSelectedTabIndex(0) // Switch to home tab
+        }
+    }
     Row(
         modifier
             .fillMaxWidth()
@@ -42,10 +51,29 @@ fun BottomNavigationRow(modifier: Modifier, homeViewModel: HomeViewModel) {
                 modifier = Modifier
                     .wrapContentSize()
                     .clickable {
-                        homeViewModel.setSelectedTabIndex(index)
+                        if (homeViewModel.deviceList.value?.size!! > 0) {
+                            if (status == DeviceStatus.ENABLED) {
+                                if (index == 1 && homeViewModel.selectedDevice.value?.deviceType == USB_OEM) {
+                                    homeViewModel.oemAlert = true
+                                } else {
+                                    homeViewModel.setSelectedTabIndex(index)
+                                    if (index == 1) {
+                                        homeViewModel.readConfigData()
+                                    }
+                                }
+                            } else {
+                                if (index != 0) {
+                                    homeViewModel.enableAlert = true
+                                }
+                            }
+                        } else {
+                            if (index != 0) {
+                                homeViewModel.connectDeviceAlert = true
+                            }
+                        }
                     },
                 text = item,
-                color = if (selectedItem == index) colorResource(id = R.color.bottom_nav_selected_background) else Color.White,
+                color = if (selectedTab == index) colorResource(id = R.color.bottom_nav_selected_background) else Color.White,
             )
         }
     }

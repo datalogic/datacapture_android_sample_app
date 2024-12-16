@@ -19,7 +19,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -33,39 +32,27 @@ import androidx.compose.ui.unit.dp
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.CustomButton
-import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.ShowPopup
 import com.datalogic.aladdin.aladdinusbapp.views.compose.DeviceDropdown
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
-import kotlinx.coroutines.delay
 
 @Composable
 fun HomeTabPortrait() {
 
     val homeViewModel = LocalHomeViewModel.current
     val deviceList = homeViewModel.deviceList.observeAsState(ArrayList()).value
-    val status = homeViewModel.status.observeAsState().value
+    val status = homeViewModel.status.observeAsState(DeviceStatus.NONE).value
 
     val scanLabel = homeViewModel.scanLabel.observeAsState("").value
     val scanData = homeViewModel.scanData.observeAsState("").value
+    val selectedDevice = homeViewModel.selectedDevice.observeAsState(null).value
+
 
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp
 
-    val comPopup = homeViewModel.comPopup
-
-    if (comPopup) {
-        ShowPopup(onDismiss = {
-            homeViewModel.comPopup = false
-        })
-        LaunchedEffect(Unit) {
-            delay(3000)
-            homeViewModel.comPopup = false
-        }
-    }
-
     /**
-      * Define a threshold for vertical scrolling
-      * */
+     * Define a threshold for vertical scrolling
+     * */
     val scrollableThreshold = 500
 
     val content = @Composable {
@@ -79,7 +66,8 @@ fun HomeTabPortrait() {
             onDeviceSelected = {
                 homeViewModel.setSelectedDevice(it)
             },
-            homeViewModel.status.value!!
+            status,
+            selectedDevice
         )
         Column(
             modifier = Modifier
@@ -248,8 +236,8 @@ fun HomeTabPortrait() {
     }
 
     /**
-      * Vertical scroll only if the screen height is less than the threshold
-      */
+     * Vertical scroll only if the screen height is less than the threshold
+     */
     if (screenHeight < scrollableThreshold) {
         Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
             content()

@@ -12,7 +12,7 @@ android {
         minSdk = 29
         targetSdk = 34
         versionCode = 1
-        versionName = "1.0.1"
+        versionName = "1.0.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -76,7 +76,6 @@ dependencies {
     implementation(files("libs/AladdinUsbSdk.aar"))
     implementation("androidx.compose.runtime:runtime-livedata:1.0.0-beta01")
 
-    implementation("com.google.code.gson:gson:2.11.0")
     implementation("androidx.compose.animation:animation")
 
     implementation("androidx.appcompat:appcompat:1.5.1")

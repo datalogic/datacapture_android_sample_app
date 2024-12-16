@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -14,7 +15,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
@@ -31,9 +31,9 @@ import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.compose.BottomNavigationRow
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.CustomButton
+import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.ShowLoading
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.ShowPopup
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
-import kotlinx.coroutines.delay
 
 @Composable
 fun HomeScreenLayoutLandscape() {
@@ -43,18 +43,13 @@ fun HomeScreenLayoutLandscape() {
     val status = homeViewModel.status.observeAsState().value
     val deviceStatus = homeViewModel.deviceStatus.observeAsState("").value
     val selectedTab by homeViewModel.selectedTabIndex.observeAsState(0)
+    var isLoading = homeViewModel.isLoading.observeAsState().value
 
-    val comPopup = homeViewModel.comPopup
+    if (isLoading!!) { ShowLoading(onDismiss = {isLoading = false})}
 
-    if (comPopup) {
-        ShowPopup(onDismiss = {
-            homeViewModel.comPopup = false
-        })
-        LaunchedEffect(Unit) {
-            delay(3000)
-            homeViewModel.comPopup = false
-        }
-    }
+    ShowPopup(homeViewModel.enableAlert, onDismiss = { homeViewModel.enableAlert = false }, stringResource(id = R.string.alert_message_for_enable_device))
+    ShowPopup(homeViewModel.oemAlert, onDismiss = { homeViewModel.oemAlert = false }, stringResource(id = R.string.alert_message_for_oem_configuration))
+    ShowPopup(homeViewModel.connectDeviceAlert, onDismiss = { homeViewModel.connectDeviceAlert = false }, stringResource(id = R.string.alert_message_for_connect_device))
 
     Column(
         modifier = Modifier
@@ -72,10 +67,16 @@ fun HomeScreenLayoutLandscape() {
                 .weight(1f),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            when (selectedTab) {
-                0 -> HomeTabLandscape()
-                1 -> ConfigurationTab()
-                2 -> DirectIOTab()
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth(0.8f)
+                    .fillMaxHeight()
+            ) {
+                when (selectedTab) {
+                    0 -> HomeTabLandscape()
+                    1 -> ConfigurationTabLandscape()
+                    2 -> DirectIOTabLandscape()
+                }
             }
 
             Column(
