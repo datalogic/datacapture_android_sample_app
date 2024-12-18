@@ -11,10 +11,9 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.utils.USBConstants
-import com.datalogic.aladdin.aladdinusbscannersdk.model.UsbDeviceList
+import com.datalogic.aladdin.aladdinusbscannersdk.model.UsbDeviceDescriptor
 import com.datalogic.aladdin.aladdinusbscannersdk.model.UsbScanData
 import com.datalogic.aladdin.aladdinusbscannersdk.usbaccess.USBDeviceManager
-import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.AladdinConstants
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.USBConstants.USB_COM
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.USBConstants.USB_OEM
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ConfigurationFeature
@@ -37,8 +36,8 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
     private val _deviceStatus = MutableLiveData<String>()
     val deviceStatus: LiveData<String> = _deviceStatus
 
-    private val _deviceList = MutableLiveData<ArrayList<UsbDeviceList>>(ArrayList())
-    val deviceList: LiveData<ArrayList<UsbDeviceList>> = _deviceList
+    private val _deviceList = MutableLiveData<ArrayList<UsbDeviceDescriptor>>(ArrayList())
+    val deviceList: LiveData<ArrayList<UsbDeviceDescriptor>> = _deviceList
 
     private val _scanLabel = MutableLiveData("")
     val scanLabel: LiveData<String> = _scanLabel
@@ -46,7 +45,7 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
     private val _isLoading = MutableLiveData(false)
     val isLoading: LiveData<Boolean> = _isLoading
 
-    val selectedDevice: MutableLiveData<UsbDeviceList?> = MutableLiveData(null)
+    val selectedDevice: MutableLiveData<UsbDeviceDescriptor?> = MutableLiveData(null)
 
     private val _selectedTabIndex = MutableLiveData(0)
     val selectedTabIndex: LiveData<Int> = _selectedTabIndex
@@ -56,7 +55,7 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
 
     val usbDeviceStatus: HashMap<String, Pair<DeviceStatus?, Boolean>> = HashMap()
 
-    var enableAlert by mutableStateOf(false)
+    var claimAlert by mutableStateOf(false)
     var oemAlert by mutableStateOf(false)
     var connectDeviceAlert by mutableStateOf(false)
 
@@ -98,7 +97,7 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
      * Setting the selected device to variable _selectedDevice
      * @param device is the selected device
      */
-    fun setSelectedDevice(device: UsbDeviceList?) {
+    fun setSelectedDevice(device: UsbDeviceDescriptor?) {
         selectedDevice.value = device
         selectedDevice.value?.let { it ->
             val productId = it.usbDevice.productId.toString()
@@ -120,7 +119,7 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
      * @param key is the productId as key
      * @param value is the scanner status as value
      */
-    fun addKeyValueIfAbsent(
+    private fun addKeyValueIfAbsent(
         map: HashMap<String, Pair<DeviceStatus?, Boolean>>,
         key: String,
         value: DeviceStatus?
@@ -135,10 +134,10 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
      */
     fun checkConnectedDevice() {
         val usbDevices = usbDeviceManager.checkConnectedDevice(context)
-        val usbDevicelist = ArrayList<UsbDeviceList>()
+        val usbDeviceDescriptor = ArrayList<UsbDeviceDescriptor>()
         if (usbDevices.isNotEmpty()) {
             for (device in usbDevices) {
-                usbDevicelist.add(device)
+                usbDeviceDescriptor.add(device)
                 addKeyValueIfAbsent(
                     usbDeviceStatus,
                     device.usbDevice.productId.toString(),
@@ -146,7 +145,7 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
                 )
             }
         }
-        _deviceList.postValue(usbDevicelist)
+        _deviceList.postValue(usbDeviceDescriptor)
     }
 
     /**
@@ -250,11 +249,11 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
 
     /**
      * Function to check and return whether the device is reattached or not.
-     * @param usbDeviceList is the device to be checked.
+     * @param usbDeviceDescriptor is the device to be checked.
      * @return true if the device is reattached and false if not.
      */
-    private fun checkDeviceReattached(usbDeviceList: UsbDeviceList): Boolean {
-        usbDeviceStatus[usbDeviceList.usbDevice.productId.toString()]?.let {
+    private fun checkDeviceReattached(usbDeviceDescriptor: UsbDeviceDescriptor): Boolean {
+        usbDeviceStatus[usbDeviceDescriptor.usbDevice.productId.toString()]?.let {
             it.let {
                 return it.second
             }
@@ -331,17 +330,6 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
         return runBlocking { deferredResult.await() }
     }
 
-    fun errorHandling() {
-        selectedDevice.value?.let {
-            usbDeviceManager.handleDeviceDisconnection(it.usbDevice)
-            CoroutineScope(Dispatchers.IO).launch {
-                val response = usbDeviceManager.deviceReConnect(it, context)
-                if (response == AladdinConstants.SUCCESS) {
-                }
-            }
-        }
-    }
-
     /**
      * Enable the Connected Scanner.
      */
@@ -414,7 +402,7 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
      * @return false if the current device is closed and close() if it is not closed.
      */
     fun setDropdownSelectedDevice(
-        currentDevice: UsbDeviceList?,
+        currentDevice: UsbDeviceDescriptor?,
     ): Boolean {
         usbDeviceStatus[currentDevice?.usbDevice?.productId.toString()]?.let {
             it.let {
@@ -503,10 +491,14 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
                     for (data in cmd) {
                         sb.append(String.format(" 0x%02X", data))
                     }
-                    _dioData.postValue(sb.toString().trim().split(" ").joinToString(","))
+                    if(command != DIOCmdValue.OTHER) {
+                        _dioData.postValue(sb.toString().trim().split(" ").joinToString(","))
+                    }
                 } else {
-                    sb.append(cmd)
-                    _dioData.postValue(cmd.joinToString(", ") { it.toInt().toString() })
+                    if(command != DIOCmdValue.OTHER) {
+                        sb.append(cmd)
+                        _dioData.postValue(cmd.joinToString(", ") { it.toInt().toString() })
+                    }
                 }
             }
         }
@@ -520,20 +512,29 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
         selectedDevice.value?.let {
             _isLoading.postValue(true)
             CoroutineScope(Dispatchers.IO).launch {
-                selectedCommand.value?.let {
+                selectedCommand.value?.let { it1 ->
+                    val editText = dioData.value.toString()
                     val validCmd = validationDio()
                     if (!validCmd) {
-                        _dioStatus.postValue(context.getString(R.string.not_a_valid_command) )
+                        _selectedCommand.postValue(DIOCmdValue.OTHER)
+                        val output =  usbDeviceManager.dioCommand(
+                            it,
+                            DIOCmdValue.OTHER,
+                            editText,
+                            context
+                        )
+                        _dioStatus.postValue(output)
                         _isLoading.postValue(false)
                     }
                 }
+
             }
         }
     }
 
     /**
      * Function to validate the typed DIOData.
-     * @return true if data is matching with command, false if not.
+     * @return true and execute command if data is matching with command, false if not.
      */
     private fun validationDio(): Boolean {
         selectedDevice.value?.let {
@@ -545,12 +546,13 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
                     try {
                         cmdByteArray = dioData.value?.split(", ")!!.map { it.toInt().toByte() }.toByteArray()
                     } catch (e: NumberFormatException) {
+                        _dioStatus.postValue(context.getString(R.string.not_a_valid_command))
                         return false
                     }
                     validation = cmdByteArray.contentEquals(command)
                     if(validation) {
                         _selectedCommand.postValue(dioCmd)
-                        val output =  usbDeviceManager.dioCommand(it.deviceType, dioCmd, dioData.value.toString(), context)
+                        val output =  usbDeviceManager.dioCommand(it, dioCmd, dioData.value.toString(), context)
                         _dioStatus.postValue(output.replace(",",",\n"))
                         _isLoading.postValue(false)
                         return true
@@ -564,13 +566,14 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
                             else "0x" + value.toInt().toString(16).uppercase(Locale.ROOT).padStart(2, '0')
                         }
                     } catch (e: NumberFormatException) {
+                        _dioStatus.postValue(context.getString(R.string.not_a_valid_command))
                         return false
                     }
 
                     validation = command.joinToString(",") { String.format("0x%02X", it) } == normalizedCmd
                     if(validation) {
                         _selectedCommand.postValue(dioCmd)
-                        val output =  usbDeviceManager.dioCommand(it.deviceType, dioCmd, dioData.value.toString(), context)
+                        val output =  usbDeviceManager.dioCommand(it, dioCmd, dioData.value.toString(), context)
                         _dioStatus.postValue(output.replace(",",",\n"))
                         _isLoading.postValue(false)
                         return true
@@ -656,7 +659,7 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
             CoroutineScope(Dispatchers.IO).launch {
                 _isLoading.postValue(true)
                 val readResult = withContext(Dispatchers.IO) {
-                    usbDeviceManager.readConfig(device.deviceType)
+                    usbDeviceManager.readConfig(device, context)
                 }
                 if (readResult.isNotEmpty()) {
                     val createMap = convertToBoolean(readResult)

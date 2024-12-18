@@ -31,8 +31,13 @@ fun BottomNavigationRow(modifier: Modifier, homeViewModel: HomeViewModel) {
     val status = homeViewModel.status.observeAsState(DeviceStatus.DISABLE).value
 
     LaunchedEffect(status) {
-        if (status != DeviceStatus.ENABLED) {
+        when (status) {
+            DeviceStatus.OPENED,
+            DeviceStatus.RELEASED,
+            DeviceStatus.CLOSED,
+            DeviceStatus.NONE->
             homeViewModel.setSelectedTabIndex(0) // Switch to home tab
+            else -> {}
         }
     }
     Row(
@@ -52,7 +57,7 @@ fun BottomNavigationRow(modifier: Modifier, homeViewModel: HomeViewModel) {
                     .wrapContentSize()
                     .clickable {
                         if (homeViewModel.deviceList.value?.size!! > 0) {
-                            if (status == DeviceStatus.ENABLED) {
+                            if ((status == DeviceStatus.CLAIMED || status == DeviceStatus.ENABLED || status == DeviceStatus.DISABLE)) {
                                 if (index == 1 && homeViewModel.selectedDevice.value?.deviceType == USB_OEM) {
                                     homeViewModel.oemAlert = true
                                 } else {
@@ -63,7 +68,7 @@ fun BottomNavigationRow(modifier: Modifier, homeViewModel: HomeViewModel) {
                                 }
                             } else {
                                 if (index != 0) {
-                                    homeViewModel.enableAlert = true
+                                    homeViewModel.claimAlert = true
                                 }
                             }
                         } else {

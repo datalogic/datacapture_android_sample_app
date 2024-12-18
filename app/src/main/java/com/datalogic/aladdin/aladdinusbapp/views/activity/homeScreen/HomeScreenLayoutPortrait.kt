@@ -36,7 +36,7 @@ fun HomeScreenLayoutPortrait() {
     val selectedTab by homeViewModel.selectedTabIndex.observeAsState(0)
     var isLoading = homeViewModel.isLoading.observeAsState().value
 
-    ShowPopup(homeViewModel.enableAlert, onDismiss = { homeViewModel.enableAlert = false }, stringResource(id = R.string.alert_message_for_enable_device))
+    ShowPopup(homeViewModel.claimAlert, onDismiss = { homeViewModel.claimAlert = false }, stringResource(id = R.string.alert_message_for_claim_device))
     ShowPopup(homeViewModel.oemAlert, onDismiss = { homeViewModel.oemAlert = false }, stringResource(id = R.string.alert_message_for_oem_configuration))
     ShowPopup(homeViewModel.connectDeviceAlert, onDismiss = { homeViewModel.connectDeviceAlert = false }, stringResource(id = R.string.alert_message_for_connect_device))
 

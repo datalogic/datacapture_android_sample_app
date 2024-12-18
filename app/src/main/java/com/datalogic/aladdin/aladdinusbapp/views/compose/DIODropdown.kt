@@ -32,21 +32,21 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.toSize
 import com.datalogic.aladdin.aladdinusbapp.R
-import com.datalogic.aladdin.aladdinusbscannersdk.model.UsbDeviceList
+import com.datalogic.aladdin.aladdinusbscannersdk.model.UsbDeviceDescriptor
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DIOCmdValue
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 
 @Composable
 fun DIODropdown(modifier: Modifier, selectedCommand: DIOCmdValue, onCommandSelected: (DIOCmdValue) -> Unit,
-                selectedDevice : (UsbDeviceList?), onDeviceSelected: (UsbDeviceList?) -> Unit, mDevices: ArrayList<UsbDeviceList>, status: DeviceStatus?){
+                selectedDevice : (UsbDeviceDescriptor?), onDeviceSelected: (UsbDeviceDescriptor?) -> Unit, mDevices: ArrayList<UsbDeviceDescriptor>, status: DeviceStatus?){
 
     var mExpanded by remember { mutableStateOf(false) }
     val commands = DIOCmdValue.entries.map { it }
     var mTextFieldSize by remember { mutableStateOf(Size.Zero)}
-    var mCurrentDevice by remember {mutableStateOf("")}
+    var mCurrentCommand by remember {mutableStateOf("")}
 
     LaunchedEffect(mDevices, selectedCommand) {
-        mCurrentDevice = if (mDevices.isNotEmpty()) selectedCommand.value else "No devices connected"
+        mCurrentCommand = if (mDevices.isNotEmpty()) selectedCommand.value else "No devices connected"
         var deviceName = selectedDevice
         if (selectedDevice == null || !mDevices.contains(selectedDevice)) {
             deviceName = if (mDevices.isNotEmpty()) mDevices.first() else null
@@ -66,7 +66,7 @@ fun DIODropdown(modifier: Modifier, selectedCommand: DIOCmdValue, onCommandSelec
         modifier = modifier
     ) {
         TextField(
-            value = mCurrentDevice,
+            value = mCurrentCommand,
             textStyle = MaterialTheme.typography.labelLarge,
             onValueChange = {},
             modifier = modifier
@@ -76,7 +76,7 @@ fun DIODropdown(modifier: Modifier, selectedCommand: DIOCmdValue, onCommandSelec
                 }
                 .clickable { mExpanded = !mExpanded },
             trailingIcon = {
-                if (mDevices.isNotEmpty() && status == DeviceStatus.ENABLED) {
+                if (mDevices.isNotEmpty() && (status == DeviceStatus.CLAIMED || status == DeviceStatus.ENABLED || status == DeviceStatus.DISABLE)) {
                     Icon(icon, stringResource(id = R.string.arrow_dropdown), tint = Color.Black)
                 } else {
                     Icon(Icons.Filled.KeyboardArrowDown, stringResource(id = R.string.arrow_dropdown))
@@ -92,7 +92,7 @@ fun DIODropdown(modifier: Modifier, selectedCommand: DIOCmdValue, onCommandSelec
                 disabledIndicatorColor = Color.Transparent
             )
         )
-        if (mDevices.isNotEmpty()&& status == DeviceStatus.ENABLED) {
+        if (mDevices.isNotEmpty() && (status == DeviceStatus.CLAIMED || status == DeviceStatus.ENABLED || status == DeviceStatus.DISABLE)) {
             DropdownMenu(
                 expanded = mExpanded,
                 onDismissRequest = { mExpanded = false },
@@ -101,18 +101,20 @@ fun DIODropdown(modifier: Modifier, selectedCommand: DIOCmdValue, onCommandSelec
                     .width(with(LocalDensity.current) { mTextFieldSize.width.toDp() })
             ) {
                 commands.forEach { command ->
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                text = command.value,
-                                style = MaterialTheme.typography.labelLarge
-                            )
-                        },
-                        onClick = {
-                            onCommandSelected(command)
-                            mExpanded = false
-                        }
-                    )
+                    if (command.value != mCurrentCommand) {
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = command.value,
+                                    style = MaterialTheme.typography.labelLarge
+                                )
+                            },
+                            onClick = {
+                                onCommandSelected(command)
+                                mExpanded = false
+                            }
+                        )
+                    }
                 }
             }
         }

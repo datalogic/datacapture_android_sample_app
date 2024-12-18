@@ -29,4 +29,5 @@
     <dimen name="_55sdp">50dp</dimen>
     <dimen name="_50sdp">45dp</dimen>
     <dimen name="_46sdp">46dp</dimen>
+    <dimen name="_dioStatus">150dp</dimen>
 </resources>

@@ -89,7 +89,7 @@ fun HomeTabPortrait() {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(BorderStroke(1.dp, Color.Black), RoundedCornerShape(8.dp))
+                    .border(BorderStroke(1.dp, Color.Black), RoundedCornerShape(dimensionResource(id = R.dimen._8sdp)))
                     .padding(horizontal = dimensionResource(id = R.dimen._16sdp)),
             ) {
                 Text(
@@ -108,7 +108,7 @@ fun HomeTabPortrait() {
                         .semantics { contentDescription = "scan_data" }
                         .fillMaxWidth()
                         .height(dimensionResource(id = R.dimen._36sdp))
-                        .border(BorderStroke(1.dp, Color.Black), RoundedCornerShape(5.dp))
+                        .border(BorderStroke(1.dp, Color.Black), RoundedCornerShape(dimensionResource(id = R.dimen._8sdp)))
                         .padding(dimensionResource(id = R.dimen._8sdp))
                         .verticalScroll(rememberScrollState()),
                     text = scanData
@@ -127,7 +127,7 @@ fun HomeTabPortrait() {
                         .semantics { contentDescription = "scanned_data_label" }
                         .fillMaxWidth()
                         .height(dimensionResource(id = R.dimen._35sdp))
-                        .border(BorderStroke(1.dp, Color.Black), RoundedCornerShape(5.dp))
+                        .border(BorderStroke(1.dp, Color.Black), RoundedCornerShape(dimensionResource(id = R.dimen._8sdp)))
                         .padding(dimensionResource(id = R.dimen._8sdp)),
                     text = scanLabel
                 )
@@ -239,7 +239,7 @@ fun HomeTabPortrait() {
      * Vertical scroll only if the screen height is less than the threshold
      */
     if (screenHeight < scrollableThreshold) {
-        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+        Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(vertical = dimensionResource(id = R.dimen._4sdp))) {
             content()
         }
     } else {

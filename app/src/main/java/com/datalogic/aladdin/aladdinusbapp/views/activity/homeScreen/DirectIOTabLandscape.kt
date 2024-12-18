@@ -126,7 +126,7 @@ fun DirectIOTabLandscape() {
                         .fillMaxWidth()
                         .border(BorderStroke(1.dp, Color.Black), RoundedCornerShape(dimensionResource(id = R.dimen._5sdp))),
                     singleLine = true,
-                    enabled = (status == DeviceStatus.ENABLED),
+                    enabled = true,
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Color.White,
                         unfocusedContainerColor = Color.White,
@@ -165,7 +165,7 @@ fun DirectIOTabLandscape() {
                             .semantics { contentDescription = "btn_execute" }
                             .padding(top = dimensionResource(id = R.dimen._16sdp))
                             .wrapContentSize(),
-                        enabled = (status == DeviceStatus.ENABLED),
+                        enabled = true,
                         onClick = { homeViewModel.executeDIOCommand() },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = colorResource(id = R.color.colorPrimary),
@@ -176,8 +176,7 @@ fun DirectIOTabLandscape() {
                         Text(
                             text = stringResource(id = R.string.execute_dio),
                             style = MaterialTheme.typography.labelLarge,
-                            color = if (status == DeviceStatus.ENABLED) colorResource(id = R.color.white)
-                            else colorResource(id = R.color.colorPrimary)
+                            color = colorResource(id = R.color.white)
                         )
                     }
 

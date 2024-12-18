@@ -29,7 +29,7 @@ import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.AladdinConstan
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.AladdinConstants.OPEN_FAILURE
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.StatusListener
-import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbErrorListener
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbDioListener
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbListener
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbScanListener
 
@@ -44,7 +44,7 @@ class HomeActivity : AppCompatActivity() {
     private lateinit var usbListener: UsbListener
     private lateinit var scanEvent: UsbScanListener
     private lateinit var statusListener: StatusListener
-    private lateinit var usbErroListener: UsbErrorListener
+    private lateinit var usbErrorListener: UsbDioListener
     private val homeViewModel: HomeViewModel by viewModels {
         MyViewModelFactory(usbDeviceManager, applicationContext)
     }
@@ -86,12 +86,19 @@ class HomeActivity : AppCompatActivity() {
             }
         }
         usbDeviceManager.registerUsbScanListener(scanEvent)
-        usbErroListener = object : UsbErrorListener {
+        usbErrorListener = object : UsbDioListener {
             override fun fireDioErrorEvent(errorCode: Int, message: String) {
                 showToast(applicationContext, message + errorCode)
             }
+            override fun executeDioAndConfigCommand(isConfigCommand : Boolean) {
+                if(isConfigCommand) {
+                    homeViewModel.readConfigData()
+                } else {
+                    homeViewModel.executeDIOCommand()
+                }
+            }
         }
-        usbDeviceManager.registerUsbDioErrorListener(usbErroListener)
+        usbDeviceManager.registerUsbDioListener(usbErrorListener)
 
         statusListener = object : StatusListener {
             override fun onStatus(productId: String, status: DeviceStatus) {
@@ -103,7 +110,6 @@ class HomeActivity : AppCompatActivity() {
                     when (errorStatus) {
                         OPEN_FAILURE, CLAIM_FAILURE, ENABLE_FAILURE ->
                             showToast(applicationContext, "Please try once again...")
-                        //homeViewModel.errorHandling()
                     }
 
                     Log.d(TAG, "Receiving event: $errorStatus")
@@ -168,6 +174,6 @@ class HomeActivity : AppCompatActivity() {
         usbDeviceManager.unregisterUsbListener(usbListener)
         usbDeviceManager.unregisterUsbScanListener(scanEvent)
         usbDeviceManager.unregisterStatusListener(statusListener)
-        usbDeviceManager.unregisterUsbDioErrorListener(usbErroListener)
+        usbDeviceManager.unregisterUsbDioListener(usbErrorListener)
     }
 }

@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -35,7 +37,6 @@ import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.compose.DIODropdown
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DIOCmdValue
-import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 
 @Composable
 fun DirectIOTabPortrait() {
@@ -124,9 +125,10 @@ fun DirectIOTabPortrait() {
                     modifier = Modifier
                         .semantics { contentDescription = "command_data" }
                         .fillMaxWidth()
-                        .border(BorderStroke(1.dp, Color.Black), RoundedCornerShape(dimensionResource(id = R.dimen._5sdp))),
+                        .wrapContentHeight()
+                        .border(BorderStroke(1.dp, Color.Black), RoundedCornerShape(dimensionResource(id = R.dimen._8sdp))),
                     singleLine = true,
-                    enabled = (status == DeviceStatus.ENABLED),
+                    enabled = true,
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Color.White,
                         unfocusedContainerColor = Color.White,
@@ -151,8 +153,8 @@ fun DirectIOTabPortrait() {
                     modifier = Modifier
                         .semantics { contentDescription = "status_message" }
                         .fillMaxWidth()
-                        .weight(1f)
-                        .border(BorderStroke(1.dp, Color.Black), RoundedCornerShape(dimensionResource(id = R.dimen._5sdp)))
+                        .height(dimensionResource(id = R.dimen._dioStatus))
+                        .border(BorderStroke(1.dp, Color.Black), RoundedCornerShape(dimensionResource(id = R.dimen._8sdp)))
                         .padding(dimensionResource(id = R.dimen._8sdp))
                         .verticalScroll(rememberScrollState()),
                     text =  dioStatus,
@@ -166,9 +168,8 @@ fun DirectIOTabPortrait() {
                             .semantics { contentDescription = "btn_execute" }
                             .padding(vertical = dimensionResource(id = R.dimen._16sdp))
                             .wrapContentSize(),
-                        enabled = (status == DeviceStatus.ENABLED),
+                        enabled = true,
                         onClick = {
-//                            homeViewModel.updateCommandFromDIOData()
                             homeViewModel.executeDIOCommand()
                         },
                         colors = ButtonDefaults.buttonColors(
@@ -180,12 +181,11 @@ fun DirectIOTabPortrait() {
                         Text(
                             text = stringResource(id = R.string.execute_dio),
                             style = MaterialTheme.typography.labelLarge,
-                            color = if (status == DeviceStatus.ENABLED) colorResource(id = R.color.white)
-                            else colorResource(id = R.color.colorPrimary)
+                            color = colorResource(id = R.color.white)
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen._8sdp)))
+                    Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen._8sdp)))
 
                     Button(
                         modifier = Modifier
@@ -211,17 +211,11 @@ fun DirectIOTabPortrait() {
      * Vertical scroll only if the screen height is less than the threshold
      */
     if (screenHeight < scrollableThreshold) {
-        Column(
-            modifier = Modifier
-                .verticalScroll(rememberScrollState()),
-        ) {
+        Column(modifier = Modifier.padding(vertical = dimensionResource(id = R.dimen._3sdp)).verticalScroll(rememberScrollState())) {
             content()
         }
     } else {
-        Column(
-            modifier = Modifier
-                .fillMaxSize(),
-        ) {
+        Column(modifier = Modifier.fillMaxSize()) {
             content()
         }
     }
