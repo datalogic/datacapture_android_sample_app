@@ -35,7 +35,6 @@ import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.compose.DIODropdown
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DIOCmdValue
-import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 
 @Composable
 fun DirectIOTabLandscape() {
