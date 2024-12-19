@@ -29,6 +29,7 @@
     <string name="alert_message_for_oem_configuration">Configuration not supported for OEM devices.</string>
     <string name="alert_message_for_claim_device">Claim the device.</string>
     <string name="alert_message_for_connect_device">Connect a device.</string>
+    <string name="alert_message_for_magellan_config">Switch to Service Port Mode to access Configuration.</string>
     <string name="command">Command</string>
     <string name="status_message">Status Message</string>
     <string name="confirm">Confirm</string>

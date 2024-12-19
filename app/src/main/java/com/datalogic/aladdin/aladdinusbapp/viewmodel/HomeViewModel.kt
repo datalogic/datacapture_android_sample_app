@@ -58,6 +58,7 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
     var claimAlert by mutableStateOf(false)
     var oemAlert by mutableStateOf(false)
     var connectDeviceAlert by mutableStateOf(false)
+    var magellanConfigAlert by mutableStateOf(false)
 
     private var isScanEnable: Boolean = false
 
@@ -79,6 +80,7 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
     var writeConfigData : HashMap<ConfigurationFeature, String> = hashMapOf()
 
     val resultLiveData = MutableLiveData< String>()
+    private var executeCmd = false
 
     init {
         this.usbDeviceManager = usbDeviceManager
@@ -492,12 +494,24 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
                         sb.append(String.format(" 0x%02X", data))
                     }
                     if(command != DIOCmdValue.OTHER) {
-                        _dioData.postValue(sb.toString().trim().split(" ").joinToString(","))
+                        _dioData.postValue(sb.toString().trim().split( " ").joinToString(","))
+                    } else {
+                        if(executeCmd) {
+                            executeCmd = false
+                        } else {
+                            _dioData.postValue("")
+                        }
                     }
                 } else {
                     if(command != DIOCmdValue.OTHER) {
                         sb.append(cmd)
                         _dioData.postValue(cmd.joinToString(", ") { it.toInt().toString() })
+                    } else {
+                        if(executeCmd) {
+                            executeCmd = false
+                        } else {
+                            _dioData.postValue("")
+                        }
                     }
                 }
             }
@@ -513,21 +527,53 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
             _isLoading.postValue(true)
             CoroutineScope(Dispatchers.IO).launch {
                 selectedCommand.value?.let { it1 ->
+                    executeCmd = false
                     val editText = dioData.value.toString()
                     val validCmd = validationDio()
                     if (!validCmd) {
-                        _selectedCommand.postValue(DIOCmdValue.OTHER)
-                        val output =  usbDeviceManager.dioCommand(
-                            it,
-                            DIOCmdValue.OTHER,
-                            editText,
-                            context
-                        )
-                        _dioStatus.postValue(output)
-                        _isLoading.postValue(false)
+                        if(isValidHexInput(editText)) {
+                            executeCmd = true
+                            _selectedCommand.postValue(DIOCmdValue.OTHER)
+                            val output = usbDeviceManager.dioCommand(
+                                it,
+                                DIOCmdValue.OTHER,
+                                editText,
+                                context,
+                            )
+                            _dioStatus.postValue(output)
+                            _isLoading.postValue(false)
+                        } else {
+                            executeCmd = true
+                            _selectedCommand.postValue(DIOCmdValue.OTHER)
+                            _isLoading.postValue(false)
+                            _dioStatus.postValue("Not a valid command")
+                        }
                     }
                 }
 
+            }
+        }
+    }
+
+    private fun isValidHexInput(input: String): Boolean {
+        return input.split(",").all {
+            val value = it.trim()
+            if (value.startsWith("0x")) {
+                try {
+                    Integer.parseInt(value.substring(2), 16)
+                    true
+                } catch (e: NumberFormatException) {
+
+                    false
+                }
+            } else {
+                try {
+                    value.toInt()
+                    true
+                } catch (e: NumberFormatException) {
+                    false
+
+                }
             }
         }
     }

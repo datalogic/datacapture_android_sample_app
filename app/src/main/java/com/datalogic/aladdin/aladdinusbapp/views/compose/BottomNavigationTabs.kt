@@ -29,6 +29,7 @@ fun BottomNavigationRow(modifier: Modifier, homeViewModel: HomeViewModel) {
     val items = listOf(stringResource(id = R.string.home), stringResource(id = R.string.configuration), stringResource(id = R.string.direct_io))
     val selectedTab by homeViewModel.selectedTabIndex.observeAsState(0)
     val status = homeViewModel.status.observeAsState(DeviceStatus.DISABLE).value
+    val selectedDevice = homeViewModel.selectedDevice.observeAsState(null).value
 
     LaunchedEffect(status) {
         when (status) {
@@ -63,7 +64,11 @@ fun BottomNavigationRow(modifier: Modifier, homeViewModel: HomeViewModel) {
                                 } else {
                                     homeViewModel.setSelectedTabIndex(index)
                                     if (index == 1) {
-                                        homeViewModel.readConfigData()
+                                        if (selectedDevice?.usbDevice?.productId.toString() == "16386"){
+                                            homeViewModel.magellanConfigAlert = true
+                                        } else {
+                                            homeViewModel.readConfigData()
+                                        }
                                     }
                                 }
                             } else {
