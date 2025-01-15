@@ -3,7 +3,6 @@ package com.datalogic.aladdin.aladdinusbapp.utils
 import android.content.Context
 import android.content.pm.ActivityInfo
 import android.util.DisplayMetrics
-import android.util.Log
 import android.view.Display
 import android.view.WindowManager
 

@@ -19,4 +19,23 @@
     <string name="status_label">STATUS:</string>
     <string name="no_devices_connected">No devices connected</string>
     <string name="no_other_devices">No other devices</string>
+
+    <string name="arrow_dropdown">arrow_dropdown</string>
+    <string name="data">Data</string>
+    <string name="execute_dio">Execute D I/O</string>
+    <string name="not_a_valid_command">Not a Valid Command</string>
+    <string name="alert">Alert!</string>
+    <string name="alert_message_for_device_change">Current device state and data will be lost if you change the device.</string>
+    <string name="alert_message_for_oem_configuration">Configuration not supported for OEM devices.</string>
+    <string name="alert_message_for_claim_device">Claim the device.</string>
+    <string name="alert_message_for_connect_device">Connect a device.</string>
+    <string name="alert_message_for_magellan_config">Switch to Service Port Mode to access Configuration.</string>
+    <string name="command">Command</string>
+    <string name="status_message">Status Message</string>
+    <string name="confirm">Confirm</string>
+    <string name="dismiss">Dismiss</string>
+    <string name="processing">Processing…</string>
+    <string name="apply">Apply</string>
+    <string name="configuration_save_failure">Configuration Save Failure</string>
+
 </resources>

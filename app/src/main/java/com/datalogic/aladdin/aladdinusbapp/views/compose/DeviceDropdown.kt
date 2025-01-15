@@ -32,30 +32,31 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.window.DialogProperties
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
-import com.datalogic.aladdin.aladdinusbscannersdk.model.UsbDeviceList
+import com.datalogic.aladdin.aladdinusbscannersdk.model.UsbDeviceDescriptor
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 
 var popup by mutableStateOf(false)
 var mExpanded by mutableStateOf(false)
-var mCurrentDevice by mutableStateOf<UsbDeviceList?>(null)
-var mSelectedDevice by mutableStateOf<UsbDeviceList?>(null)
+var mCurrentDevice by mutableStateOf<UsbDeviceDescriptor?>(null)
+var mSelectedDevice by mutableStateOf<UsbDeviceDescriptor?>(null)
 var mTextFieldSize by mutableStateOf(Size.Zero)
 
 @Composable
 fun DeviceDropdown(
     modifier: Modifier,
-    mDevices: ArrayList<UsbDeviceList>,
-    onDeviceSelected: (UsbDeviceList?) -> Unit,
-    deviceStatus: DeviceStatus
+    mDevices: ArrayList<UsbDeviceDescriptor>,
+    onDeviceSelected: (UsbDeviceDescriptor?) -> Unit,
+    deviceStatus: DeviceStatus,
+    selectedDevice: UsbDeviceDescriptor?
 ) {
-
     LaunchedEffect(mDevices) {
+        mCurrentDevice = selectedDevice
         if (mCurrentDevice == null || !mDevices.contains(mCurrentDevice)) {
             mCurrentDevice = if (mDevices.isNotEmpty()) mDevices.first() else null
         }
@@ -68,13 +69,13 @@ fun DeviceDropdown(
         Icons.Filled.KeyboardArrowDown
 
     Card(
-        shape = RoundedCornerShape(5.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
+        shape = RoundedCornerShape(dimensionResource(id = R.dimen._5sdp)),
+        elevation = CardDefaults.cardElevation(defaultElevation = dimensionResource(id = R.dimen._10sdp)),
         colors = CardDefaults.cardColors(Color.White),
         modifier = modifier
     ) {
         TextField(
-            value = mCurrentDevice?.displayName ?: "No devices connected",
+            value = selectedDevice?.displayName ?: stringResource(id = R.string.no_devices_connected),
             textStyle = MaterialTheme.typography.labelLarge,
             onValueChange = {},
             modifier = Modifier
@@ -132,7 +133,7 @@ fun DeviceDropdown(
                             }
                         )
                         if (popup){
-                            AlertDialogComponent(onDeviceSelected)
+                            AlertDialogComponent(onDeviceSelected, mCurrentDevice)
                         }
                     }
                 }
@@ -151,7 +152,7 @@ fun DeviceDropdown(
 }
 
 @Composable
-fun AlertDialogComponent( onDeviceSelected: (UsbDeviceList?) -> Unit,) {
+fun AlertDialogComponent( onDeviceSelected: (UsbDeviceDescriptor?) -> Unit, selectedDevice : UsbDeviceDescriptor?) {
     val homeViewModel = LocalHomeViewModel.current
     AlertDialog(
         onDismissRequest = { popup = false },
@@ -160,24 +161,24 @@ fun AlertDialogComponent( onDeviceSelected: (UsbDeviceList?) -> Unit,) {
                 onClick = {
                     popup = false
                     mExpanded = false
-                    if(homeViewModel.setDropdownSelectedDevice(mCurrentDevice)) {
+                    if(homeViewModel.setDropdownSelectedDevice(selectedDevice)) {
                         mCurrentDevice = mSelectedDevice
                         mExpanded = false
                         onDeviceSelected(mCurrentDevice)
                     }
                 }) {
-                Text("Confirm")
+                Text(stringResource(id = R.string.confirm))
             }
         },
         dismissButton = {
             TextButton(onClick = { popup = false }) {
-                Text("Dismiss")
+                Text(stringResource(id = R.string.dismiss))
             }
         },
-        title = { Text(text = "Alert!", style = MaterialTheme.typography.headlineLarge) },
-        text = { Text(text = "Current device state and data will be lost if you change the device.", style = MaterialTheme.typography.labelLarge) },
-        modifier = Modifier.padding(16.dp),
-        shape = RoundedCornerShape(16.dp),
+        title = { Text(text = stringResource(id = R.string.alert), style = MaterialTheme.typography.headlineLarge) },
+        text = { Text(text = stringResource(id = R.string.alert_message_for_device_change), style = MaterialTheme.typography.labelLarge) },
+        modifier = Modifier.padding(dimensionResource(id = R.dimen._16sdp)),
+        shape = RoundedCornerShape(dimensionResource(id = R.dimen._16sdp)),
         containerColor = Color.White,
         properties = DialogProperties(dismissOnBackPress = true, dismissOnClickOutside = false)
     )

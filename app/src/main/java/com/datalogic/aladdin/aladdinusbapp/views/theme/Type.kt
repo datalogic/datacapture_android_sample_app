@@ -21,73 +21,73 @@ val TypographyAladdin = Typography(
         fontFamily = AladdinFontFamily,
         fontWeight = FontWeight.Normal,
         fontSize = 16.sp,
-        color = Color.Black
+        color = TextBlue
     ),
     bodyMedium = TextStyle(
         fontFamily = AladdinFontFamily,
         fontWeight = FontWeight.Normal,
         fontSize = 14.sp,
-        color = Color.Black
+        color = TextBlue
     ),
     bodySmall = TextStyle(
         fontFamily = AladdinFontFamily,
         fontWeight = FontWeight.Normal,
         fontSize = 12.sp,
-        color = Color.Black
+        color = TextBlue
     ),
     headlineLarge = TextStyle(
         fontFamily = AladdinFontFamily,
         fontWeight = FontWeight.SemiBold,
         fontSize = 16.sp,
-        color = Color.Black
+        color = TextBlue
     ),
     headlineMedium = TextStyle(
         fontFamily = AladdinFontFamily,
         fontWeight = FontWeight.SemiBold,
         fontSize = 14.sp,
-        color = Color.Black
+        color = TextBlue
     ),
     headlineSmall = TextStyle(
         fontFamily = AladdinFontFamily,
         fontWeight = FontWeight.SemiBold,
         fontSize = 12.sp,
-        color = Color.Black
+        color = TextBlue
     ),
     labelLarge = TextStyle(
         fontFamily = AladdinFontFamily,
         fontWeight = FontWeight.Medium,
         fontSize = 16.sp,
-        color = Color.Black
+        color = TextBlue
     ),
     labelMedium = TextStyle(
         fontFamily = AladdinFontFamily,
         fontWeight = FontWeight.Medium,
         fontSize = 14.sp,
-        color = Color.Black
+        color = TextBlue
     ),
     labelSmall = TextStyle(
         fontFamily = AladdinFontFamily,
         fontWeight = FontWeight.Medium,
         fontSize = 12.sp,
-        color = Color.Black
+        color = TextBlue
     ),
     titleLarge = TextStyle(
         fontFamily = AladdinFontFamily,
         fontWeight = FontWeight.Bold,
         fontSize = 16.sp,
-        color = Color.Black
+        color = TextBlue
     ),
     titleMedium = TextStyle(
         fontFamily = AladdinFontFamily,
         fontWeight = FontWeight.Bold,
         fontSize = 14.sp,
-        color = Color.Black
+        color = TextBlue
     ),
     titleSmall = TextStyle(
         fontFamily = AladdinFontFamily,
         fontWeight = FontWeight.Bold,
         fontSize = 12.sp,
-        color = Color.Black
+        color = TextBlue
     ),
 )
 

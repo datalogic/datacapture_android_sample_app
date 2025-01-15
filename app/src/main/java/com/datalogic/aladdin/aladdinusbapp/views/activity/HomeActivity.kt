@@ -3,6 +3,8 @@ package com.datalogic.aladdin.aladdinusbapp.views.activity
 import android.content.Context
 import android.hardware.usb.UsbDevice
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.setContent
@@ -27,6 +29,7 @@ import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.AladdinConstan
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.AladdinConstants.OPEN_FAILURE
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.StatusListener
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbDioListener
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbListener
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbScanListener
 
@@ -41,7 +44,7 @@ class HomeActivity : AppCompatActivity() {
     private lateinit var usbListener: UsbListener
     private lateinit var scanEvent: UsbScanListener
     private lateinit var statusListener: StatusListener
-
+    private lateinit var usbErrorListener: UsbDioListener
     private val homeViewModel: HomeViewModel by viewModels {
         MyViewModelFactory(usbDeviceManager, applicationContext)
     }
@@ -65,14 +68,13 @@ class HomeActivity : AppCompatActivity() {
         usbDeviceManager = USBDeviceManager()
         usbListener = object : UsbListener {
             override fun onDeviceAttachedListener(device: UsbDevice) {
-                Log.d(TAG, "Device attached: $device")
+                homeViewModel.setDeviceStatus("Attached ${device.productName}")
                 homeViewModel.checkConnectedDevice()
                 homeViewModel.deviceReAttached(device)
             }
 
             override fun onDeviceDetachedListener(device: UsbDevice) {
                 homeViewModel.setDeviceStatus("Detached ${device.productName}")
-                Log.d(TAG, "Device detached: $device")
                 homeViewModel.handleDeviceDisconnection(device)
             }
         }
@@ -84,9 +86,21 @@ class HomeActivity : AppCompatActivity() {
             }
         }
         usbDeviceManager.registerUsbScanListener(scanEvent)
+        usbErrorListener = object : UsbDioListener {
+            override fun fireDioErrorEvent(errorCode: Int, message: String) {
+                showToast(applicationContext, message + errorCode)
+            }
+            override fun executeDioAndConfigCommand(isConfigCommand : Boolean) {
+                if(isConfigCommand) {
+                    homeViewModel.readConfigData()
+                } else {
+                    homeViewModel.executeDIOCommand()
+                }
+            }
+        }
+        usbDeviceManager.registerUsbDioListener(usbErrorListener)
 
         statusListener = object : StatusListener {
-
             override fun onStatus(productId: String, status: DeviceStatus) {
                 homeViewModel.setStatus(productId, status, true)
             }
@@ -95,8 +109,7 @@ class HomeActivity : AppCompatActivity() {
                 try {
                     when (errorStatus) {
                         OPEN_FAILURE, CLAIM_FAILURE, ENABLE_FAILURE ->
-                            Toast.makeText(applicationContext, "Please try once again...", Toast.LENGTH_LONG).show()
-                            //homeViewModel.errorHandling()
+                            showToast(applicationContext, "Please try once again...")
                     }
 
                     Log.d(TAG, "Receiving event: $errorStatus")
@@ -120,15 +133,10 @@ class HomeActivity : AppCompatActivity() {
                 }
             }
         }
-
         requestedOrientation = CommonUtils.orientation
 
-        Log.d(
-            TAG,
-            "UI falls under: " + (resources.getDimension(R.dimen.test) / resources.displayMetrics.density).toInt()
-        )
+        Log.d(TAG, "UI falls under: " + (resources.getDimension(R.dimen.test) / resources.displayMetrics.density).toInt())
         Log.d(TAG, "UI screen dimension: " + CommonUtils.getScreenResolution(this))
-
     }
 
     override fun onRequestPermissionsResult(
@@ -137,6 +145,13 @@ class HomeActivity : AppCompatActivity() {
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    }
+
+    // Function to show Toast on the main thread
+    fun showToast(context: Context, message: String) {
+        Handler(Looper.getMainLooper()).post {
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        }
     }
 
     override fun onResume() {
@@ -159,6 +174,6 @@ class HomeActivity : AppCompatActivity() {
         usbDeviceManager.unregisterUsbListener(usbListener)
         usbDeviceManager.unregisterUsbScanListener(scanEvent)
         usbDeviceManager.unregisterStatusListener(statusListener)
+        usbDeviceManager.unregisterUsbDioListener(usbErrorListener)
     }
-
 }

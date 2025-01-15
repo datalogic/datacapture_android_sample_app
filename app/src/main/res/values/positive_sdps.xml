@@ -29,4 +29,5 @@
     <dimen name="_4sdp">4dp</dimen>
     <dimen name="_12sdp">12dp</dimen>
     <dimen name="test">0dp</dimen>
+    <dimen name="_dioStatus">150dp</dimen>
 </resources>

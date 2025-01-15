@@ -17,4 +17,12 @@
     <color name="purple_200">#FFBB86FC</color>
 
     <color name="bottom_nav_selected_background">#F7AC2C</color>
+    <color name="track_green">#FFA6F59F</color>
+    <color name="border_green">#FF60A256</color>
+    <color name="track_red">#FFF3B5B5</color>
+    <color name="border_red">#FFD84D4D</color>
+    <color name="history_card_view_background">#F5F5F5</color>
+    <color name="apply_button_disabled">#E3E2E2</color>
+    <color name="apply_text">#C1BFBF</color>
+
 </resources>
