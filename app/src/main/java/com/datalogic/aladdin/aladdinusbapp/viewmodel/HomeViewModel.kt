@@ -135,19 +135,25 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
      * Function to check for the connected devices
      */
     fun checkConnectedDevice() {
-        val usbDevices = usbDeviceManager.checkConnectedDevice(context)
-        val usbDeviceDescriptor = ArrayList<UsbDeviceDescriptor>()
-        if (usbDevices.isNotEmpty()) {
-            for (device in usbDevices) {
-                usbDeviceDescriptor.add(device)
-                addKeyValueIfAbsent(
-                    usbDeviceStatus,
-                    device.usbDevice.productId.toString(),
-                    DeviceStatus.CLOSED
-                )
+        _isLoading.postValue(true)
+
+        usbDeviceManager.checkConnectedDevice(context) { usbDevices ->
+            val usbDeviceDescriptor = ArrayList<UsbDeviceDescriptor>()
+
+            if (usbDevices.isNotEmpty()) {
+                for (device in usbDevices) {
+                    usbDeviceDescriptor.add(device)
+                    addKeyValueIfAbsent(
+                        usbDeviceStatus,
+                        device.usbDevice.productId.toString(),
+                        DeviceStatus.CLOSED
+                    )
+                }
             }
+
+            _deviceList.postValue(usbDeviceDescriptor)
+            _isLoading.postValue(false)
         }
-        _deviceList.postValue(usbDeviceDescriptor)
     }
 
     /**
