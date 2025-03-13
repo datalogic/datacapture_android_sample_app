@@ -233,10 +233,10 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
     /**
      * Open the USB connection once permission is granted.
      */
-    fun openUsbConnection() {
+    fun openAndClaimUsbConnection() {
         selectedDevice.value?.let { targetDevice ->
             CoroutineScope(Dispatchers.IO).launch {
-                when (usbDeviceManager.openConnection(targetDevice, context)) {
+                val result = when (usbDeviceManager.openConnection(targetDevice, context)) {
                     USBConstants.SUCCESS -> {
                         Log.d(TAG, "USB Connection opened for device: ${targetDevice.displayName}")
                         usbDeviceStatus[targetDevice.usbDevice.productId.toString()] = Pair(DeviceStatus.OPENED, false)
@@ -250,6 +250,10 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
                     else -> {
                         Log.e(TAG, "No permission to open USB connection.")
                     }
+                }
+                // Claim device interface after opening the connection
+                if(result == USBConstants.SUCCESS) {
+                    claim()
                 }
             }
         }
@@ -305,6 +309,7 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
      */
     fun close(): Boolean {
         selectedDevice.value?.let {
+            release()
             usbDeviceManager.closeUsbConnection(it.usbDevice)
             setStatus(it.usbDevice.productId.toString(), DeviceStatus.CLOSED, false)
             return true

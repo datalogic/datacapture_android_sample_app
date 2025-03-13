@@ -111,7 +111,7 @@ fun HomeScreenLayoutLandscape() {
                     buttonState = (status == DeviceStatus.CLOSED && deviceList.isNotEmpty()),
                     stringResource(id = R.string.open),
                     onClick = {
-                        homeViewModel.openUsbConnection()
+                        homeViewModel.openAndClaimUsbConnection()
                     }
                 )
                 CustomButton(
