@@ -21,6 +21,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.utils.CommonUtils
 import com.datalogic.aladdin.aladdinusbapp.viewmodel.HomeViewModel
+import com.datalogic.aladdin.aladdinusbapp.viewmodel.ImageCaptureModel
 import com.datalogic.aladdin.aladdinusbapp.views.theme.AladdinUSBAppTheme
 import com.datalogic.aladdin.aladdinusbscannersdk.usbaccess.USBDeviceManager
 import com.datalogic.aladdin.aladdinusbscannersdk.model.UsbScanData
@@ -36,6 +37,9 @@ import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbScanListene
 val LocalHomeViewModel = staticCompositionLocalOf<HomeViewModel> {
     error("No HomeViewModel provided")
 }
+val LocalImageCaptureViewModel = staticCompositionLocalOf<ImageCaptureModel> {
+    error("No HomeViewModel provided")
+}
 
 class HomeActivity : AppCompatActivity() {
 
@@ -48,6 +52,9 @@ class HomeActivity : AppCompatActivity() {
     private val homeViewModel: HomeViewModel by viewModels {
         MyViewModelFactory(usbDeviceManager, applicationContext)
     }
+    private val imageCaptureViewModel: ImageCaptureModel by viewModels {
+        MyViewModelFactory(usbDeviceManager, applicationContext)
+    }
 
     class MyViewModelFactory(
         private val usbDeviceManager: USBDeviceManager,
@@ -57,6 +64,9 @@ class HomeActivity : AppCompatActivity() {
             if (modelClass.isAssignableFrom(HomeViewModel::class.java)) {
                 @Suppress("UNCHECKED_CAST")
                 return HomeViewModel(usbDeviceManager, context) as T
+            } else if (modelClass.isAssignableFrom(ImageCaptureModel::class.java)) {
+                @Suppress("UNCHECKED_CAST")
+                return ImageCaptureModel(usbDeviceManager, context) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")
         }
@@ -127,7 +137,10 @@ class HomeActivity : AppCompatActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = Color.White
                 ) {
-                    CompositionLocalProvider(LocalHomeViewModel provides homeViewModel) {
+                    CompositionLocalProvider(
+                        LocalHomeViewModel provides homeViewModel,
+                        LocalImageCaptureViewModel provides imageCaptureViewModel
+                    ) {
                         Navigation()
                     }
                 }
