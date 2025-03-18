@@ -150,7 +150,8 @@ fun HomeTabPortrait() {
         }
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             CustomButton(
@@ -160,7 +161,7 @@ fun HomeTabPortrait() {
                 buttonState = (status == DeviceStatus.CLOSED && deviceList.isNotEmpty()),
                 stringResource(id = R.string.open),
                 onClick = {
-                    homeViewModel.openUsbConnection()
+                    homeViewModel.openDevice()
                 }
             )
             Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen._10sdp)))
@@ -168,68 +169,10 @@ fun HomeTabPortrait() {
                 modifier = Modifier
                     .weight(0.5f)
                     .semantics { contentDescription = "btn_close" },
-                buttonState = (status == DeviceStatus.OPENED || status == DeviceStatus.RELEASED),
+                buttonState = (status == DeviceStatus.OPENED),
                 stringResource(id = R.string.close),
                 onClick = {
-                    homeViewModel.close()
-                }
-            )
-        }
-
-        Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen._8sdp)))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            CustomButton(
-                modifier = Modifier
-                    .weight(0.5f)
-                    .semantics { contentDescription = "btn_claim" },
-                buttonState = (status == DeviceStatus.OPENED || status == DeviceStatus.RELEASED),
-                stringResource(id = R.string.claim),
-                onClick = {
-                    homeViewModel.claim()
-                }
-            )
-            Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen._10sdp)))
-            CustomButton(
-                modifier = Modifier
-                    .weight(0.5f)
-                    .semantics { contentDescription = "btn_release" },
-                buttonState = (status == DeviceStatus.CLAIMED || status == DeviceStatus.DISABLE),
-                stringResource(id = R.string.release),
-                onClick = {
-                    homeViewModel.release()
-                }
-            )
-        }
-
-        Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen._8sdp)))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            CustomButton(
-                modifier = Modifier
-                    .weight(0.5f)
-                    .semantics { contentDescription = "btn_enable" },
-                buttonState = (status == DeviceStatus.CLAIMED || status == DeviceStatus.DISABLE),
-                stringResource(id = R.string.enable),
-                onClick = {
-                    homeViewModel.enabled()
-                }
-            )
-            Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen._10sdp)))
-            CustomButton(
-                modifier = Modifier
-                    .weight(0.5f)
-                    .semantics { contentDescription = "btn_disable" },
-                buttonState = (status == DeviceStatus.ENABLED),
-                stringResource(id = R.string.disable),
-                onClick = {
-                    homeViewModel.disable()
+                    homeViewModel.closeDevice()
                 }
             )
         }
