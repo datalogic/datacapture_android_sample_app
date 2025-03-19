@@ -100,26 +100,37 @@ class HomeActivity : AppCompatActivity() {
         }
         usbDeviceManager.registerUsbDioListener(usbErrorListener)
 
-        statusListener = object : StatusListener {
+        // USB connection status listener implementation
+        val statusListener = object : StatusListener {
             override fun onStatus(productId: String, status: DeviceStatus) {
-                homeViewModel.setStatus(productId, status, true)
+                runOnUiThread {
+                    homeViewModel.setStatus(productId, status)
+
+                    // Update UI based on new status
+                    when (status) {
+                        DeviceStatus.OPENED -> {
+                            showToast(applicationContext, "Device successfully opened")
+                        }
+                        DeviceStatus.CLOSED -> {
+                            showToast(applicationContext, "Device closed")
+                        }
+                        else -> {}
+                    }
+                }
             }
 
             override fun onError(errorStatus: Int) {
-                try {
+                runOnUiThread {
                     when (errorStatus) {
-                        OPEN_FAILURE, CLAIM_FAILURE, ENABLE_FAILURE ->
-                            showToast(applicationContext, "Please try once again...")
+                        OPEN_FAILURE -> showToast(applicationContext, "Failed to open device")
+                        CLAIM_FAILURE -> showToast(applicationContext, "Failed to claim interface")
+                        ENABLE_FAILURE -> showToast(applicationContext, "Failed to enable scanner")
+                        else -> showToast(applicationContext, "Error: $errorStatus")
                     }
-
-                    Log.d(TAG, "Receiving event: $errorStatus")
-                } catch (e: Exception) {
-                    Log.e(TAG, "Receiving event: ", e)
                 }
             }
         }
         usbDeviceManager.registerStatusListener(statusListener)
-
 
         setContent {
             AladdinUSBAppTheme {
@@ -170,7 +181,7 @@ class HomeActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         Log.d(TAG, "Destroy called")
-        homeViewModel.disable()
+        homeViewModel.onCleared()
         usbDeviceManager.unregisterUsbListener(usbListener)
         usbDeviceManager.unregisterUsbScanListener(scanEvent)
         usbDeviceManager.unregisterStatusListener(statusListener)

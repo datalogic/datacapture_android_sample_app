@@ -76,7 +76,7 @@ fun DIODropdown(modifier: Modifier, selectedCommand: DIOCmdValue, onCommandSelec
                 }
                 .clickable { mExpanded = !mExpanded },
             trailingIcon = {
-                if (mDevices.isNotEmpty() && (status == DeviceStatus.CLAIMED || status == DeviceStatus.ENABLED || status == DeviceStatus.DISABLE)) {
+                if (mDevices.isNotEmpty() && status == DeviceStatus.OPENED) {
                     Icon(icon, stringResource(id = R.string.arrow_dropdown), tint = Color.Black)
                 } else {
                     Icon(Icons.Filled.KeyboardArrowDown, stringResource(id = R.string.arrow_dropdown))
@@ -92,7 +92,7 @@ fun DIODropdown(modifier: Modifier, selectedCommand: DIOCmdValue, onCommandSelec
                 disabledIndicatorColor = Color.Transparent
             )
         )
-        if (mDevices.isNotEmpty() && (status == DeviceStatus.CLAIMED || status == DeviceStatus.ENABLED || status == DeviceStatus.DISABLE)) {
+        if (mDevices.isNotEmpty() && status == DeviceStatus.OPENED) {
             DropdownMenu(
                 expanded = mExpanded,
                 onDismissRequest = { mExpanded = false },

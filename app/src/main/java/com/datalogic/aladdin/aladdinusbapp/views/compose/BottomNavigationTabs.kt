@@ -28,13 +28,11 @@ import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 fun BottomNavigationRow(modifier: Modifier, homeViewModel: HomeViewModel) {
     val items = listOf(stringResource(id = R.string.home), stringResource(id = R.string.configuration), stringResource(id = R.string.direct_io))
     val selectedTab by homeViewModel.selectedTabIndex.observeAsState(0)
-    val status = homeViewModel.status.observeAsState(DeviceStatus.DISABLE).value
+    val status = homeViewModel.status.observeAsState(DeviceStatus.CLOSED).value
     val selectedDevice = homeViewModel.selectedDevice.observeAsState(null).value
 
     LaunchedEffect(status) {
         when (status) {
-            DeviceStatus.OPENED,
-            DeviceStatus.RELEASED,
             DeviceStatus.CLOSED,
             DeviceStatus.NONE->
             homeViewModel.setSelectedTabIndex(0) // Switch to home tab
@@ -58,7 +56,7 @@ fun BottomNavigationRow(modifier: Modifier, homeViewModel: HomeViewModel) {
                     .wrapContentSize()
                     .clickable {
                         if (homeViewModel.deviceList.value?.size!! > 0) {
-                            if ((status == DeviceStatus.CLAIMED || status == DeviceStatus.ENABLED || status == DeviceStatus.DISABLE)) {
+                            if (status == DeviceStatus.OPENED) {
                                 if (index == 1 && homeViewModel.selectedDevice.value?.deviceType == USB_OEM) {
                                     homeViewModel.oemAlert = true
                                 } else {

@@ -150,7 +150,8 @@ fun HomeTabPortrait() {
         }
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             CustomButton(
@@ -160,7 +161,7 @@ fun HomeTabPortrait() {
                 buttonState = (status == DeviceStatus.CLOSED && deviceList.isNotEmpty()),
                 stringResource(id = R.string.open),
                 onClick = {
-                    homeViewModel.openAndClaimUsbConnection()
+                    homeViewModel.openDevice()
                 }
             )
             Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen._10sdp)))
@@ -168,10 +169,10 @@ fun HomeTabPortrait() {
                 modifier = Modifier
                     .weight(0.5f)
                     .semantics { contentDescription = "btn_close" },
-                buttonState = (status == DeviceStatus.OPENED || status == DeviceStatus.RELEASED),
+                buttonState = (status == DeviceStatus.OPENED),
                 stringResource(id = R.string.close),
                 onClick = {
-                    homeViewModel.close()
+                    homeViewModel.closeDevice()
                 }
             )
         }
