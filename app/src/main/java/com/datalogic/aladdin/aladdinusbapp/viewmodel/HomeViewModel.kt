@@ -9,21 +9,19 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.utils.USBConstants
 import com.datalogic.aladdin.aladdinusbscannersdk.model.UsbDeviceDescriptor
 import com.datalogic.aladdin.aladdinusbscannersdk.model.UsbScanData
 import com.datalogic.aladdin.aladdinusbscannersdk.usbaccess.USBDeviceManager
-import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.USBConstants.USB_COM
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.USBConstants.USB_OEM
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ConfigurationFeature
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DIOCmdValue
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.util.Locale
 
 class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : ViewModel() {
     private var usbDeviceManager: USBDeviceManager
@@ -59,7 +57,7 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
     private val reattachedDevices = mutableSetOf<String>()
 
     // UI alert states
-    var claimAlert by mutableStateOf(false)
+    var openAlert by mutableStateOf(false)
     var oemAlert by mutableStateOf(false)
     var connectDeviceAlert by mutableStateOf(false)
     var magellanConfigAlert by mutableStateOf(false)
@@ -337,37 +335,21 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
     fun updateSelectedDIOCommand(command: DIOCmdValue) {
         selectedDevice.value?.let {
             CoroutineScope(Dispatchers.IO).launch {
-                val sb = java.lang.StringBuilder()
-                val cmd = if (it.deviceType == USB_OEM) command.oemValue else command.comValue
-
-                if (it.deviceType == USB_OEM) {
-                    for (data in cmd) {
-                        sb.append(String.format(" 0x%02X", data))
-                    }
-                    if(command != DIOCmdValue.OTHER) {
-                        _dioData.postValue(sb.toString().trim().split(" ").joinToString(","))
-                    } else {
-                        if(executeCmd) {
-                            executeCmd = false
-                        } else {
-                            _dioData.postValue("")
-                        }
-                    }
+                if (command != DIOCmdValue.OTHER) {
+                    // Use the string representation for display
+                    val isOem = it.deviceType == USB_OEM
+                    // Use the display string instead of the hex value
+                    _dioData.postValue(command.getDisplayString(isOem))
                 } else {
-                    if(command != DIOCmdValue.OTHER) {
-                        sb.append(cmd)
-                        _dioData.postValue(cmd.joinToString(", ") { it.toInt().toString() })
+                    if(executeCmd) {
+                        executeCmd = false
                     } else {
-                        if(executeCmd) {
-                            executeCmd = false
-                        } else {
-                            _dioData.postValue("")
-                        }
+                        _dioData.postValue("")
                     }
                 }
+                _selectedCommand.postValue(command)
             }
         }
-        _selectedCommand.postValue(command)
     }
 
     /**
@@ -382,30 +364,27 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
 
             _isLoading.postValue(true)
             CoroutineScope(Dispatchers.IO).launch {
-                selectedCommand.value?.let { command ->
-                    executeCmd = false
-                    val editText = dioData.value.toString()
-                    val validCmd = validationDio()
+                val commandString = dioData.value.toString()
 
-                    if (!validCmd) {
-                        if(isValidHexInput(editText)) {
-                            executeCmd = true
-                            _selectedCommand.postValue(DIOCmdValue.OTHER)
-                            val output = usbDeviceManager.dioCommand(
-                                device,
-                                DIOCmdValue.OTHER,
-                                editText,
-                                context
-                            )
-                            _dioStatus.postValue(output)
-                        } else {
-                            executeCmd = true
-                            _selectedCommand.postValue(DIOCmdValue.OTHER)
-                            _dioStatus.postValue("Not a valid command")
-                        }
-                    }
+                if (commandString.isBlank()) {
+                    _dioStatus.postValue("Please enter a command")
                     _isLoading.postValue(false)
+                    return@launch
                 }
+
+                // Get the selected command type
+                val selectedCmd = selectedCommand.value ?: DIOCmdValue.OTHER
+
+                // Execute the command
+                val output = usbDeviceManager.dioCommand(
+                    device,
+                    selectedCmd,
+                    commandString,
+                    context
+                )
+
+                _dioStatus.postValue(output)
+                _isLoading.postValue(false)
             }
         }
     }
@@ -418,92 +397,16 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
     }
 
     /**
-     * Function to validate hex input for DIO commands
-     */
-    private fun isValidHexInput(input: String): Boolean {
-        return input.split(",").all {
-            val value = it.trim()
-            if (value.startsWith("0x")) {
-                try {
-                    Integer.parseInt(value.substring(2), 16)
-                    true
-                } catch (e: NumberFormatException) {
-                    false
-                }
-            } else {
-                try {
-                    value.toInt()
-                    true
-                } catch (e: NumberFormatException) {
-                    false
-                }
-            }
-        }
-    }
-
-    /**
-     * Function to validate the typed DIOData.
-     */
-    private fun validationDio(): Boolean {
-        selectedDevice.value?.let { device ->
-            var validation: Boolean
-            DIOCmdValue.entries.map { dioCmd ->
-                val command = if (device.deviceType == USB_OEM) dioCmd.oemValue else dioCmd.comValue
-
-                if (device.deviceType == USB_COM) {
-                    val cmdByteArray: ByteArray
-                    try {
-                        cmdByteArray = dioData.value?.split(", ")!!.map { it.toInt().toByte() }.toByteArray()
-                    } catch (e: NumberFormatException) {
-                        _dioStatus.postValue(context.getString(R.string.not_a_valid_command))
-                        return false
-                    }
-
-                    validation = cmdByteArray.contentEquals(command)
-                    if(validation) {
-                        _selectedCommand.postValue(dioCmd)
-                        val output = usbDeviceManager.dioCommand(device, dioCmd, dioData.value.toString(), context)
-                        _dioStatus.postValue(output.replace(",",",\n"))
-                        _isLoading.postValue(false)
-                        return true
-                    }
-                } else {
-                    val normalizedCmd: String
-                    try {
-                        normalizedCmd = dioData.value?.split(",")!!.joinToString(",") {
-                            val value = it.trim()
-                            if (value.startsWith("0x")) value
-                            else "0x" + value.toInt().toString(16).uppercase(Locale.ROOT).padStart(2, '0')
-                        }
-                    } catch (e: NumberFormatException) {
-                        _dioStatus.postValue(context.getString(R.string.not_a_valid_command))
-                        return false
-                    }
-
-                    validation = command.joinToString(",") { String.format("0x%02X", it) } == normalizedCmd
-                    if(validation) {
-                        _selectedCommand.postValue(dioCmd)
-                        val output = usbDeviceManager.dioCommand(device, dioCmd, dioData.value.toString(), context)
-                        _dioStatus.postValue(output.replace(",",",\n"))
-                        _isLoading.postValue(false)
-                        return true
-                    }
-                }
-            }
-            return false
-        }
-        return false
-    }
-
-    /**
      * Function to convert HashMap<ConfigurationFeature, String> to HashMap<ConfigurationFeature, Boolean>.
      */
     private fun convertToBoolean(map: HashMap<ConfigurationFeature, String>): HashMap<ConfigurationFeature, Boolean> {
         val createMap: HashMap<ConfigurationFeature, Boolean> = hashMapOf()
         for ((feature, value) in map) {
-            when (value) {
-                "00" -> createMap[feature] = false
-                "01" -> createMap[feature] = true
+            Log.d("HomeViewModel", "Converting feature: $feature, value: $value")
+            createMap[feature] = when (value.lowercase()) {
+                "00", "0", "false" -> false
+                "01", "1", "true" -> true
+                else -> value.toIntOrNull()?.let { it > 0 } ?: false
             }
         }
         return createMap
@@ -530,25 +433,61 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
                 return
             }
 
+            if (writeConfigData.isEmpty()) {
+                resultLiveData.postValue("No configuration changes to apply")
+                return
+            }
+
             _isLoading.postValue(true)
             CoroutineScope(Dispatchers.IO).launch {
-                val writeResult = withContext(Dispatchers.IO) {
-                    usbDeviceManager.writeConfig(device.deviceType, writeConfigData)
-                }
+                try {
+                    Log.d("HomeViewModel", "Applying configuration changes: $writeConfigData")
 
-                var failure = ""
-                if (writeResult.isNotEmpty()) {
-                    for ((feature, value) in writeResult) {
-                        if (value != ">") failure = failure + feature.featureName + ","
+                    val writeResult = usbDeviceManager.writeConfig(device.deviceType, writeConfigData)
+                    Log.d("HomeViewModel", "Write result: $writeResult")
+
+                    var failure = ""
+                    if (writeResult.isNotEmpty()) {
+                        for ((feature, value) in writeResult) {
+                            if (value != ">") failure = failure + feature.featureName + ", "
+                        }
+
+                        if (failure.isNotEmpty()) {
+                            failure = failure.substring(0, failure.length - 2)
+                        }
+
+                        val resultMessage = if (failure.isEmpty()) {
+                            "Configuration saved successfully"
+                        } else {
+                            "Failed to save: $failure"
+                        }
+                        withContext(Dispatchers.Main) {
+                            resultLiveData.postValue(resultMessage)
+                        }
+                    } else {
+                        withContext(Dispatchers.Main) {
+                            resultLiveData.postValue("Configuration save failed")
+                        }
                     }
-                } else failure = context.getString(R.string.configuration_save_failure)
+                } catch (e: Exception) {
+                    Log.e("HomeViewModel", "Error in applyConfiguration: ${e.message}", e)
+                    withContext(Dispatchers.Main) {
+                        resultLiveData.postValue("Error: ${e.message}")
+                    }
+                } finally {
+                    withContext(Dispatchers.Main) {
+                        _isLoading.postValue(false)
+                    }
 
-                _isLoading.postValue(false)
-                readConfigData()
-                writeConfigData = hashMapOf()
-                resultLiveData.postValue(failure)
+                    // Refresh config data after write
+                    delay(500) // Give device time to process changes
+                    readConfigData()
+
+                    // Clear write data
+                    writeConfigData.clear()
+                }
             }
-        } ?: resultLiveData.postValue("")
+        } ?: resultLiveData.postValue("No device selected")
     }
 
     /**
@@ -557,25 +496,41 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
     fun readConfigData() {
         selectedDevice.value?.let { device ->
             if (device.status != DeviceStatus.OPENED) {
-                _readConfigData.postValue(hashMapOf())
                 resultLiveData.postValue("Device must be opened first")
                 return
             }
 
             _isLoading.postValue(true)
             CoroutineScope(Dispatchers.IO).launch {
-                val readResult = withContext(Dispatchers.IO) {
-                    usbDeviceManager.readConfig(device, context)
-                }
+                try {
+                    Log.d("HomeViewModel", "Reading config data for device: ${device.displayName}")
+                    val configData = usbDeviceManager.readConfig(device, context)
+                    Log.d("HomeViewModel", "Received config data: $configData")
 
-                if (readResult.isNotEmpty()) {
-                    val createMap = convertToBoolean(readResult)
-                    _readConfigData.postValue(createMap)
-                    clearScanData()
+                    if (configData.isNotEmpty()) {
+                        val booleanMap = convertToBoolean(configData)
+                        Log.d("HomeViewModel", "Converted to boolean map: $booleanMap")
+                        withContext(Dispatchers.Main) {
+                            _readConfigData.postValue(booleanMap)
+                        }
+                    } else {
+                        Log.e("HomeViewModel", "Received empty config data")
+                        withContext(Dispatchers.Main) {
+                            resultLiveData.postValue("Failed to read configuration data")
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e("HomeViewModel", "Error reading config: ${e.message}", e)
+                    withContext(Dispatchers.Main) {
+                        resultLiveData.postValue("Error: ${e.message}")
+                    }
+                } finally {
+                    withContext(Dispatchers.Main) {
+                        _isLoading.postValue(false)
+                    }
                 }
-                _isLoading.postValue(false)
             }
-        }
+        } ?: resultLiveData.postValue("No device selected")
     }
 
     public override fun onCleared() {
