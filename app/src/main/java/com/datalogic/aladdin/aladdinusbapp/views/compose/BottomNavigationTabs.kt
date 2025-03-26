@@ -71,7 +71,7 @@ fun BottomNavigationRow(modifier: Modifier, homeViewModel: HomeViewModel) {
                                 }
                             } else {
                                 if (index != 0) {
-                                    homeViewModel.claimAlert = true
+                                    homeViewModel.openAlert = true
                                 }
                             }
                         } else {
