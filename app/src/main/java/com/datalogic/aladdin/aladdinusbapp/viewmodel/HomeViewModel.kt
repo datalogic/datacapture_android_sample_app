@@ -2,7 +2,10 @@ package com.datalogic.aladdin.aladdinusbapp.viewmodel
 
 import android.content.Context
 import android.hardware.usb.UsbDevice
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -10,21 +13,23 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.datalogic.aladdin.aladdinusbapp.utils.USBConstants
-import com.datalogic.aladdin.aladdinusbscannersdk.model.UsbDeviceDescriptor
+import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
 import com.datalogic.aladdin.aladdinusbscannersdk.model.UsbScanData
-import com.datalogic.aladdin.aladdinusbscannersdk.usbaccess.USBDeviceManager
+import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDeviceManager
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.USBConstants.USB_OEM
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ConfigurationFeature
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DIOCmdValue
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbDioListener
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbScanListener
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : ViewModel() {
-    private var usbDeviceManager: USBDeviceManager
+class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) : ViewModel() {
+    private var usbDeviceManager: DatalogicDeviceManager
 
     private val _status = MutableLiveData<DeviceStatus>()
     val status: LiveData<DeviceStatus> = _status
@@ -33,8 +38,8 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
     private val _deviceStatus = MutableLiveData<String>()
     val deviceStatus: LiveData<String> = _deviceStatus
 
-    private val _deviceList = MutableLiveData<ArrayList<UsbDeviceDescriptor>>(ArrayList())
-    val deviceList: LiveData<ArrayList<UsbDeviceDescriptor>> = _deviceList
+    private val _deviceList = MutableLiveData<ArrayList<DatalogicDevice>>(ArrayList())
+    val deviceList: LiveData<ArrayList<DatalogicDevice>> = _deviceList
 
     private val _scanLabel = MutableLiveData("")
     val scanLabel: LiveData<String> = _scanLabel
@@ -45,7 +50,7 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
     private val _isLoading = MutableLiveData(false)
     val isLoading: LiveData<Boolean> = _isLoading
 
-    val selectedDevice: MutableLiveData<UsbDeviceDescriptor?> = MutableLiveData(null)
+    val selectedDevice: MutableLiveData<DatalogicDevice?> = MutableLiveData(null)
 
     private val _selectedTabIndex = MutableLiveData(0)
     val selectedTabIndex: LiveData<Int> = _selectedTabIndex
@@ -82,6 +87,11 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
     // Internal state
     private var executeCmd = false
 
+    //Listener
+    private lateinit var scanEvent: UsbScanListener
+    private lateinit var usbErrorListener: UsbDioListener
+
+
     init {
         this.usbDeviceManager = usbDeviceManager
         _status.postValue(DeviceStatus.CLOSED)
@@ -91,7 +101,7 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
     /**
      * Select a device to work with
      */
-    fun setSelectedDevice(device: UsbDeviceDescriptor?) {
+    fun setSelectedDevice(device: DatalogicDevice?) {
 //        // Close any previously selected device
 //        selectedDevice.value?.let {
 //            if (it.status == DeviceStatus.OPENED) {
@@ -121,7 +131,7 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
     fun checkConnectedDevice() {
         _isLoading.postValue(true)
 
-        usbDeviceManager.checkConnectedDevice(context) { devices ->
+        usbDeviceManager.checkConnectedDeviceAsync(context) { devices ->
             _deviceList.postValue(ArrayList(devices))
             _isLoading.postValue(false)
         }
@@ -141,9 +151,9 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
                 _deviceStatus.postValue("Device disconnected: ${it.displayName}")
                 _dioData.postValue("")
             }
+            it.handleDeviceDisconnection(device)
         }
 
-        usbDeviceManager.handleDeviceDisconnection(device)
         checkConnectedDevice()
     }
 
@@ -213,10 +223,10 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
 
                 val result = if (isReattached) {
                     // For reattached devices, we need to handle reconnection differently
-                    usbDeviceManager.deviceReConnect(device, context)
+                    device.deviceReConnect(device, context)
                 } else {
                     // Standard open operation (combines open, claim, enable)
-                    usbDeviceManager.openDevice(device, context)
+                    device.openDevice(device, context)
                 }
 
                 withContext(Dispatchers.Main) {
@@ -228,6 +238,28 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
 
                             // Remove from reattached list since we've handled it
                             reattachedDevices.remove(deviceId)
+
+                            //Setup listener
+                            scanEvent = object : UsbScanListener {
+                                override fun onScan(scanData: UsbScanData) {
+                                    setScannedData(scanData)
+                                }
+                            }
+                            device.registerUsbScanListener(scanEvent)
+
+                            usbErrorListener = object : UsbDioListener {
+                                override fun fireDioErrorEvent(errorCode: Int, message: String) {
+                                    showToast(context, message + errorCode)
+                                }
+                                override fun executeDioAndConfigCommand(isConfigCommand : Boolean) {
+                                    if(isConfigCommand) {
+                                        readConfigData()
+                                    } else {
+                                        executeDIOCommand()
+                                    }
+                                }
+                            }
+                            device.registerUsbDioListener(usbErrorListener)
                         }
                         else -> {
                             Log.e(TAG, "Failed to open device: ${device.displayName}")
@@ -252,7 +284,7 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
             _isLoading.postValue(true)
 
             CoroutineScope(Dispatchers.IO).launch {
-                val result = usbDeviceManager.closeDevice(device.usbDevice)
+                val result = device.closeDevice(device.usbDevice)
 
                 withContext(Dispatchers.Main) {
                     when (result) {
@@ -261,6 +293,10 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
                             _deviceStatus.postValue("Device closed")
                             _status.postValue(DeviceStatus.CLOSED)
                             clearScanData()
+
+                            //Clear listener
+                            device.unregisterUsbScanListener(scanEvent)
+                            device.unregisterUsbDioListener(usbErrorListener)
                         }
                         else -> {
                             Log.e(TAG, "Failed to close device: ${device.displayName}")
@@ -311,7 +347,7 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
      * @param newDevice is the device to select
      * @return true if the selection was processed, false otherwise
      */
-    fun setDropdownSelectedDevice(newDevice: UsbDeviceDescriptor?): Boolean {
+    fun setDropdownSelectedDevice(newDevice: DatalogicDevice?): Boolean {
         selectedDevice.value?.let {
             if (it.status == DeviceStatus.OPENED) {
                 closeDevice()
@@ -376,7 +412,7 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
                 val selectedCmd = selectedCommand.value ?: DIOCmdValue.OTHER
 
                 // Execute the command
-                val output = usbDeviceManager.dioCommand(
+                val output = device.dioCommand(
                     device,
                     selectedCmd,
                     commandString,
@@ -443,7 +479,7 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
                 try {
                     Log.d("HomeViewModel", "Applying configuration changes: $writeConfigData")
 
-                    val writeResult = usbDeviceManager.writeConfig(device.deviceType, writeConfigData)
+                    val writeResult = device.writeConfig(device.deviceType, writeConfigData)
                     Log.d("HomeViewModel", "Write result: $writeResult")
 
                     var failure = ""
@@ -504,7 +540,7 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     Log.d("HomeViewModel", "Reading config data for device: ${device.displayName}")
-                    val configData = usbDeviceManager.readConfig(device, context)
+                    val configData = device.readConfig(device, context)
                     Log.d("HomeViewModel", "Received config data: $configData")
 
                     if (configData.isNotEmpty()) {
@@ -545,5 +581,12 @@ class HomeViewModel(usbDeviceManager: USBDeviceManager, context: Context) : View
 
         // Unregister receivers
         usbDeviceManager.unregisterReceiver(context)
+    }
+
+    // Function to show Toast on the main thread
+    fun showToast(context: Context, message: String) {
+        Handler(Looper.getMainLooper()).post {
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        }
     }
 }

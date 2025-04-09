@@ -32,13 +32,13 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.toSize
 import com.datalogic.aladdin.aladdinusbapp.R
-import com.datalogic.aladdin.aladdinusbscannersdk.model.UsbDeviceDescriptor
+import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DIOCmdValue
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 
 @Composable
 fun DIODropdown(modifier: Modifier, selectedCommand: DIOCmdValue, onCommandSelected: (DIOCmdValue) -> Unit,
-                selectedDevice : (UsbDeviceDescriptor?), onDeviceSelected: (UsbDeviceDescriptor?) -> Unit, mDevices: ArrayList<UsbDeviceDescriptor>, status: DeviceStatus?){
+                selectedDevice : (DatalogicDevice?), onDeviceSelected: (DatalogicDevice?) -> Unit, mDevices: ArrayList<DatalogicDevice>, status: DeviceStatus?){
 
     var mExpanded by remember { mutableStateOf(false) }
     val commands = DIOCmdValue.entries.map { it }
