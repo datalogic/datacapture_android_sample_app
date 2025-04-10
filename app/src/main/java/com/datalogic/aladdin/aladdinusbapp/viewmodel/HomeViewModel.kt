@@ -223,10 +223,10 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
 
                 val result = if (isReattached) {
                     // For reattached devices, we need to handle reconnection differently
-                    device.deviceReConnect(device, context)
+                    device.deviceReConnect(context)
                 } else {
                     // Standard open operation (combines open, claim, enable)
-                    device.openDevice(device, context)
+                    device.openDevice(context)
                 }
 
                 withContext(Dispatchers.Main) {
@@ -412,12 +412,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                 val selectedCmd = selectedCommand.value ?: DIOCmdValue.OTHER
 
                 // Execute the command
-                val output = device.dioCommand(
-                    device,
-                    selectedCmd,
-                    commandString,
-                    context
-                )
+                val output = device.dioCommand(selectedCmd, commandString, context)
 
                 _dioStatus.postValue(output)
                 _isLoading.postValue(false)
@@ -540,7 +535,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     Log.d("HomeViewModel", "Reading config data for device: ${device.displayName}")
-                    val configData = device.readConfig(device, context)
+                    val configData = device.readConfig(context)
                     Log.d("HomeViewModel", "Received config data: $configData")
 
                     if (configData.isNotEmpty()) {
