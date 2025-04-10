@@ -21,9 +21,6 @@ class AladdinUSBApplication : Application() {
         // Register for USB events
         usbDeviceManager.registerReceiver(applicationContext)
 
-        // Ensure all devices start in a known state
-        usbDeviceManager.resetAllDeviceStates()
-
         // Set up uncaught exception handler to clean up devices on crash
         val defaultExceptionHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
@@ -37,12 +34,6 @@ class AladdinUSBApplication : Application() {
 
     private fun cleanup() {
         try {
-            val openDevices = usbDeviceManager.getDevicesByStatus(DeviceStatus.OPENED)
-
-            for (device in openDevices) {
-                device.closeDevice(device.usbDevice)
-            }
-
             // Unregister receiver
             usbDeviceManager.unregisterReceiver(applicationContext)
         } catch (e: Exception) {
