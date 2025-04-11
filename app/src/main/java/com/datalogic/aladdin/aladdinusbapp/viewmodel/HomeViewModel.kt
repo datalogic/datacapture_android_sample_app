@@ -16,8 +16,8 @@ import com.datalogic.aladdin.aladdinusbapp.utils.USBConstants
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
 import com.datalogic.aladdin.aladdinusbscannersdk.model.UsbScanData
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDeviceManager
-import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.USBConstants.USB_OEM
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ConfigurationFeature
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ConnectionType
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DIOCmdValue
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbDioListener
@@ -373,7 +373,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             CoroutineScope(Dispatchers.IO).launch {
                 if (command != DIOCmdValue.OTHER) {
                     // Use the string representation for display
-                    val isOem = it.deviceType == USB_OEM
+                    val isOem = it.connectionType == ConnectionType.USB_OEM
                     // Use the display string instead of the hex value
                     _dioData.postValue(command.getDisplayString(isOem))
                 } else {
@@ -474,7 +474,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                 try {
                     Log.d("HomeViewModel", "Applying configuration changes: $writeConfigData")
 
-                    val writeResult = device.writeConfig(device.deviceType, writeConfigData)
+                    val writeResult = device.writeConfig(writeConfigData)
                     Log.d("HomeViewModel", "Write result: $writeResult")
 
                     var failure = ""

@@ -21,7 +21,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.viewmodel.HomeViewModel
-import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.USBConstants.USB_OEM
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ConnectionType
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 
 @Composable
@@ -57,7 +57,7 @@ fun BottomNavigationRow(modifier: Modifier, homeViewModel: HomeViewModel) {
                     .clickable {
                         if (homeViewModel.deviceList.value?.size!! > 0) {
                             if (status == DeviceStatus.OPENED) {
-                                if (index == 1 && homeViewModel.selectedDevice.value?.deviceType == USB_OEM) {
+                                if (index == 1 && homeViewModel.selectedDevice.value?.connectionType == ConnectionType.USB_OEM) {
                                     homeViewModel.oemAlert = true
                                 } else {
                                     homeViewModel.setSelectedTabIndex(index)
