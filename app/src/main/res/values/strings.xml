@@ -6,6 +6,7 @@
     <string name="home">Home</string>
     <string name="configuration">Configuration</string>
     <string name="direct_io">Direct I/O</string>
+    <string name="image_capture">Image Capture</string>
     <string name="scanner_data">Scanner Data</string>
     <string name="scan_data">Scan Data</string>
     <string name="scan_data_label">Scan Data Label</string>

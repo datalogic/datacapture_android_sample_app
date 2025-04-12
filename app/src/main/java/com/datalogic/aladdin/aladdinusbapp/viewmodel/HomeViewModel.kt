@@ -1,9 +1,15 @@
 package com.datalogic.aladdin.aladdinusbapp.viewmodel
 
+import android.content.ContentValues
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.hardware.usb.UsbDevice
+import android.net.Uri
+import android.os.Environment
 import android.os.Handler
 import android.os.Looper
+import android.provider.MediaStore
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.runtime.getValue
@@ -27,6 +33,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.lifecycle.viewModelScope
 
 class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) : ViewModel() {
     private var usbDeviceManager: DatalogicDeviceManager
@@ -583,5 +590,71 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         Handler(Looper.getMainLooper()).post {
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }
+    }
+
+
+
+
+
+
+
+    private var imageResponseCallback: ((Bitmap?) -> Unit)? = null
+
+    fun startCaptureAuto() {
+        selectedDevice.value?.let { device ->
+            viewModelScope.launch(Dispatchers.IO) {
+                val imageData: ByteArray = device.imageCaptureAuto()
+                handleImage(imageData)
+            }
+        } ?: resultLiveData.postValue("No device selected")
+    }
+
+    fun startCaptureOnTrigger() {
+        // Implement your on trigger capture logic here.
+        println("On Trigger capture triggered")
+    }
+
+    private fun handleImage(imageData: ByteArray){
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                // Decode image
+                val imageBitmap = BitmapFactory.decodeByteArray(imageData, 0, imageData.size)
+
+                // Save to gallery and get URI
+                val imageUri = saveBitmapToGallery(imageBitmap)
+
+                // Notify UI with bitmap and URI on main thread
+                withContext(Dispatchers.Main) {
+                    imageResponseCallback?.invoke(imageBitmap)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private fun saveBitmapToGallery( bitmap: Bitmap): Uri? {
+        val fileName = "IMG_${System.currentTimeMillis()}.jpg"
+        val imageCollection = MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+        val contentValues = ContentValues().apply {
+            put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
+            put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+            put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
+        }
+
+        val contentResolver = context.contentResolver
+        val imageUri: Uri? = contentResolver.insert(imageCollection, contentValues)
+        imageUri?.let { uri ->
+            contentResolver.openOutputStream(uri).use { outputStream ->
+                if (outputStream != null) {
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
+                }
+            }
+        }
+        return imageUri
+    }
+
+    fun setImageCallback(callback: ((Bitmap?) -> Unit)?) {
+        imageResponseCallback = callback
     }
 }

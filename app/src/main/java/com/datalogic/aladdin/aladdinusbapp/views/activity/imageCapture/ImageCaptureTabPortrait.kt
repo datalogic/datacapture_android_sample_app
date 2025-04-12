@@ -34,14 +34,13 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.datalogic.aladdin.aladdinusbapp.R
-import com.datalogic.aladdin.aladdinusbapp.viewmodel.ImageCaptureModel
-import com.datalogic.aladdin.aladdinusbapp.viewmodel.ImageCaptureModel.Companion.HOST_CMD_CAPTURE
-import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalImageCaptureViewModel
+import com.datalogic.aladdin.aladdinusbapp.viewmodel.HomeViewModel
+import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 
 
 @Composable
 fun ImageCaptureTabPortrait() {
-    val imageCaptureModel = LocalImageCaptureViewModel.current
+    val imageCaptureModel = LocalHomeViewModel.current
     var brightness by remember { mutableStateOf(0f) }
     var contrast by remember { mutableStateOf(0f) }
     var sensorMode by remember { mutableStateOf("Auto") }
@@ -140,7 +139,7 @@ fun DropdownRow(
 }
 
 @Composable
-fun CaptureButtons(model: ImageCaptureModel) {
+fun CaptureButtons(model: HomeViewModel) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.fillMaxWidth()
@@ -149,8 +148,8 @@ fun CaptureButtons(model: ImageCaptureModel) {
             // Each capture button uses the ToggleableButton with its own toggle state.
             ToggleableButton(label = label, onClick = {
                 when(label) {
-                    "Auto" -> model.startCapture(HOST_CMD_CAPTURE)
-                    "On Trigger" -> model.captureOnTrigger()
+                    "Auto" -> model.startCaptureAuto()
+                    "On Trigger" -> model.startCaptureOnTrigger()
                 }
             })
         }
