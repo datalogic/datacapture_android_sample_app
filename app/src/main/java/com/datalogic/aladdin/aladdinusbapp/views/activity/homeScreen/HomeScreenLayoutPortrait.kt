@@ -21,8 +21,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
+import com.datalogic.aladdin.aladdinusbapp.views.activity.imageCapture.ImageCaptureTabPortrait
 import com.datalogic.aladdin.aladdinusbapp.views.compose.BottomNavigationRow
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.FooterImageView
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.HeaderImageView
@@ -70,6 +72,7 @@ fun HomeScreenLayoutPortrait() {
                 0 -> HomeTabPortrait()
                 1 -> ConfigurationTabPortrait()
                 2 -> DirectIOTabPortrait()
+                3 -> ImageCaptureTabPortrait()
             }
         }
 
@@ -110,4 +113,9 @@ fun HomeScreenLayoutPortrait() {
             homeViewModel
         )
     }
+}
+@Preview
+@Composable
+fun PreviewHomeScreenLayoutPortrait() {
+    HomeScreenLayoutPortrait()
 }
