@@ -21,20 +21,18 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.viewmodel.HomeViewModel
-import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.USBConstants.USB_OEM
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ConnectionType
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 
 @Composable
 fun BottomNavigationRow(modifier: Modifier, homeViewModel: HomeViewModel) {
-    val items = listOf(stringResource(id = R.string.home), stringResource(id = R.string.configuration), stringResource(id = R.string.direct_io))
+    val items = listOf(stringResource(id = R.string.home), stringResource(id = R.string.configuration), stringResource(id = R.string.direct_io), stringResource(id = R.string.image_capture))
     val selectedTab by homeViewModel.selectedTabIndex.observeAsState(0)
-    val status = homeViewModel.status.observeAsState(DeviceStatus.DISABLE).value
+    val status = homeViewModel.status.observeAsState(DeviceStatus.CLOSED).value
     val selectedDevice = homeViewModel.selectedDevice.observeAsState(null).value
 
     LaunchedEffect(status) {
         when (status) {
-            DeviceStatus.OPENED,
-            DeviceStatus.RELEASED,
             DeviceStatus.CLOSED,
             DeviceStatus.NONE->
             homeViewModel.setSelectedTabIndex(0) // Switch to home tab
@@ -57,9 +55,13 @@ fun BottomNavigationRow(modifier: Modifier, homeViewModel: HomeViewModel) {
                 modifier = Modifier
                     .wrapContentSize()
                     .clickable {
+                        if(index == 3)
+                        {
+                            homeViewModel.setSelectedTabIndex(index);
+                        }
                         if (homeViewModel.deviceList.value?.size!! > 0) {
-                            if ((status == DeviceStatus.CLAIMED || status == DeviceStatus.ENABLED || status == DeviceStatus.DISABLE)) {
-                                if (index == 1 && homeViewModel.selectedDevice.value?.deviceType == USB_OEM) {
+                            if (status == DeviceStatus.OPENED) {
+                                if (index == 1 && homeViewModel.selectedDevice.value?.connectionType == ConnectionType.USB_OEM) {
                                     homeViewModel.oemAlert = true
                                 } else {
                                     homeViewModel.setSelectedTabIndex(index)
@@ -73,7 +75,7 @@ fun BottomNavigationRow(modifier: Modifier, homeViewModel: HomeViewModel) {
                                 }
                             } else {
                                 if (index != 0) {
-                                    homeViewModel.claimAlert = true
+                                    homeViewModel.openAlert = true
                                 }
                             }
                         } else {

@@ -6,6 +6,7 @@
     <string name="home">Home</string>
     <string name="configuration">Configuration</string>
     <string name="direct_io">Direct I/O</string>
+    <string name="image_capture">Image Capture</string>
     <string name="scanner_data">Scanner Data</string>
     <string name="scan_data">Scan Data</string>
     <string name="scan_data_label">Scan Data Label</string>
@@ -25,6 +26,7 @@
     <string name="execute_dio">Execute D I/O</string>
     <string name="not_a_valid_command">Not a Valid Command</string>
     <string name="alert">Alert!</string>
+    <string name="alert_message_for_open_device">Device is not opened.</string>
     <string name="alert_message_for_device_change">Current device state and data will be lost if you change the device.</string>
     <string name="alert_message_for_oem_configuration">Configuration not supported for OEM devices.</string>
     <string name="alert_message_for_claim_device">Claim the device.</string>

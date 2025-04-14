@@ -32,13 +32,13 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.toSize
 import com.datalogic.aladdin.aladdinusbapp.R
-import com.datalogic.aladdin.aladdinusbscannersdk.model.UsbDeviceDescriptor
+import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DIOCmdValue
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 
 @Composable
 fun DIODropdown(modifier: Modifier, selectedCommand: DIOCmdValue, onCommandSelected: (DIOCmdValue) -> Unit,
-                selectedDevice : (UsbDeviceDescriptor?), onDeviceSelected: (UsbDeviceDescriptor?) -> Unit, mDevices: ArrayList<UsbDeviceDescriptor>, status: DeviceStatus?){
+                selectedDevice : (DatalogicDevice?), onDeviceSelected: (DatalogicDevice?) -> Unit, mDevices: ArrayList<DatalogicDevice>, status: DeviceStatus?){
 
     var mExpanded by remember { mutableStateOf(false) }
     val commands = DIOCmdValue.entries.map { it }
@@ -76,7 +76,7 @@ fun DIODropdown(modifier: Modifier, selectedCommand: DIOCmdValue, onCommandSelec
                 }
                 .clickable { mExpanded = !mExpanded },
             trailingIcon = {
-                if (mDevices.isNotEmpty() && (status == DeviceStatus.CLAIMED || status == DeviceStatus.ENABLED || status == DeviceStatus.DISABLE)) {
+                if (mDevices.isNotEmpty() && status == DeviceStatus.OPENED) {
                     Icon(icon, stringResource(id = R.string.arrow_dropdown), tint = Color.Black)
                 } else {
                     Icon(Icons.Filled.KeyboardArrowDown, stringResource(id = R.string.arrow_dropdown))
@@ -92,7 +92,7 @@ fun DIODropdown(modifier: Modifier, selectedCommand: DIOCmdValue, onCommandSelec
                 disabledIndicatorColor = Color.Transparent
             )
         )
-        if (mDevices.isNotEmpty() && (status == DeviceStatus.CLAIMED || status == DeviceStatus.ENABLED || status == DeviceStatus.DISABLE)) {
+        if (mDevices.isNotEmpty() && status == DeviceStatus.OPENED) {
             DropdownMenu(
                 expanded = mExpanded,
                 onDismissRequest = { mExpanded = false },

@@ -47,7 +47,7 @@ fun HomeScreenLayoutLandscape() {
 
     if (isLoading!!) { ShowLoading(onDismiss = {isLoading = false})}
 
-    ShowPopup(homeViewModel.claimAlert, onDismiss = { homeViewModel.claimAlert = false }, stringResource(id = R.string.alert_message_for_claim_device))
+    ShowPopup(homeViewModel.openAlert, onDismiss = { homeViewModel.openAlert = false }, stringResource(id = R.string.alert_message_for_open_device))
     ShowPopup(homeViewModel.oemAlert, onDismiss = { homeViewModel.oemAlert = false }, stringResource(id = R.string.alert_message_for_oem_configuration))
     ShowPopup(homeViewModel.connectDeviceAlert, onDismiss = { homeViewModel.connectDeviceAlert = false }, stringResource(id = R.string.alert_message_for_connect_device))
     ShowPopup(homeViewModel.magellanConfigAlert, onDismiss = { homeViewModel.magellanConfigAlert = false }, stringResource(id = R.string.alert_message_for_magellan_config))
@@ -111,57 +111,17 @@ fun HomeScreenLayoutLandscape() {
                     buttonState = (status == DeviceStatus.CLOSED && deviceList.isNotEmpty()),
                     stringResource(id = R.string.open),
                     onClick = {
-                        homeViewModel.openUsbConnection()
-                    }
-                )
-                CustomButton(
-                    modifier = Modifier
-                        .semantics { contentDescription = "btn_claim" }
-                        .fillMaxWidth(),
-                    buttonState = (status == DeviceStatus.OPENED || status == DeviceStatus.RELEASED),
-                    stringResource(id = R.string.claim),
-                    onClick = {
-                        homeViewModel.claim()
-                    }
-                )
-                CustomButton(
-                    modifier = Modifier
-                        .semantics { contentDescription = "btn_enable" }
-                        .fillMaxWidth(),
-                    buttonState = (status == DeviceStatus.CLAIMED || status == DeviceStatus.DISABLE),
-                    stringResource(id = R.string.enable),
-                    onClick = {
-                        homeViewModel.enabled()
-                    }
-                )
-                CustomButton(
-                    modifier = Modifier
-                        .semantics { contentDescription = "btn_disable" }
-                        .fillMaxWidth(),
-                    buttonState = (status == DeviceStatus.ENABLED),
-                    stringResource(id = R.string.disable),
-                    onClick = {
-                        homeViewModel.disable()
-                    }
-                )
-                CustomButton(
-                    modifier = Modifier
-                        .semantics { contentDescription = "btn_release" }
-                        .fillMaxWidth(),
-                    buttonState = (status == DeviceStatus.CLAIMED || status == DeviceStatus.DISABLE),
-                    stringResource(id = R.string.release),
-                    onClick = {
-                        homeViewModel.release()
+                        homeViewModel.openDevice()
                     }
                 )
                 CustomButton(
                     modifier = Modifier
                         .semantics { contentDescription = "btn_close" }
                         .fillMaxWidth(),
-                    buttonState = (status == DeviceStatus.OPENED || status == DeviceStatus.RELEASED),
+                    buttonState = (status == DeviceStatus.OPENED),
                     stringResource(id = R.string.close),
                     onClick = {
-                        homeViewModel.close()
+                        homeViewModel.closeDevice()
                     }
                 )
             }

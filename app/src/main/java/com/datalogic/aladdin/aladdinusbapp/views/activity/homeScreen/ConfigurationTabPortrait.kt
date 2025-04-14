@@ -52,7 +52,7 @@ fun ConfigurationTabPortrait() {
     }
 
     if (writeResult.isNotBlank()) {
-        Toast.makeText(context, "Configuration failure $writeResult", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, writeResult, Toast.LENGTH_SHORT).show()
         homeViewModel.resultLiveData.value = ""
     }
 

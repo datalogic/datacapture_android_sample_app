@@ -22,7 +22,7 @@ import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.utils.CommonUtils
 import com.datalogic.aladdin.aladdinusbapp.viewmodel.HomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.theme.AladdinUSBAppTheme
-import com.datalogic.aladdin.aladdinusbscannersdk.usbaccess.USBDeviceManager
+import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDeviceManager
 import com.datalogic.aladdin.aladdinusbscannersdk.model.UsbScanData
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.AladdinConstants.CLAIM_FAILURE
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.AladdinConstants.ENABLE_FAILURE
@@ -40,17 +40,15 @@ val LocalHomeViewModel = staticCompositionLocalOf<HomeViewModel> {
 class HomeActivity : AppCompatActivity() {
 
     private var TAG = HomeActivity::class.java.simpleName
-    private lateinit var usbDeviceManager: USBDeviceManager
+    private lateinit var usbDeviceManager: DatalogicDeviceManager
     private lateinit var usbListener: UsbListener
-    private lateinit var scanEvent: UsbScanListener
     private lateinit var statusListener: StatusListener
-    private lateinit var usbErrorListener: UsbDioListener
     private val homeViewModel: HomeViewModel by viewModels {
         MyViewModelFactory(usbDeviceManager, applicationContext)
     }
 
     class MyViewModelFactory(
-        private val usbDeviceManager: USBDeviceManager,
+        private val usbDeviceManager: DatalogicDeviceManager,
         private val context: Context
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -65,7 +63,7 @@ class HomeActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         supportActionBar?.hide()
-        usbDeviceManager = USBDeviceManager()
+        usbDeviceManager = DatalogicDeviceManager
         usbListener = object : UsbListener {
             override fun onDeviceAttachedListener(device: UsbDevice) {
                 homeViewModel.setDeviceStatus("Attached ${device.productName}")
@@ -80,46 +78,37 @@ class HomeActivity : AppCompatActivity() {
         }
         usbDeviceManager.registerUsbListener(usbListener)
 
-        scanEvent = object : UsbScanListener {
-            override fun onScan(scanData: UsbScanData) {
-                homeViewModel.setScannedData(scanData)
-            }
-        }
-        usbDeviceManager.registerUsbScanListener(scanEvent)
-        usbErrorListener = object : UsbDioListener {
-            override fun fireDioErrorEvent(errorCode: Int, message: String) {
-                showToast(applicationContext, message + errorCode)
-            }
-            override fun executeDioAndConfigCommand(isConfigCommand : Boolean) {
-                if(isConfigCommand) {
-                    homeViewModel.readConfigData()
-                } else {
-                    homeViewModel.executeDIOCommand()
-                }
-            }
-        }
-        usbDeviceManager.registerUsbDioListener(usbErrorListener)
-
-        statusListener = object : StatusListener {
+        // USB connection status listener implementation
+        val statusListener = object : StatusListener {
             override fun onStatus(productId: String, status: DeviceStatus) {
-                homeViewModel.setStatus(productId, status, true)
+                runOnUiThread {
+                    homeViewModel.setStatus(productId, status)
+
+                    // Update UI based on new status
+                    when (status) {
+                        DeviceStatus.OPENED -> {
+                            showToast(applicationContext, "Device successfully opened")
+                        }
+                        DeviceStatus.CLOSED -> {
+                            showToast(applicationContext, "Device closed")
+                        }
+                        else -> {}
+                    }
+                }
             }
 
             override fun onError(errorStatus: Int) {
-                try {
+                runOnUiThread {
                     when (errorStatus) {
-                        OPEN_FAILURE, CLAIM_FAILURE, ENABLE_FAILURE ->
-                            showToast(applicationContext, "Please try once again...")
+                        OPEN_FAILURE -> showToast(applicationContext, "Failed to open device")
+                        CLAIM_FAILURE -> showToast(applicationContext, "Failed to claim interface")
+                        ENABLE_FAILURE -> showToast(applicationContext, "Failed to enable scanner")
+                        else -> showToast(applicationContext, "Error: $errorStatus")
                     }
-
-                    Log.d(TAG, "Receiving event: $errorStatus")
-                } catch (e: Exception) {
-                    Log.e(TAG, "Receiving event: ", e)
                 }
             }
         }
         usbDeviceManager.registerStatusListener(statusListener)
-
 
         setContent {
             AladdinUSBAppTheme {
@@ -127,7 +116,9 @@ class HomeActivity : AppCompatActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = Color.White
                 ) {
-                    CompositionLocalProvider(LocalHomeViewModel provides homeViewModel) {
+                    CompositionLocalProvider(
+                        LocalHomeViewModel provides homeViewModel
+                    ) {
                         Navigation()
                     }
                 }
@@ -170,10 +161,8 @@ class HomeActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         Log.d(TAG, "Destroy called")
-        homeViewModel.disable()
+        homeViewModel.onCleared()
         usbDeviceManager.unregisterUsbListener(usbListener)
-        usbDeviceManager.unregisterUsbScanListener(scanEvent)
         usbDeviceManager.unregisterStatusListener(statusListener)
-        usbDeviceManager.unregisterUsbDioListener(usbErrorListener)
     }
 }

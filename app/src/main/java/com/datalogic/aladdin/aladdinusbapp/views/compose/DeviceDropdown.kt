@@ -38,22 +38,22 @@ import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.window.DialogProperties
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
-import com.datalogic.aladdin.aladdinusbscannersdk.model.UsbDeviceDescriptor
+import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 
 var popup by mutableStateOf(false)
 var mExpanded by mutableStateOf(false)
-var mCurrentDevice by mutableStateOf<UsbDeviceDescriptor?>(null)
-var mSelectedDevice by mutableStateOf<UsbDeviceDescriptor?>(null)
+var mCurrentDevice by mutableStateOf<DatalogicDevice?>(null)
+var mSelectedDevice by mutableStateOf<DatalogicDevice?>(null)
 var mTextFieldSize by mutableStateOf(Size.Zero)
 
 @Composable
 fun DeviceDropdown(
     modifier: Modifier,
-    mDevices: ArrayList<UsbDeviceDescriptor>,
-    onDeviceSelected: (UsbDeviceDescriptor?) -> Unit,
+    mDevices: ArrayList<DatalogicDevice>,
+    onDeviceSelected: (DatalogicDevice?) -> Unit,
     deviceStatus: DeviceStatus,
-    selectedDevice: UsbDeviceDescriptor?
+    selectedDevice: DatalogicDevice?
 ) {
     LaunchedEffect(mDevices) {
         mCurrentDevice = selectedDevice
@@ -152,7 +152,7 @@ fun DeviceDropdown(
 }
 
 @Composable
-fun AlertDialogComponent( onDeviceSelected: (UsbDeviceDescriptor?) -> Unit, selectedDevice : UsbDeviceDescriptor?) {
+fun AlertDialogComponent( onDeviceSelected: (DatalogicDevice?) -> Unit, selectedDevice : DatalogicDevice?) {
     val homeViewModel = LocalHomeViewModel.current
     AlertDialog(
         onDismissRequest = { popup = false },
