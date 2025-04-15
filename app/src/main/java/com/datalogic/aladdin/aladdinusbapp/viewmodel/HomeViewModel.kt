@@ -258,13 +258,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                                 override fun fireDioErrorEvent(errorCode: Int, message: String) {
                                     showToast(context, message + errorCode)
                                 }
-                                override fun executeDioAndConfigCommand(isConfigCommand : Boolean) {
-                                    if(isConfigCommand) {
-                                        readConfigData()
-                                    } else {
-                                        executeDIOCommand()
-                                    }
-                                }
                             }
                             device.registerUsbDioListener(usbErrorListener)
                         }
