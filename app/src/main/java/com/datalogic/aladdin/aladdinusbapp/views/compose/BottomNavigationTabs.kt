@@ -55,13 +55,9 @@ fun BottomNavigationRow(modifier: Modifier, homeViewModel: HomeViewModel) {
                 modifier = Modifier
                     .wrapContentSize()
                     .clickable {
-                        if(index == 3)
-                        {
-                            homeViewModel.setSelectedTabIndex(index);
-                        }
                         if (homeViewModel.deviceList.value?.size!! > 0) {
                             if (status == DeviceStatus.OPENED) {
-                                if (index == 1 && homeViewModel.selectedDevice.value?.connectionType == ConnectionType.USB_OEM) {
+                                if ((index == 1 || index == 3) && homeViewModel.selectedDevice.value?.connectionType == ConnectionType.USB_OEM) {
                                     homeViewModel.oemAlert = true
                                 } else {
                                     homeViewModel.setSelectedTabIndex(index)
