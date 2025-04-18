@@ -18,8 +18,13 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.Switch
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
@@ -32,7 +37,9 @@ import androidx.compose.ui.unit.dp
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.CustomButton
+import com.datalogic.aladdin.aladdinusbapp.views.compose.ConnectionTypeDropdown
 import com.datalogic.aladdin.aladdinusbapp.views.compose.DeviceDropdown
+import com.datalogic.aladdin.aladdinusbapp.views.compose.DeviceTypeDropdown
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 
 @Composable
@@ -46,14 +53,7 @@ fun HomeTabPortrait() {
     val scanData = homeViewModel.scanData.observeAsState("").value
     val selectedDevice = homeViewModel.selectedDevice.observeAsState(null).value
 
-
-    val configuration = LocalConfiguration.current
-    val screenHeight = configuration.screenHeightDp
-
-    /**
-     * Define a threshold for vertical scrolling
-     * */
-    val scrollableThreshold = 500
+    var autoDetectChecked by remember { mutableStateOf(true) }
 
     val content = @Composable {
 
@@ -69,6 +69,122 @@ fun HomeTabPortrait() {
             status,
             selectedDevice
         )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    top = dimensionResource(id = R.dimen._15sdp),
+                    bottom = dimensionResource(id = R.dimen._5sdp)
+                ),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Switch(
+                checked = autoDetectChecked,
+                onCheckedChange = {
+                    autoDetectChecked = it
+                }
+            )
+
+            Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen._15sdp)))
+
+            Text(
+                modifier = Modifier
+                    .semantics { contentDescription = "lbl_auto_detect_device" }
+                    .fillMaxWidth()
+                    .padding(
+                        top = dimensionResource(id = R.dimen._15sdp),
+                        bottom = dimensionResource(id = R.dimen._5sdp)
+                    ),
+                text = stringResource(id = R.string.auto_detect_device),
+                style = MaterialTheme.typography.labelLarge
+            )
+        }
+
+        if (!autoDetectChecked) {
+            Column(
+                modifier = Modifier
+                    .semantics { contentDescription = "device_settings" }
+                    .fillMaxWidth()
+                    .padding(vertical = dimensionResource(id = R.dimen._10sdp))
+            ) {
+                Text(
+                    modifier = Modifier
+                        .semantics { contentDescription = "lbl_device_settings" }
+                        .fillMaxWidth()
+                        .padding(
+                            start = dimensionResource(id = R.dimen._10sdp),
+                            bottom = dimensionResource(id = R.dimen._5sdp)
+                        ),
+                    text = stringResource(id = R.string.device_settings),
+                    style = MaterialTheme.typography.headlineLarge
+                )
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(
+                            BorderStroke(1.dp, Color.Black),
+                            RoundedCornerShape(dimensionResource(id = R.dimen._8sdp))
+                        )
+                        .padding(horizontal = dimensionResource(id = R.dimen._16sdp)),
+                ) {
+
+                    Text(
+                        modifier = Modifier
+                            .semantics { contentDescription = "lbl_device_vid" }
+                            .fillMaxWidth()
+                            .padding(
+                                top = dimensionResource(id = R.dimen._10sdp),
+                                bottom = dimensionResource(id = R.dimen._5sdp)
+                            ),
+                        text = "VID: 1234",
+                        style = MaterialTheme.typography.labelLarge
+                    )
+
+                    Text(
+                        modifier = Modifier
+                            .semantics { contentDescription = "lbl_device_pid" }
+                            .fillMaxWidth()
+                            .padding(
+                                top = dimensionResource(id = R.dimen._10sdp),
+                                bottom = dimensionResource(id = R.dimen._5sdp)
+                            ),
+                        text = "PID: 5678",
+                        style = MaterialTheme.typography.labelLarge
+                    )
+
+                    Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen._5sdp)))
+
+                    DeviceTypeDropdown(
+                        modifier = Modifier
+                            .semantics { contentDescription = "device_type_dropdown" }
+                            .fillMaxWidth()
+                            .height(dimensionResource(id = R.dimen._55sdp)),
+                        homeViewModel.getSelectedDeviceType(),
+                        onDeviceTypeSelected = {
+                            homeViewModel.setSelectedDeviceType(it)
+                        }
+                    )
+
+                    Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen._15sdp)))
+
+                    ConnectionTypeDropdown(
+                        modifier = Modifier
+                            .semantics { contentDescription = "connection_type_dropdown" }
+                            .fillMaxWidth()
+                            .height(dimensionResource(id = R.dimen._55sdp)),
+                        homeViewModel.getSelectedConnectionType(),
+                        onDeviceTypeSelected = {
+                            homeViewModel.setSelectedConnectionType(it)
+                        }
+                    )
+
+                    Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen._15sdp)))
+                }
+            }
+        }
+
         Column(
             modifier = Modifier
                 .semantics { contentDescription = "scanner_data" }
@@ -181,11 +297,7 @@ fun HomeTabPortrait() {
     /**
      * Vertical scroll only if the screen height is less than the threshold
      */
-    if (screenHeight < scrollableThreshold) {
-        Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(vertical = dimensionResource(id = R.dimen._4sdp))) {
-            content()
-        }
-    } else {
+    Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(vertical = dimensionResource(id = R.dimen._4sdp))) {
         content()
     }
 }

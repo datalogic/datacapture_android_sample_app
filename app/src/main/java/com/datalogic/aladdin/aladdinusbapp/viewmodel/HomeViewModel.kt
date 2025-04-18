@@ -34,6 +34,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.lifecycle.viewModelScope
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceType
 
 class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) : ViewModel() {
     private var usbDeviceManager: DatalogicDeviceManager
@@ -98,6 +99,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     private lateinit var scanEvent: UsbScanListener
     private lateinit var usbErrorListener: UsbDioListener
 
+    private var currentDeviceType: DeviceType = DeviceType.HHS
+    private var currentConnectionType: ConnectionType = ConnectionType.USB_COM
 
     init {
         this.usbDeviceManager = usbDeviceManager
@@ -130,6 +133,22 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         // Update command dropdown with appropriate command for the device
         selectedCommand.value?.let { updateSelectedDIOCommand(it) }
         _readConfigData.postValue(hashMapOf())
+    }
+
+    fun setSelectedDeviceType(deviceType: DeviceType) {
+        currentDeviceType = deviceType
+    }
+
+    fun getSelectedDeviceType(): DeviceType {
+        return currentDeviceType
+    }
+
+    fun getSelectedConnectionType(): ConnectionType {
+        return currentConnectionType
+    }
+
+    fun setSelectedConnectionType(connectionType: ConnectionType) {
+        currentConnectionType = connectionType
     }
 
     /**
