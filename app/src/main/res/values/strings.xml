@@ -4,6 +4,7 @@
     <string name="alert_dialog_text">This application requires permission to access USB devices. Please grant permission.</string>
     <string name="cancel">Cancel</string>
     <string name="home">Home</string>
+    <string name="imageCapture">Image Capture</string>
     <string name="configuration">Configuration</string>
     <string name="direct_io">Direct I/O</string>
     <string name="image_capture">Image Capture</string>
