@@ -41,8 +41,14 @@ import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 @Composable
 fun ImageCaptureTabPortrait() {
     val imageCaptureModel = LocalHomeViewModel.current
-    var brightness by remember { mutableStateOf(0f) }
-    var contrast by remember { mutableStateOf(0f) }
+    
+    // Initialize sliders with the current values from the ViewModel
+    var brightness by remember { 
+        mutableStateOf(imageCaptureModel.getBrightnessPercentage().toFloat()) 
+    }
+    var contrast by remember { 
+        mutableStateOf(imageCaptureModel.getContrastPercentage().toFloat()) 
+    }
     var sensorMode by remember { mutableStateOf("Auto") }
     var previewImage by remember { mutableStateOf<Bitmap?>(null) }
 
@@ -63,13 +69,26 @@ fun ImageCaptureTabPortrait() {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        SliderRow("Brightness", brightness, -100f, 100f) { brightness = it }
-        SliderRow("Contrast", contrast, -100f, 100f) { contrast = it }
-        DropdownRow(
-            label = "Sensor Mode",
-            options = listOf("Auto", "Sensor 1", "Sensor 2"),
-            selected = sensorMode
-        ) { sensorMode = it }
+        SliderRow(
+            "Brightness", 
+            brightness, 
+            0f, 
+            100f
+        ) { newValue ->
+            brightness = newValue
+            imageCaptureModel.setBrightness(newValue.toInt())
+        }
+        
+        SliderRow(
+            "Contrast", 
+            contrast, 
+            0f, 
+            100f
+        ) { newValue ->
+            contrast = newValue
+            imageCaptureModel.setContrast(newValue.toInt())
+        }
+        
         // You can similarly implement Image Format if needed.
         CaptureButtons(imageCaptureModel)
 
@@ -144,12 +163,11 @@ fun CaptureButtons(model: HomeViewModel) {
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
-        listOf("Auto", "On Trigger").forEach { label ->
+        listOf("Auto").forEach { label ->
             // Each capture button uses the ToggleableButton with its own toggle state.
             ToggleableButton(label = label, onClick = {
                 when(label) {
                     "Auto" -> model.startCaptureAuto()
-                    "On Trigger" -> model.startCaptureOnTrigger()
                 }
             })
         }

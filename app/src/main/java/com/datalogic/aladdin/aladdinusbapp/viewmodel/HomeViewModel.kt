@@ -73,7 +73,13 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     var oemAlert by mutableStateOf(false)
     var connectDeviceAlert by mutableStateOf(false)
     var magellanConfigAlert by mutableStateOf(false)
-
+    
+    // Image capture parameters
+    private val _brightness = MutableLiveData("32") // Default 50% (hex "32")
+    val brightness: LiveData<String> = _brightness
+    
+    private val _contrast = MutableLiveData("32") // Default 50% (hex "32")
+    val contrast: LiveData<String> = _contrast
 
     // DIO related state
     private val _dioStatus = MutableLiveData("")
@@ -585,19 +591,70 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         }
     }
 
-
-
-
-
-
+    /**
+     * Sets the brightness value for image capture.
+     * @param value Brightness value in range 0-100 (percentage)
+     */
+    fun setBrightness(percentage: Int) {
+        if (percentage in 0..100) {
+            // Convert percentage (0-100) to hex (00-64)
+            val hexValue = percentage.toString(16).padStart(2, '0').uppercase()
+            _brightness.postValue(hexValue)
+        }
+    }
+    
+    /**
+     * Sets the contrast value for image capture.
+     * @param value Contrast value in range 0-100 (percentage)
+     */
+    fun setContrast(percentage: Int) {
+        if (percentage in 0..100) {
+            // Convert percentage (0-100) to hex (00-64)
+            val hexValue = percentage.toString(16).padStart(2, '0').uppercase()
+            _contrast.postValue(hexValue)
+        }
+    }
+    
+    /**
+     * Get current brightness as an integer percentage (0-100)
+     */
+    fun getBrightnessPercentage(): Int {
+        return try {
+            brightness.value?.toInt(16) ?: 50
+        } catch (e: Exception) {
+            50 // Default to 50% if there's an error
+        }
+    }
+    
+    /**
+     * Get current contrast as an integer percentage (0-100)
+     */
+    fun getContrastPercentage(): Int {
+        return try {
+            contrast.value?.toInt(16) ?: 50
+        } catch (e: Exception) {
+            50 // Default to 50% if there's an error
+        }
+    }
 
     private var imageResponseCallback: ((Bitmap?) -> Unit)? = null
 
     fun startCaptureAuto() {
         selectedDevice.value?.let { device ->
             viewModelScope.launch(Dispatchers.IO) {
-                val imageData: ByteArray = device.imageCaptureAuto()
-                handleImage(imageData)
+                try {
+                    val currentBrightness = brightness.value ?: "32"  // Default to 50%
+                    val currentContrast = contrast.value ?: "32"      // Default to 50%
+                    
+                    Log.d(TAG, "Image capture with brightness: $currentBrightness, contrast: $currentContrast")
+                    val imageData: ByteArray = device.imageCaptureAuto(currentBrightness.toInt(), currentContrast.toInt())
+                    handleImage(imageData)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error capturing image: ${e.message}", e)
+                    withContext(Dispatchers.Main) {
+                        resultLiveData.postValue("Image capture failed: ${e.message}")
+                    }
+                }
             }
         } ?: resultLiveData.postValue("No device selected")
     }
