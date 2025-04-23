@@ -59,8 +59,8 @@ fun DeviceDropdown(
         mCurrentDevice = selectedDevice
         if (mCurrentDevice == null || !mDevices.contains(mCurrentDevice)) {
             mCurrentDevice = if (mDevices.isNotEmpty()) mDevices.first() else null
+            onDeviceSelected(mCurrentDevice)
         }
-        onDeviceSelected(mCurrentDevice)
     }
 
     val icon = if (mExpanded)

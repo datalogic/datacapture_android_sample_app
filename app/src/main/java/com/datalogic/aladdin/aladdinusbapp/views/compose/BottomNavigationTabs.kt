@@ -55,7 +55,7 @@ fun BottomNavigationRow(modifier: Modifier, homeViewModel: HomeViewModel) {
                 modifier = Modifier
                     .wrapContentSize()
                     .clickable {
-                        if (homeViewModel.deviceList.value?.size!! > 0) {
+                        if (selectedDevice != null) {
                             if (status == DeviceStatus.OPENED) {
                                 if ((index == 1 || index == 3) && homeViewModel.selectedDevice.value?.connectionType == ConnectionType.USB_OEM) {
                                     homeViewModel.oemAlert = true

@@ -1,5 +1,6 @@
 package com.datalogic.aladdin.aladdinusbapp.views.compose
 
+import android.hardware.usb.UsbDevice
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -32,20 +33,24 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.toSize
 import com.datalogic.aladdin.aladdinusbapp.R
-import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DIOCmdValue
-import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
+
+var mCurrentUsbDevice by mutableStateOf<UsbDevice?>(null)
 
 @Composable
-fun DIODropdown(modifier: Modifier, selectedCommand: DIOCmdValue, onCommandSelected: (DIOCmdValue) -> Unit){
-
+fun UsbDeviceDropdown(modifier: Modifier, selectedUsbDevice: UsbDevice?, usbDevices: ArrayList<UsbDevice>, onUsbDeviceSelected: (UsbDevice?) -> Unit){
     var mExpanded by remember { mutableStateOf(false) }
-    val commands = DIOCmdValue.entries.map { it }
     var mTextFieldSize by remember { mutableStateOf(Size.Zero)}
-    var mCurrentCommand by remember {mutableStateOf("")}
 
-    LaunchedEffect(selectedCommand) {
-        mCurrentCommand = selectedCommand.value
-        onCommandSelected(selectedCommand)
+    LaunchedEffect(selectedUsbDevice, usbDevices) {
+        mCurrentUsbDevice = selectedUsbDevice
+        if ((mCurrentUsbDevice == null && usbDevices.isNotEmpty()) ||
+            (mCurrentUsbDevice != null && usbDevices.isNotEmpty() && !usbDevices.contains(mCurrentUsbDevice))) {
+            mCurrentUsbDevice = usbDevices.first()
+            onUsbDeviceSelected(mCurrentUsbDevice)
+        } else if (mCurrentUsbDevice != null && usbDevices.isEmpty()) {
+            mCurrentUsbDevice = null
+            onUsbDeviceSelected(mCurrentUsbDevice)
+        }
     }
 
     val icon = if (mExpanded)
@@ -59,8 +64,12 @@ fun DIODropdown(modifier: Modifier, selectedCommand: DIOCmdValue, onCommandSelec
         colors = CardDefaults.cardColors(Color.White),
         modifier = modifier
     ) {
+        var deviceDisplayName: String = stringResource(id = R.string.no_devices_connected)
+        if (selectedUsbDevice != null) {
+            deviceDisplayName = "${selectedUsbDevice.productName}-${selectedUsbDevice.vendorId}-${selectedUsbDevice.productId}"
+        }
         TextField(
-            value = mCurrentCommand,
+            value = deviceDisplayName,
             textStyle = MaterialTheme.typography.labelLarge,
             onValueChange = {},
             modifier = modifier
@@ -71,7 +80,7 @@ fun DIODropdown(modifier: Modifier, selectedCommand: DIOCmdValue, onCommandSelec
                 .clickable { mExpanded = !mExpanded },
             trailingIcon = {
                     Icon(icon, stringResource(id = R.string.arrow_dropdown), tint = Color.Black)
-                           },
+                },
             enabled = false,
             singleLine = true,
             colors = TextFieldDefaults.colors(
@@ -83,24 +92,26 @@ fun DIODropdown(modifier: Modifier, selectedCommand: DIOCmdValue, onCommandSelec
                 disabledIndicatorColor = Color.Transparent
             )
         )
-        DropdownMenu(
-            expanded = mExpanded,
-            onDismissRequest = { mExpanded = false },
-            modifier = Modifier
-                .background(color = Color.White)
-                .width(with(LocalDensity.current) { mTextFieldSize.width.toDp() })
-        ) {
-            commands.forEach { command ->
-                if (command.value != mCurrentCommand) {
+
+        if (usbDevices.isNotEmpty()) {
+            DropdownMenu(
+                expanded = mExpanded,
+                onDismissRequest = { mExpanded = false },
+                modifier = Modifier
+                    .background(color = Color.White)
+                    .width(with(LocalDensity.current) { mTextFieldSize.width.toDp() })
+            ) {
+                usbDevices.forEach { usbDeviceElem ->
                     DropdownMenuItem(
                         text = {
                             Text(
-                                text = command.value,
+                                text = "${usbDeviceElem.productName}-${usbDeviceElem.vendorId}-${usbDeviceElem.productId}",
                                 style = MaterialTheme.typography.labelLarge
                             )
                         },
                         onClick = {
-                            onCommandSelected(command)
+                            onUsbDeviceSelected(usbDeviceElem)
+                            mCurrentUsbDevice = usbDeviceElem
                             mExpanded = false
                         }
                     )

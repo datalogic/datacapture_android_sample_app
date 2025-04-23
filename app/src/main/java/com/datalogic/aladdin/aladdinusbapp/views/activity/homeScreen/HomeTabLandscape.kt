@@ -39,6 +39,7 @@ import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ConnectionTypeDropdown
 import com.datalogic.aladdin.aladdinusbapp.views.compose.DeviceDropdown
 import com.datalogic.aladdin.aladdinusbapp.views.compose.DeviceTypeDropdown
+import com.datalogic.aladdin.aladdinusbapp.views.compose.UsbDeviceDropdown
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 
 @Composable
@@ -51,7 +52,9 @@ fun HomeTabLandscape() {
     val status = homeViewModel.status.observeAsState(DeviceStatus.NONE).value
     val selectedDevice = homeViewModel.selectedDevice.observeAsState(null).value
 
-    var autoDetectChecked by remember { mutableStateOf(true) }
+    var autoDetectChecked = homeViewModel.autoDetectChecked.observeAsState(true).value
+    val usbDeviceList = homeViewModel.usbDeviceList.observeAsState(ArrayList()).value
+    val selectedUsbDevice = homeViewModel.selectedUsbDevice.observeAsState(null).value
 
     Column(
         modifier = Modifier
@@ -61,20 +64,33 @@ fun HomeTabLandscape() {
                 top = dimensionResource(id = R.dimen._20sdp),
             )
     ) {
-        DeviceDropdown(
-            modifier = Modifier
-                .semantics { contentDescription = "device_list_dropdown" }
-                .padding(bottom = dimensionResource(id = R.dimen._20sdp))
-                .fillMaxWidth()
-                .wrapContentHeight(),
-            deviceList,
-            onDeviceSelected = {
-                homeViewModel.setSelectedDevice(it)
-            },
-            status,
-            selectedDevice
-        )
-
+        if (autoDetectChecked) {
+            DeviceDropdown(
+                modifier = Modifier
+                    .semantics { contentDescription = "device_list_dropdown" }
+                    .padding(bottom = dimensionResource(id = R.dimen._20sdp))
+                    .fillMaxWidth()
+                    .wrapContentHeight(),
+                deviceList,
+                onDeviceSelected = {
+                    homeViewModel.setSelectedDevice(it)
+                },
+                status,
+                selectedDevice
+            )
+        } else {
+            UsbDeviceDropdown(
+                modifier = Modifier
+                    .semantics { contentDescription = "usb_device_list_dropdown" }
+                    .fillMaxWidth()
+                    .height(dimensionResource(id = R.dimen._55sdp)),
+                selectedUsbDevice,
+                usbDeviceList,
+                onUsbDeviceSelected = {
+                    homeViewModel.setSelectedUsbDevice(it)
+                }
+            )
+        }
 
         Row(
             modifier = Modifier
@@ -88,7 +104,7 @@ fun HomeTabLandscape() {
             Switch(
                 checked = autoDetectChecked,
                 onCheckedChange = {
-                    autoDetectChecked = it
+                    homeViewModel.setAutoDetectChecked(it)
                 }
             )
 
@@ -144,7 +160,7 @@ fun HomeTabLandscape() {
                                 top = dimensionResource(id = R.dimen._10sdp),
                                 bottom = dimensionResource(id = R.dimen._5sdp)
                             ),
-                        text = "VID: 1234",
+                        text = "VID: " + (selectedUsbDevice?.vendorId?:"None"),
                         style = MaterialTheme.typography.labelLarge
                     )
 
@@ -156,7 +172,7 @@ fun HomeTabLandscape() {
                                 top = dimensionResource(id = R.dimen._10sdp),
                                 bottom = dimensionResource(id = R.dimen._5sdp)
                             ),
-                        text = "PID: 5678",
+                        text = "PID: " + (selectedUsbDevice?.productId?:"None"),
                         style = MaterialTheme.typography.labelLarge
                     )
 
@@ -190,7 +206,7 @@ fun HomeTabLandscape() {
                 }
             }
         }
-        
+
         Column(
             modifier = Modifier
                 .semantics { contentDescription = "scanner_data" }

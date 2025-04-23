@@ -77,13 +77,7 @@ fun DirectIOTabPortrait() {
                 selectedCommand = selectedCommand,
                 onCommandSelected = { command ->
                     homeViewModel.updateSelectedDIOCommand(command)
-                }   ,
-                selectedDevice = selectedDevice,
-                onDeviceSelected = {
-                    homeViewModel.setSelectedDevice(it)
-                },
-                deviceList,
-                status
+                }
             )
         }
 

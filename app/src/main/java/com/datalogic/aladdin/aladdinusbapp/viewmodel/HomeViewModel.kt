@@ -34,6 +34,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.lifecycle.viewModelScope
+import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDeviceManager.createDatalogicDevice
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceType
 
 class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) : ViewModel() {
@@ -49,6 +50,9 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     private val _deviceList = MutableLiveData<ArrayList<DatalogicDevice>>(ArrayList())
     val deviceList: LiveData<ArrayList<DatalogicDevice>> = _deviceList
 
+    private val _usbDeviceList = MutableLiveData<ArrayList<UsbDevice>>(ArrayList())
+    val usbDeviceList: LiveData<ArrayList<UsbDevice>> = _usbDeviceList
+
     private val _scanLabel = MutableLiveData("")
     val scanLabel: LiveData<String> = _scanLabel
 
@@ -58,7 +62,11 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     private val _isLoading = MutableLiveData(false)
     val isLoading: LiveData<Boolean> = _isLoading
 
+    private val _autoDetectChecked = MutableLiveData(true)
+    val autoDetectChecked: LiveData<Boolean> = _autoDetectChecked
+
     val selectedDevice: MutableLiveData<DatalogicDevice?> = MutableLiveData(null)
+    val selectedUsbDevice: MutableLiveData<UsbDevice?> = MutableLiveData(null)
 
     private val _selectedTabIndex = MutableLiveData(0)
     val selectedTabIndex: LiveData<Int> = _selectedTabIndex
@@ -135,6 +143,15 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         _readConfigData.postValue(hashMapOf())
     }
 
+    fun setSelectedUsbDevice(device: UsbDevice?) {
+        selectedUsbDevice.value = device
+        device?.let {
+            _status.postValue(DeviceStatus.CLOSED)
+        } ?: run {
+            _status.postValue(DeviceStatus.NONE)
+        }
+    }
+
     fun setSelectedDeviceType(deviceType: DeviceType) {
         currentDeviceType = deviceType
     }
@@ -151,15 +168,27 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         currentConnectionType = connectionType
     }
 
+    fun setAutoDetectChecked(autoDetectChecked: Boolean) {
+        _autoDetectChecked.value = autoDetectChecked
+        checkConnectedDevice()
+    }
+
     /**
      * Check for connected devices
      */
     fun checkConnectedDevice() {
         _isLoading.postValue(true)
 
-        usbDeviceManager.checkConnectedDeviceAsync(context) { devices ->
-            _deviceList.postValue(ArrayList(devices))
-            _isLoading.postValue(false)
+        if (_autoDetectChecked.value == true) {
+            usbDeviceManager.checkConnectedDeviceAsync(context) { devices ->
+                _deviceList.postValue(ArrayList(devices))
+                _isLoading.postValue(false)
+            }
+        } else {
+            usbDeviceManager.getAllUsbDevice(context) { devices ->
+                _usbDeviceList.postValue(ArrayList(devices))
+                _isLoading.postValue(false)
+            }
         }
     }
 
@@ -240,58 +269,77 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
      * Open device - perform full open, claim and enable operation
      */
     fun openDevice() {
-        selectedDevice.value?.let { device ->
-            _isLoading.postValue(true)
+        if (autoDetectChecked.value == true) {
+            selectedDevice.value?.let { device ->
+                _isLoading.postValue(true)
 
-            CoroutineScope(Dispatchers.IO).launch {
-                val deviceId = device.usbDevice.productId.toString()
-                val isReattached = reattachedDevices.contains(deviceId)
+                coroutineOpenDevice(device)
+            } ?: run {
+                // No device selected
+                connectDeviceAlert = true
+            }
+        } else {
+            selectedUsbDevice.value?.let { usbDevice ->
+                _isLoading.postValue(true)
 
-                val result = if (isReattached) {
-                    // For reattached devices, we need to handle reconnection differently
-                    device.deviceReConnect(context)
-                } else {
-                    // Standard open operation (combines open, claim, enable)
-                    device.openDevice(context)
+                selectedDevice.value = createDatalogicDevice(context, usbDevice, currentDeviceType, currentConnectionType)
+
+                selectedDevice.value?.let { device ->
+                    coroutineOpenDevice(device)
+                } ?: run {
+                    // No device selected
+                    connectDeviceAlert = true
                 }
+            } ?: run {
+                // No device selected
+                connectDeviceAlert = true
+            }
+        }
+    }
 
-                withContext(Dispatchers.Main) {
-                    when (result) {
-                        USBConstants.SUCCESS -> {
-                            Log.d(TAG, "Device opened successfully: ${device.displayName}")
-                            _deviceStatus.postValue("Device opened")
-                            _status.postValue(DeviceStatus.OPENED)
+    fun coroutineOpenDevice(device: DatalogicDevice) {
+        CoroutineScope(Dispatchers.IO).launch {
+            val deviceId = device.usbDevice.productId.toString()
 
-                            // Remove from reattached list since we've handled it
-                            reattachedDevices.remove(deviceId)
+            val result = device.openDevice(context)
 
-                            //Setup listener
-                            scanEvent = object : UsbScanListener {
-                                override fun onScan(scanData: UsbScanData) {
-                                    setScannedData(scanData)
-                                }
+            withContext(Dispatchers.Main) {
+                when (result) {
+                    USBConstants.SUCCESS -> {
+                        Log.d(TAG, "Device opened successfully: ${device.displayName}")
+                        _deviceStatus.postValue("Device opened")
+                        _status.postValue(DeviceStatus.OPENED)
+
+                        // Remove from reattached list since we've handled it
+                        reattachedDevices.remove(deviceId)
+
+                        //Setup listener
+                        scanEvent = object : UsbScanListener {
+                            override fun onScan(scanData: UsbScanData) {
+                                setScannedData(scanData)
                             }
-                            device.registerUsbScanListener(scanEvent)
+                        }
+                        device.registerUsbScanListener(scanEvent)
 
-                            usbErrorListener = object : UsbDioListener {
-                                override fun fireDioErrorEvent(errorCode: Int, message: String) {
-                                    showToast(context, message + errorCode)
-                                }
+                        usbErrorListener = object : UsbDioListener {
+                            override fun fireDioErrorEvent(
+                                errorCode: Int,
+                                message: String
+                            ) {
+                                showToast(context, message + errorCode)
                             }
-                            device.registerUsbDioListener(usbErrorListener)
                         }
-                        else -> {
-                            Log.e(TAG, "Failed to open device: ${device.displayName}")
-                            _deviceStatus.postValue("Failed to open device")
-                        }
+                        device.registerUsbDioListener(usbErrorListener)
                     }
 
-                    _isLoading.postValue(false)
+                    else -> {
+                        Log.e(TAG, "Failed to open device: ${device.displayName}")
+                        _deviceStatus.postValue("Failed to open device")
+                    }
                 }
+
+                _isLoading.postValue(false)
             }
-        } ?: run {
-            // No device selected
-            connectDeviceAlert = true
         }
     }
 
