@@ -610,7 +610,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     fun setContrast(percentage: Int) {
         if (percentage in 0..100) {
             // Convert percentage (0-100) to hex (00-64)
-            val hexValue = percentage.toString(16).padStart(2, '0').uppercase()
+            val hexValue = percentage.toString()
             _contrast.postValue(hexValue)
         }
     }
@@ -647,7 +647,9 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                     val currentContrast = contrast.value ?: "32"      // Default to 50%
                     
                     Log.d(TAG, "Image capture with brightness: $currentBrightness, contrast: $currentContrast")
-                    val imageData: ByteArray = device.imageCaptureAuto(currentBrightness.toInt(), currentContrast.toInt())
+                    val imageData: ByteArray = device.imageCaptureAuto(currentBrightness.toInt(),
+                        currentContrast.toInt()
+                    )
                     handleImage(imageData)
                 } catch (e: Exception) {
                     Log.e(TAG, "Error capturing image: ${e.message}", e)
