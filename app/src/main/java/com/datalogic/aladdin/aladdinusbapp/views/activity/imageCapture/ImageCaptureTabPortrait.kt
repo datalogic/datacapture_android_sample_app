@@ -1,6 +1,7 @@
 package com.datalogic.aladdin.aladdinusbapp.views.activity.imageCapture
 
 import android.graphics.Bitmap
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,8 +15,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -31,7 +35,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.viewmodel.HomeViewModel
@@ -41,9 +51,14 @@ import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 @Composable
 fun ImageCaptureTabPortrait() {
     val imageCaptureModel = LocalHomeViewModel.current
-    var brightness by remember { mutableStateOf(0f) }
-    var contrast by remember { mutableStateOf(0f) }
-    var sensorMode by remember { mutableStateOf("Auto") }
+
+    // Initialize sliders with the current values from the ViewModel
+    var brightness by remember {
+        mutableStateOf(imageCaptureModel.getBrightnessPercentage().toFloat())
+    }
+    var contrast by remember {
+        mutableStateOf(imageCaptureModel.getContrastPercentage().toFloat())
+    }
     var previewImage by remember { mutableStateOf<Bitmap?>(null) }
 
     DisposableEffect(imageCaptureModel) {
@@ -56,6 +71,16 @@ fun ImageCaptureTabPortrait() {
             imageCaptureModel.setImageCallback(null)
         }
     }
+    Text(
+        modifier = Modifier
+            .semantics { contentDescription = "lbl_imageCapture" }
+            .fillMaxWidth()
+            .padding(bottom = dimensionResource(id = R.dimen._5sdp)),
+        text = stringResource(id = R.string.imageCapture),
+        style = MaterialTheme.typography.headlineLarge,
+        fontSize = 20.sp,
+        textAlign = TextAlign.Center
+    )
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -63,36 +88,63 @@ fun ImageCaptureTabPortrait() {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        SliderRow("Brightness", brightness, -100f, 100f) { brightness = it }
-        SliderRow("Contrast", contrast, -100f, 100f) { contrast = it }
-        DropdownRow(
-            label = "Sensor Mode",
-            options = listOf("Auto", "Sensor 1", "Sensor 2"),
-            selected = sensorMode
-        ) { sensorMode = it }
+        if (imageCaptureModel.selectedDevice.value
+                ?.deviceType
+                ?.name
+                ?.equals("HHS") == true) {
+            SliderRow(
+                "Brightness",
+                brightness,
+                0f,
+                100f
+            ) { newValue ->
+                brightness = newValue
+                imageCaptureModel.setBrightness(newValue.toInt())
+            }
+
+            SliderRow(
+                "Contrast",
+                contrast,
+                0f,
+                100f
+            ) { newValue ->
+                contrast = newValue
+                imageCaptureModel.setContrast(newValue.toInt())
+            }
+        }
+
         // You can similarly implement Image Format if needed.
         CaptureButtons(imageCaptureModel)
 
-        Box(
+        Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(200.dp)
-                .background(Color.LightGray)
-                .padding(16.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            if (previewImage != null) {
-                // Display the image
-                androidx.compose.foundation.Image(
-                    bitmap = previewImage!!.asImageBitmap(),
-                    contentDescription = "Captured Image",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Fit
-                )
-            } else {
-                Text(text = "Image Preview", color = Color.DarkGray)
+                .height(200.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        )
+        {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .background(Color.LightGray)
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                if (previewImage != null) {
+                    // Display the image
+                    Image(
+                        bitmap = previewImage!!.asImageBitmap(),
+                        contentDescription = "Captured Image",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Fit
+                    )
+                } else {
+                    Text(text = "Image Preview", color = Color.DarkGray)
+                }
             }
         }
+
     }
 }
 
@@ -105,7 +157,7 @@ fun SliderRow(label: String, value: Float, min: Float, max: Float, onValueChange
         )
         Slider(value = value, onValueChange = onValueChange, valueRange = min..max)
         // Use ToggleableButton for the reset functionality.
-        ToggleableButton(label = "Reset $label", onClick = { onValueChange(0f) })
+        ToggleableButton(label = "Reset $label", onClick = { onValueChange(50f) })
     }
 }
 
@@ -118,7 +170,6 @@ fun DropdownRow(
 ) {
     var expanded by remember { mutableStateOf(false) }
     // Here we add toggle effect on the dropdown's trigger button.
-    var isSelected by remember { mutableStateOf(false) }
     ToggleableButton(
         label = "Reset $label",
         onClick = { expanded = true }
@@ -144,12 +195,11 @@ fun CaptureButtons(model: HomeViewModel) {
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
-        listOf("Auto", "On Trigger").forEach { label ->
+        listOf("Auto").forEach { label ->
             // Each capture button uses the ToggleableButton with its own toggle state.
             ToggleableButton(label = label, onClick = {
                 when(label) {
                     "Auto" -> model.startCaptureAuto()
-                    "On Trigger" -> model.startCaptureOnTrigger()
                 }
             })
         }
@@ -197,5 +247,3 @@ fun captureAuto(){
 fun captureOnTrigger(){
     println("On Trigger capture button clicked")
 }
-
-
