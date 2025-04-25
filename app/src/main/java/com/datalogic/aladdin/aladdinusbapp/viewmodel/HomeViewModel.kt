@@ -712,12 +712,13 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                 try {
                     val currentBrightness = brightness.value ?: "32"  // Default to 50%
                     val currentContrast = contrast.value ?: "32"      // Default to 50%
-                    
+                    _isLoading.postValue(true)
                     Log.d(TAG, "Image capture with brightness: $currentBrightness, contrast: $currentContrast")
                     val imageData: ByteArray = device.imageCaptureAuto(currentBrightness.toInt(),
                         currentContrast.toInt()
                     )
                     handleImage(imageData)
+                    _isLoading.postValue(false)
                 } catch (e: Exception) {
                     Log.e(TAG, "Error capturing image: ${e.message}", e)
                     withContext(Dispatchers.Main) {
