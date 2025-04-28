@@ -5,6 +5,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.hardware.usb.UsbDevice
+import android.hardware.usb.UsbManager
 import android.net.Uri
 import android.os.Environment
 import android.os.Handler
@@ -34,7 +35,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.lifecycle.viewModelScope
-import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDeviceManager.createDatalogicDevice
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceType
 
 class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) : ViewModel() {
@@ -176,17 +176,17 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
 
     fun setAutoDetectChecked(autoDetectChecked: Boolean) {
         _autoDetectChecked.value = autoDetectChecked
-        checkConnectedDevice()
+        detectDevice()
     }
 
     /**
      * Check for connected devices
      */
-    fun checkConnectedDevice() {
+    fun detectDevice() {
         _isLoading.postValue(true)
 
         if (_autoDetectChecked.value == true) {
-            usbDeviceManager.checkConnectedDeviceAsync(context) { devices ->
+            usbDeviceManager.detectDevice(context) { devices ->
                 _deviceList.postValue(ArrayList(devices))
                 _isLoading.postValue(false)
             }
@@ -215,7 +215,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             it.handleDeviceDisconnection(device)
         }
 
-        checkConnectedDevice()
+        detectDevice()
     }
 
     /**
@@ -262,13 +262,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
 
         // Update UI
         _deviceStatus.postValue("Device reattached: ${device.productName}")
-
-        // If this is our selected device, update status
-        selectedDevice.value?.let {
-            if (it.usbDevice.productId.toString() == deviceId) {
-                it.isReattached = true
-            }
-        }
     }
 
     /**
@@ -287,8 +280,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         } else {
             selectedUsbDevice.value?.let { usbDevice ->
                 _isLoading.postValue(true)
-
-                selectedDevice.value = createDatalogicDevice(context, usbDevice, currentDeviceType, currentConnectionType)
+                val usbManager = context.getSystemService(Context.USB_SERVICE) as UsbManager
+                selectedDevice.value = DatalogicDevice(usbManager, usbDevice, currentDeviceType, currentConnectionType)
 
                 selectedDevice.value?.let { device ->
                     coroutineOpenDevice(device)
@@ -357,7 +350,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             _isLoading.postValue(true)
 
             CoroutineScope(Dispatchers.IO).launch {
-                val result = device.closeDevice(device.usbDevice)
+                val result = device.closeDevice()
 
                 withContext(Dispatchers.Main) {
                     when (result) {
@@ -608,7 +601,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     Log.d("HomeViewModel", "Reading config data for device: ${device.displayName}")
-                    val configData = device.readConfig(context)
+                    val configData = device.readConfig()
                     Log.d("HomeViewModel", "Received config data: $configData")
 
                     if (configData.isNotEmpty()) {

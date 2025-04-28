@@ -67,7 +67,7 @@ class HomeActivity : AppCompatActivity() {
         usbListener = object : UsbListener {
             override fun onDeviceAttachedListener(device: UsbDevice) {
                 homeViewModel.setDeviceStatus("Attached ${device.productName}")
-                homeViewModel.checkConnectedDevice()
+                homeViewModel.detectDevice()
                 homeViewModel.deviceReAttached(device)
             }
 
@@ -148,7 +148,7 @@ class HomeActivity : AppCompatActivity() {
     override fun onResume() {
         Log.d(TAG, "Resume called")
         super.onResume()
-        homeViewModel.checkConnectedDevice()
+        homeViewModel.detectDevice()
         homeViewModel.appInForeground()
     }
 

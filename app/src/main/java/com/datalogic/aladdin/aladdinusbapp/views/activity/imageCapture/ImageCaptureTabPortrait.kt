@@ -195,11 +195,11 @@ fun CaptureButtons(model: HomeViewModel) {
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
-        listOf("Auto").forEach { label ->
+        listOf("Capture Auto").forEach { label ->
             // Each capture button uses the ToggleableButton with its own toggle state.
             ToggleableButton(label = label, onClick = {
                 when(label) {
-                    "Auto" -> model.startCaptureAuto()
+                    "Capture Auto" -> model.startCaptureAuto()
                 }
             })
         }
