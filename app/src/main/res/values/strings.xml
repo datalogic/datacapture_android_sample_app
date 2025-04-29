@@ -42,5 +42,7 @@
     <string name="processing">Processing…</string>
     <string name="apply">Apply</string>
     <string name="configuration_save_failure">Configuration Save Failure</string>
+    <string name="scale">Scale</string>
+    <string name="more">More</string>
 
 </resources>

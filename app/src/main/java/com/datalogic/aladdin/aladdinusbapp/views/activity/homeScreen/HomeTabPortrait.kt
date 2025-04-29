@@ -17,17 +17,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
@@ -57,6 +53,7 @@ fun HomeTabPortrait() {
     var autoDetectChecked = homeViewModel.autoDetectChecked.observeAsState(true).value
     val usbDeviceList = homeViewModel.usbDeviceList.observeAsState(ArrayList()).value
     val selectedUsbDevice = homeViewModel.selectedUsbDevice.observeAsState(null).value
+    val isContinuousMode = homeViewModel.isContinuousMode.observeAsState(false).value
 
     val content = @Composable {
 
@@ -155,7 +152,7 @@ fun HomeTabPortrait() {
                                 top = dimensionResource(id = R.dimen._10sdp),
                                 bottom = dimensionResource(id = R.dimen._5sdp)
                             ),
-                        text = "VID: " + (selectedUsbDevice?.vendorId?:"None"),
+                        text = "VID: " + (selectedUsbDevice?.vendorId ?: "None"),
                         style = MaterialTheme.typography.labelLarge
                     )
 
@@ -167,7 +164,7 @@ fun HomeTabPortrait() {
                                 top = dimensionResource(id = R.dimen._10sdp),
                                 bottom = dimensionResource(id = R.dimen._5sdp)
                             ),
-                        text = "PID: " + (selectedUsbDevice?.productId?:"None"),
+                        text = "PID: " + (selectedUsbDevice?.productId ?: "None"),
                         style = MaterialTheme.typography.labelLarge
                     )
 
@@ -222,7 +219,10 @@ fun HomeTabPortrait() {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(BorderStroke(1.dp, Color.Black), RoundedCornerShape(dimensionResource(id = R.dimen._8sdp)))
+                    .border(
+                        BorderStroke(1.dp, Color.Black),
+                        RoundedCornerShape(dimensionResource(id = R.dimen._8sdp))
+                    )
                     .padding(horizontal = dimensionResource(id = R.dimen._16sdp)),
             ) {
                 Text(
@@ -241,7 +241,10 @@ fun HomeTabPortrait() {
                         .semantics { contentDescription = "scan_data" }
                         .fillMaxWidth()
                         .height(dimensionResource(id = R.dimen._36sdp))
-                        .border(BorderStroke(1.dp, Color.Black), RoundedCornerShape(dimensionResource(id = R.dimen._8sdp)))
+                        .border(
+                            BorderStroke(1.dp, Color.Black),
+                            RoundedCornerShape(dimensionResource(id = R.dimen._8sdp))
+                        )
                         .padding(dimensionResource(id = R.dimen._8sdp))
                         .verticalScroll(rememberScrollState()),
                     text = scanData
@@ -260,7 +263,10 @@ fun HomeTabPortrait() {
                         .semantics { contentDescription = "scanned_data_label" }
                         .fillMaxWidth()
                         .height(dimensionResource(id = R.dimen._35sdp))
-                        .border(BorderStroke(1.dp, Color.Black), RoundedCornerShape(dimensionResource(id = R.dimen._8sdp)))
+                        .border(
+                            BorderStroke(1.dp, Color.Black),
+                            RoundedCornerShape(dimensionResource(id = R.dimen._8sdp))
+                        )
                         .padding(dimensionResource(id = R.dimen._8sdp)),
                     text = scanLabel
                 )
@@ -278,6 +284,148 @@ fun HomeTabPortrait() {
                         text = stringResource(id = R.string.clear_fields),
                         color = Color.White
                     )
+                }
+            }
+        }
+
+        if (selectedDevice?.deviceType?.name == "FRS") {
+            val scaleStatus by homeViewModel.scaleStatus.observeAsState("")
+            val scaleWeight by homeViewModel.scaleWeight.observeAsState("")
+            val scaleProtocolStatus by homeViewModel.scaleProtocolStatus.observeAsState(
+                Pair(
+                    false,
+                    ""
+                )
+            )
+
+            Column(
+                modifier = Modifier
+                    .semantics { contentDescription = "scale_data" }
+                    .fillMaxWidth()
+                    .padding(vertical = dimensionResource(id = R.dimen._10sdp))
+            ) {
+                Text(
+                    modifier = Modifier
+                        .semantics { contentDescription = "lbl_scale_data" }
+                        .fillMaxWidth()
+                        .padding(
+                            start = dimensionResource(id = R.dimen._10sdp),
+                            bottom = dimensionResource(id = R.dimen._5sdp)
+                        ),
+                    text = "Scale",
+                    style = MaterialTheme.typography.headlineLarge
+                )
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(
+                            BorderStroke(1.dp, Color.Black),
+                            RoundedCornerShape(dimensionResource(id = R.dimen._8sdp))
+                        )
+                        .padding(
+                            horizontal = dimensionResource(id = R.dimen._16sdp),
+                            vertical = dimensionResource(id = R.dimen._10sdp)
+                        ),
+                    verticalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen._8sdp))
+                ) {
+                    com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.CustomTextField(
+                        textValue = scaleStatus,
+                        onValueChange = { },
+                        readOnly = true,
+                        labelText = "Scale Status",
+                        enabledStatus = true
+                    )
+
+                    com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.CustomTextField(
+                        textValue = scaleWeight,
+                        onValueChange = { },
+                        readOnly = true,
+                        labelText = "Weight",
+                        enabledStatus = true
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                if (status == DeviceStatus.OPENED) {
+                                    homeViewModel.getWeight()
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            enabled = status == DeviceStatus.OPENED,
+                            colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary))
+                        ) {
+                            Text("Get Weight", color = Color.White)
+                        }
+
+                        Button(
+                            onClick = {
+                                if (isContinuousMode) {
+                                    homeViewModel.stopContinuousWeightReading()
+                                } else {
+                                    homeViewModel.startContinuousWeightReading()
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            enabled = status == DeviceStatus.OPENED,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (isContinuousMode)
+                                    colorResource(id = R.color.border_red)
+                                else
+                                    colorResource(id = R.color.colorPrimary)
+                            )
+                        ) {
+                            Text(
+                                if (isContinuousMode) "Stop" else "Start Continuous",
+                                color = Color.White
+                            )
+                        }
+                    }
+
+                    Button(
+                        onClick = { homeViewModel.clearScaleData() },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary))
+                    ) {
+                        Text("Clear Scale Data", color = Color.White)
+                    }
+
+                    Button(
+                        onClick = { homeViewModel.checkScaleProtocol() },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = status == DeviceStatus.OPENED,
+                        colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary))
+                    ) {
+                        Text("Check Scale Protocol", color = Color.White)
+                    }
+
+                    Text(
+                        text = if (status == DeviceStatus.OPENED) {
+                            scaleProtocolStatus.second
+                        } else "",
+                        style = MaterialTheme.typography.headlineLarge,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                horizontal = dimensionResource(id = R.dimen._16sdp),
+                                vertical = dimensionResource(id = R.dimen._10sdp)
+                            )
+                    )
+
+                    if (!scaleProtocolStatus.first && status == DeviceStatus.OPENED && scaleProtocolStatus.second !== "") {
+                        Button(
+                            onClick = { homeViewModel.enableScaleProtocol() },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary))
+                        ) {
+                            Text("Enable Scale Protocol And Reset Device", color = Color.White)
+                        }
+                    }
                 }
             }
         }
@@ -311,11 +459,14 @@ fun HomeTabPortrait() {
             )
         }
     }
-
     /**
      * Vertical scroll only if the screen height is less than the threshold
      */
-    Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(vertical = dimensionResource(id = R.dimen._4sdp))) {
+    Column(
+        modifier = Modifier
+            .verticalScroll(rememberScrollState())
+            .padding(vertical = dimensionResource(id = R.dimen._4sdp))
+    ) {
         content()
     }
 }

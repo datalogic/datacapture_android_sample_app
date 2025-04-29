@@ -19,23 +19,27 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.datalogic.aladdin.aladdinusbapp.utils.USBConstants
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
-import com.datalogic.aladdin.aladdinusbscannersdk.model.UsbScanData
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDeviceManager
+import com.datalogic.aladdin.aladdinusbscannersdk.model.ScaleData
+import com.datalogic.aladdin.aladdinusbscannersdk.model.UsbScanData
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ConfigurationFeature
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ConnectionType
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DIOCmdValue
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceType
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbDioListener
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbScaleListener
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbScanListener
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import androidx.lifecycle.viewModelScope
-import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceType
 
 class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) : ViewModel() {
     private var usbDeviceManager: DatalogicDeviceManager
@@ -82,11 +86,11 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     var oemAlert by mutableStateOf(false)
     var connectDeviceAlert by mutableStateOf(false)
     var magellanConfigAlert by mutableStateOf(false)
-    
+
     // Image capture parameters
     private val _brightness = MutableLiveData("32") // Default 50% (hex "32")
     val brightness: LiveData<String> = _brightness
-    
+
     private val _contrast = MutableLiveData("32") // Default 50% (hex "32")
     val contrast: LiveData<String> = _contrast
 
@@ -101,11 +105,13 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     val dioData: LiveData<String> = _dioData
 
     // Configuration related state
-    private val _readConfigData = MutableLiveData<HashMap<ConfigurationFeature, Boolean>>(hashMapOf())
+    private val _readConfigData =
+        MutableLiveData<HashMap<ConfigurationFeature, Boolean>>(hashMapOf())
     val readConfigData: LiveData<HashMap<ConfigurationFeature, Boolean>> = _readConfigData
 
     var writeConfigData: HashMap<ConfigurationFeature, String> = hashMapOf()
     val resultLiveData = MutableLiveData<String>()
+
     // Internal state
     private var executeCmd = false
 
@@ -115,6 +121,21 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
 
     private var currentDeviceType: DeviceType = DeviceType.HHS
     private var currentConnectionType: ConnectionType = ConnectionType.USB_COM
+
+    // Scale related properties
+    private val _scaleStatus = MutableLiveData<String>("")
+    val scaleStatus: LiveData<String> = _scaleStatus
+
+    private val _scaleWeight = MutableLiveData<String>("")
+    val scaleWeight: LiveData<String> = _scaleWeight
+
+    private val _scaleProtocolStatus = MutableLiveData<Pair<Boolean, String>>(Pair(false, ""))
+    val scaleProtocolStatus: LiveData<Pair<Boolean, String>> = _scaleProtocolStatus
+
+    private var weightPollingJob: Job? = null
+
+    private val _isContinousMode = MutableLiveData<Boolean>(false)
+    val isContinuousMode: LiveData<Boolean> = _isContinousMode
 
     init {
         this.usbDeviceManager = usbDeviceManager
@@ -126,13 +147,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
      * Select a device to work with
      */
     fun setSelectedDevice(device: DatalogicDevice?) {
-//        // Close any previously selected device
-//        selectedDevice.value?.let {
-//            if (it.status == DeviceStatus.OPENED) {
-//                closeDevice()
-//            }
-//        }
-
         selectedDevice.value = device
 
         // Update UI with selected device info
@@ -281,7 +295,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             selectedUsbDevice.value?.let { usbDevice ->
                 _isLoading.postValue(true)
                 val usbManager = context.getSystemService(Context.USB_SERVICE) as UsbManager
-                selectedDevice.value = DatalogicDevice(usbManager, usbDevice, currentDeviceType, currentConnectionType)
+                selectedDevice.value =
+                    DatalogicDevice(usbManager, usbDevice, currentDeviceType, currentConnectionType)
 
                 selectedDevice.value?.let { device ->
                     coroutineOpenDevice(device)
@@ -329,6 +344,18 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                             }
                         }
                         device.registerUsbDioListener(usbErrorListener)
+
+                        // Setup scale listener
+                        val scaleListener = object : UsbScaleListener {
+                            override fun onScale(scaleData: ScaleData) {
+                                // Update UI with scale data on main thread
+                                Handler(Looper.getMainLooper()).post {
+                                    _scaleStatus.postValue(scaleData.status)
+                                    _scaleWeight.postValue(scaleData.weight)
+                                }
+                            }
+                        }
+                        device.registerUsbScaleListener(scaleListener)
                     }
 
                     else -> {
@@ -360,10 +387,23 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                             _status.postValue(DeviceStatus.CLOSED)
                             clearScanData()
 
-                            //Clear listener
+                            //Clear listeners
                             device.unregisterUsbScanListener(scanEvent)
                             device.unregisterUsbDioListener(usbErrorListener)
+
+                            // Clear scale listener if it was registered
+                            if (device.deviceType == DeviceType.FRS) {
+                                try {
+                                    device.unregisterUsbScaleListener(object : UsbScaleListener {
+                                       override fun onScale(scaleData: ScaleData) {}
+                                    })
+                                    stopContinuousWeightReading()
+                                } catch (e: Exception) {
+                                    Log.e(TAG, "Error unregistering scale listener", e)
+                                }
+                            }
                         }
+
                         else -> {
                             Log.e(TAG, "Failed to close device: ${device.displayName}")
                             _deviceStatus.postValue("Failed to close device")
@@ -443,7 +483,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                     // Use the display string instead of the hex value
                     _dioData.postValue(command.getDisplayString(isOem))
                 } else {
-                    if(executeCmd) {
+                    if (executeCmd) {
                         executeCmd = false
                     } else {
                         _dioData.postValue("")
@@ -662,7 +702,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             _brightness.postValue(hexValue)
         }
     }
-    
+
     /**
      * Sets the contrast value for image capture.
      * @param value Contrast value in range 0-100 (percentage)
@@ -674,7 +714,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             _contrast.postValue(hexValue)
         }
     }
-    
+
     /**
      * Get current brightness as an integer percentage (0-100)
      */
@@ -685,7 +725,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             50 // Default to 50% if there's an error
         }
     }
-    
+
     /**
      * Get current contrast as an integer percentage (0-100)
      */
@@ -706,8 +746,12 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                     val currentBrightness = brightness.value ?: "32"  // Default to 50%
                     val currentContrast = contrast.value ?: "32"      // Default to 50%
                     _isLoading.postValue(true)
-                    Log.d(TAG, "Image capture with brightness: $currentBrightness, contrast: $currentContrast")
-                    val imageData: ByteArray = device.imageCaptureAuto(currentBrightness.toInt(),
+                    Log.d(
+                        TAG,
+                        "Image capture with brightness: $currentBrightness, contrast: $currentContrast"
+                    )
+                    val imageData: ByteArray = device.imageCaptureAuto(
+                        currentBrightness.toInt(),
                         currentContrast.toInt()
                     )
                     handleImage(imageData)
@@ -727,7 +771,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         println("On Trigger capture triggered")
     }
 
-    private fun handleImage(imageData: ByteArray){
+    private fun handleImage(imageData: ByteArray) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 // Decode image
@@ -746,9 +790,10 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         }
     }
 
-    private fun saveBitmapToGallery( bitmap: Bitmap): Uri? {
+    private fun saveBitmapToGallery(bitmap: Bitmap): Uri? {
         val fileName = "IMG_${System.currentTimeMillis()}.jpg"
-        val imageCollection = MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+        val imageCollection =
+            MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
         val contentValues = ContentValues().apply {
             put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
             put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
@@ -769,5 +814,240 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
 
     fun setImageCallback(callback: ((Bitmap?) -> Unit)?) {
         imageResponseCallback = callback
+    }
+
+    /**
+     * Handle tab selection logic
+     * @param tabIndex The index of the tab to select
+     * @return True if the tab should be selected, false if selection should be blocked
+     */
+    fun handleTabSelection(tabIndex: Int): Boolean {
+        // Home tab is always accessible
+        if (tabIndex == 0) {
+            setSelectedTabIndex(tabIndex)
+            // Check scale protocol if available and device is open
+            if (selectedDevice.value?.deviceType == DeviceType.FRS &&
+                status.value == DeviceStatus.OPENED
+            ) {
+                checkScaleProtocol()
+            }
+            return true
+        }
+
+        // For tabs other than Home, we need a device
+        if (deviceList.value?.isEmpty() == true && usbDeviceList.value?.isEmpty() == true) {
+            connectDeviceAlert = true
+            return false
+        }
+
+        // For tabs other than Home, device needs to be open
+        if (status.value != DeviceStatus.OPENED) {
+            openAlert = true
+            return false
+        }
+
+        // Tab-specific logic
+        when (tabIndex) {
+            1 -> { // Configuration tab
+                if (selectedDevice.value?.connectionType == ConnectionType.USB_OEM) {
+                    oemAlert = true
+                    return false
+                }
+
+                setSelectedTabIndex(tabIndex)
+                if (selectedDevice.value?.usbDevice?.productId.toString() == "16386") {
+                    magellanConfigAlert = true
+                } else {
+                    readConfigData()
+                }
+                return true
+            }
+
+            2 -> { // DirectIO tab
+                setSelectedTabIndex(tabIndex)
+                return true
+            }
+
+            3 -> { // Image capture tab
+                if (selectedDevice.value?.connectionType == ConnectionType.USB_OEM) {
+                    oemAlert = true
+                    return false
+                }
+                setSelectedTabIndex(tabIndex)
+                return true
+            }
+
+            else -> return false
+        }
+    }
+
+    /**
+     * Check if the selected device has scale protocol enabled
+     */
+    fun checkScaleProtocol() {
+        selectedDevice.value?.let { device ->
+            if (device.status != DeviceStatus.OPENED) {
+                _scaleProtocolStatus.postValue(Pair(false, "Device must be opened first"))
+                return
+            }
+
+            _isLoading.postValue(true)
+            viewModelScope.launch(Dispatchers.IO) {
+                try {
+                    val protocolStatus = device.checkScaleProtocolEnabled(context)
+
+                    withContext(Dispatchers.Main) {
+                        _scaleProtocolStatus.postValue(protocolStatus)
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error checking scale protocol", e)
+                    withContext(Dispatchers.Main) {
+                        _scaleProtocolStatus.postValue(Pair(false, "Error: ${e.message}"))
+                    }
+                } finally {
+                    withContext(Dispatchers.Main) {
+                        _isLoading.postValue(false)
+                    }
+                }
+            }
+        } ?: _scaleProtocolStatus.postValue(Pair(false, "No device selected"))
+    }
+
+    /**
+     * Enable scale protocol on the selected device
+     * Will require device reset to take effect
+     */
+    fun enableScaleProtocol() {
+        selectedDevice.value?.let { device ->
+            if (device.status != DeviceStatus.OPENED) {
+                showToast(context, "Device must be opened first")
+                return
+            }
+
+            _isLoading.postValue(true)
+            viewModelScope.launch(Dispatchers.IO) {
+                try {
+                    val result = device.enableScaleProtocol(context)
+
+                    withContext(Dispatchers.Main) {
+                        if (result == USBConstants.SUCCESS) {
+                            showToast(
+                                context,
+                                "Scale protocol enabled. Device has been reset. Please reconnect."
+                            )
+                        } else {
+                            showToast(context, "Failed to enable scale protocol")
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error enabling scale protocol", e)
+                    withContext(Dispatchers.Main) {
+                        showToast(context, "Error: ${e.message}")
+                    }
+                } finally {
+                    withContext(Dispatchers.Main) {
+                        _isLoading.postValue(false)
+                    }
+                }
+            }
+        } ?: showToast(context, "No device selected")
+    }
+
+    /**
+     * Get the current weight from the scale
+     */
+    fun getWeight() {
+        selectedDevice.value?.let { device ->
+            if (device.status != DeviceStatus.OPENED) {
+                _scaleStatus.postValue("Error")
+                _scaleWeight.postValue("Device not open")
+                return
+            }
+
+            _isLoading.postValue(true)
+            viewModelScope.launch(Dispatchers.IO) {
+                try {
+                    val result = device.sendWeightRequest()
+                    if( result !== USBConstants.SUCCESS) {
+                        _scaleStatus.postValue("Error")
+                        _scaleWeight.postValue("Failed to get weight")
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error getting weight", e)
+                    withContext(Dispatchers.Main) {
+                        _scaleStatus.postValue("Error")
+                        _scaleWeight.postValue("Failed: ${e.message}")
+                    }
+                } finally {
+                    withContext(Dispatchers.Main) {
+                        _isLoading.postValue(false)
+                    }
+                }
+            }
+        } ?: run {
+            _scaleStatus.postValue("Error")
+            _scaleWeight.postValue("No device selected")
+        }
+    }
+
+    /**
+     * Start continuous weight reading
+     * @param intervalMs The interval between weight readings in milliseconds
+     */
+    fun startContinuousWeightReading(intervalMs: Long = 500) {
+        // Cancel any existing job first
+        stopContinuousWeightReading()
+
+        selectedDevice.value?.let { device ->
+            if (device.status != DeviceStatus.OPENED) {
+                _scaleStatus.postValue("Error")
+                _scaleWeight.postValue("Device not open")
+                return
+            }
+
+            // Use Dispatchers.IO for the continuous weight reading
+            weightPollingJob = viewModelScope.launch(Dispatchers.IO) {
+                try {
+                    while (isActive) {
+                        // Get weight on IO thread
+                        val result = device.sendWeightRequest()
+                        if( result !== USBConstants.SUCCESS) {
+                            _scaleStatus.postValue("Error")
+                            _scaleWeight.postValue("Failed to get weight")
+                        }
+                        // This ensures we don't overwhelm the UI thread
+                        delay(intervalMs)
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error in continuous weight reading", e)
+                    withContext(Dispatchers.Main) {
+                        _scaleStatus.postValue("Error")
+                        _scaleWeight.postValue("Failed: ${e.message}")
+                    }
+                }
+            }
+        } ?: run {
+            _scaleStatus.postValue("Error")
+            _scaleWeight.postValue("No device selected")
+        }
+
+        _isContinousMode.postValue(true)
+    }
+
+    /**
+     * Stop continuous weight reading
+     */
+    fun stopContinuousWeightReading() {
+        weightPollingJob?.cancel()
+        weightPollingJob = null
+        _isContinousMode.postValue(false)
+    }
+
+    /**
+     * Clear scale data
+     */
+    fun clearScaleData() {
+        _scaleStatus.postValue("")
+        _scaleWeight.postValue("")
     }
 }
