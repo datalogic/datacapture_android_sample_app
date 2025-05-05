@@ -28,6 +28,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
+import com.datalogic.aladdin.aladdinusbapp.views.activity.imageCapture.ImageCaptureTabPortrait
 import com.datalogic.aladdin.aladdinusbapp.views.compose.BottomNavigationRow
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.CustomButton
@@ -77,6 +78,7 @@ fun HomeScreenLayoutLandscape() {
                     0 -> HomeTabLandscape()
                     1 -> ConfigurationTabLandscape()
                     2 -> DirectIOTabLandscape()
+                    3 -> ImageCaptureTabPortrait()
                 }
             }
 

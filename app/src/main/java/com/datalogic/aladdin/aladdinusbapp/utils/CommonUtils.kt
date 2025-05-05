@@ -2,6 +2,7 @@ package com.datalogic.aladdin.aladdinusbapp.utils
 
 import android.content.Context
 import android.content.pm.ActivityInfo
+import android.content.res.Configuration
 import android.util.DisplayMetrics
 import android.view.Display
 import android.view.WindowManager
@@ -25,14 +26,13 @@ object CommonUtils {
      */
 
     var isTablet: Boolean = false
-    var orientation: Int = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+    var orientation: Int = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
 
     fun initialize(context: Context) {
-        isTablet = context.resources.configuration.smallestScreenWidthDp >= 600
-        if (isTablet) {
-            orientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-        } else {
-            orientation =ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-        }
+        orientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED // Allow rotation
+    }
+
+    fun isLandscape(context: Context): Boolean {
+        return context.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     }
 }
