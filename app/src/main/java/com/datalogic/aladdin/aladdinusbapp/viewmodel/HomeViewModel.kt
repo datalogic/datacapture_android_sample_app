@@ -132,10 +132,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     private val _scaleProtocolStatus = MutableLiveData<Pair<Boolean, String>>(Pair(false, ""))
     val scaleProtocolStatus: LiveData<Pair<Boolean, String>> = _scaleProtocolStatus
 
-    private var weightPollingJob: Job? = null
-
-    private val _isContinousMode = MutableLiveData<Boolean>(false)
-    val isContinuousMode: LiveData<Boolean> = _isContinousMode
+    private val _isEnableScale = MutableLiveData<Boolean>(false)
+    val isEnableScale: LiveData<Boolean> = _isEnableScale
 
     init {
         this.usbDeviceManager = usbDeviceManager
@@ -218,6 +216,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     fun handleDeviceDisconnection(device: UsbDevice) {
         clearScanData()
         clearDIOStatus()
+        clearScaleData()
+        disableScaleHandler()
 
         // Check if this is our selected device
         selectedDevice.value?.let {
@@ -397,7 +397,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                                     device.unregisterUsbScaleListener(object : UsbScaleListener {
                                        override fun onScale(scaleData: ScaleData) {}
                                     })
-                                    stopContinuousWeightReading()
                                 } catch (e: Exception) {
                                     Log.e(TAG, "Error unregistering scale listener", e)
                                 }
@@ -953,94 +952,14 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         } ?: showToast(context, "No device selected")
     }
 
-    /**
-     * Get the current weight from the scale
-     */
-    fun getWeight() {
-        selectedDevice.value?.let { device ->
-            if (device.status != DeviceStatus.OPENED) {
-                _scaleStatus.postValue("Error")
-                _scaleWeight.postValue("Device not open")
-                return
-            }
-
-            _isLoading.postValue(true)
-            viewModelScope.launch(Dispatchers.IO) {
-                try {
-                    val result = device.sendWeightRequest()
-                    if( result !== USBConstants.SUCCESS) {
-                        _scaleStatus.postValue("Error")
-                        _scaleWeight.postValue("Failed to get weight")
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error getting weight", e)
-                    withContext(Dispatchers.Main) {
-                        _scaleStatus.postValue("Error")
-                        _scaleWeight.postValue("Failed: ${e.message}")
-                    }
-                } finally {
-                    withContext(Dispatchers.Main) {
-                        _isLoading.postValue(false)
-                    }
-                }
-            }
-        } ?: run {
-            _scaleStatus.postValue("Error")
-            _scaleWeight.postValue("No device selected")
-        }
+    fun enableScaleHandler() {
+        selectedDevice.value?.enableScale()
+        _isEnableScale.postValue(true)
     }
 
-    /**
-     * Start continuous weight reading
-     * @param intervalMs The interval between weight readings in milliseconds
-     */
-    fun startContinuousWeightReading(intervalMs: Long = 500) {
-        // Cancel any existing job first
-        stopContinuousWeightReading()
-
-        selectedDevice.value?.let { device ->
-            if (device.status != DeviceStatus.OPENED) {
-                _scaleStatus.postValue("Error")
-                _scaleWeight.postValue("Device not open")
-                return
-            }
-
-            // Use Dispatchers.IO for the continuous weight reading
-            weightPollingJob = viewModelScope.launch(Dispatchers.IO) {
-                try {
-                    while (isActive) {
-                        // Get weight on IO thread
-                        val result = device.sendWeightRequest()
-                        if( result !== USBConstants.SUCCESS) {
-                            _scaleStatus.postValue("Error")
-                            _scaleWeight.postValue("Failed to get weight")
-                        }
-                        // This ensures we don't overwhelm the UI thread
-                        delay(intervalMs)
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error in continuous weight reading", e)
-                    withContext(Dispatchers.Main) {
-                        _scaleStatus.postValue("Error")
-                        _scaleWeight.postValue("Failed: ${e.message}")
-                    }
-                }
-            }
-        } ?: run {
-            _scaleStatus.postValue("Error")
-            _scaleWeight.postValue("No device selected")
-        }
-
-        _isContinousMode.postValue(true)
-    }
-
-    /**
-     * Stop continuous weight reading
-     */
-    fun stopContinuousWeightReading() {
-        weightPollingJob?.cancel()
-        weightPollingJob = null
-        _isContinousMode.postValue(false)
+    fun disableScaleHandler() {
+        selectedDevice.value?.disableScale()
+        _isEnableScale.postValue(false)
     }
 
     /**

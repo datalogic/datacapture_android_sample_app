@@ -32,6 +32,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
+import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.CustomButton
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ConnectionTypeDropdown
 import com.datalogic.aladdin.aladdinusbapp.views.compose.DeviceDropdown
@@ -53,7 +54,7 @@ fun HomeTabPortrait() {
     var autoDetectChecked = homeViewModel.autoDetectChecked.observeAsState(true).value
     val usbDeviceList = homeViewModel.usbDeviceList.observeAsState(ArrayList()).value
     val selectedUsbDevice = homeViewModel.selectedUsbDevice.observeAsState(null).value
-    val isContinuousMode = homeViewModel.isContinuousMode.observeAsState(false).value
+    val isEnableScale = homeViewModel.isEnableScale.observeAsState(false).value
 
     val content = @Composable {
 
@@ -329,7 +330,7 @@ fun HomeTabPortrait() {
                         ),
                     verticalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen._8sdp))
                 ) {
-                    com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.CustomTextField(
+                    ComposableUtils.CustomTextField(
                         textValue = scaleStatus,
                         onValueChange = { },
                         readOnly = true,
@@ -337,7 +338,7 @@ fun HomeTabPortrait() {
                         enabledStatus = true
                     )
 
-                    com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.CustomTextField(
+                    ComposableUtils.CustomTextField(
                         textValue = scaleWeight,
                         onValueChange = { },
                         readOnly = true,
@@ -345,63 +346,40 @@ fun HomeTabPortrait() {
                         enabledStatus = true
                     )
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Button(
-                            onClick = {
-                                if (status == DeviceStatus.OPENED) {
-                                    homeViewModel.getWeight()
-                                }
-                            },
-                            modifier = Modifier.weight(1f),
-                            enabled = status == DeviceStatus.OPENED,
-                            colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary))
-                        ) {
-                            Text("Get Weight", color = Color.White)
+                    CustomButton(
+                        modifier = Modifier
+                            .semantics { contentDescription = "btn_open" }
+                            .fillMaxWidth(),
+                        buttonState = (!isEnableScale && status == DeviceStatus.OPENED),
+                        stringResource(id = R.string.enable),
+                        onClick = {
+                            homeViewModel.enableScaleHandler()
                         }
-
-                        Button(
-                            onClick = {
-                                if (isContinuousMode) {
-                                    homeViewModel.stopContinuousWeightReading()
-                                } else {
-                                    homeViewModel.startContinuousWeightReading()
-                                }
-                            },
-                            modifier = Modifier.weight(1f),
-                            enabled = status == DeviceStatus.OPENED,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (isContinuousMode)
-                                    colorResource(id = R.color.border_red)
-                                else
-                                    colorResource(id = R.color.colorPrimary)
-                            )
-                        ) {
-                            Text(
-                                if (isContinuousMode) "Stop" else "Start Continuous",
-                                color = Color.White
-                            )
+                    )
+                    CustomButton(
+                        modifier = Modifier
+                            .semantics { contentDescription = "btn_close" }
+                            .fillMaxWidth(),
+                        buttonState = (isEnableScale && status == DeviceStatus.OPENED),
+                        stringResource(id = R.string.disable),
+                        onClick = {
+                            homeViewModel.disableScaleHandler()
                         }
-                    }
+                    )
 
-                    Button(
-                        onClick = { homeViewModel.clearScaleData() },
+                    CustomButton(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary))
-                    ) {
-                        Text("Clear Scale Data", color = Color.White)
-                    }
+                        buttonState = status == DeviceStatus.OPENED,
+                        stringResource(id = R.string.clear_scale_data),
+                        onClick = { homeViewModel.clearScaleData() }
+                    )
 
-                    Button(
-                        onClick = { homeViewModel.checkScaleProtocol() },
+                    CustomButton(
                         modifier = Modifier.fillMaxWidth(),
-                        enabled = status == DeviceStatus.OPENED,
-                        colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary))
-                    ) {
-                        Text("Check Scale Protocol", color = Color.White)
-                    }
+                        buttonState = status == DeviceStatus.OPENED,
+                        stringResource(id = R.string.check_scale_protocol),
+                        onClick = { homeViewModel.checkScaleProtocol() }
+                    )
 
                     Text(
                         text = if (status == DeviceStatus.OPENED) {

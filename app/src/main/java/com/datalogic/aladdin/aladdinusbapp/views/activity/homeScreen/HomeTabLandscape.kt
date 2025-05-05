@@ -36,6 +36,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
+import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ConnectionTypeDropdown
 import com.datalogic.aladdin.aladdinusbapp.views.compose.DeviceDropdown
 import com.datalogic.aladdin.aladdinusbapp.views.compose.DeviceTypeDropdown
@@ -280,6 +281,107 @@ fun HomeTabLandscape() {
                         text = stringResource(id = R.string.clear_fields),
                         color = Color.White
                     )
+                }
+            }
+        }
+
+        if (selectedDevice?.deviceType?.name == "FRS") {
+            val scaleStatus by homeViewModel.scaleStatus.observeAsState("")
+            val scaleWeight by homeViewModel.scaleWeight.observeAsState("")
+            val scaleProtocolStatus by homeViewModel.scaleProtocolStatus.observeAsState(
+                Pair(
+                    false,
+                    ""
+                )
+            )
+
+            Column(
+                modifier = Modifier
+                    .semantics { contentDescription = "scale_data" }
+                    .fillMaxWidth()
+                    .padding(vertical = dimensionResource(id = R.dimen._10sdp))
+            ) {
+                Text(
+                    modifier = Modifier
+                        .semantics { contentDescription = "lbl_scale_data" }
+                        .fillMaxWidth()
+                        .padding(
+                            start = dimensionResource(id = R.dimen._10sdp),
+                            bottom = dimensionResource(id = R.dimen._5sdp)
+                        ),
+                    text = "Scale",
+                    style = MaterialTheme.typography.headlineLarge
+                )
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(
+                            BorderStroke(1.dp, Color.Black),
+                            RoundedCornerShape(dimensionResource(id = R.dimen._8sdp))
+                        )
+                        .padding(
+                            horizontal = dimensionResource(id = R.dimen._16sdp),
+                            vertical = dimensionResource(id = R.dimen._10sdp)
+                        ),
+                    verticalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen._8sdp))
+                ) {
+                    ComposableUtils.CustomTextField(
+                        textValue = scaleStatus,
+                        onValueChange = { },
+                        readOnly = true,
+                        labelText = "Scale Status",
+                        enabledStatus = true
+                    )
+
+                    ComposableUtils.CustomTextField(
+                        textValue = scaleWeight,
+                        onValueChange = { },
+                        readOnly = true,
+                        labelText = "Weight",
+                        enabledStatus = true
+                    )
+
+                    Button(
+                        onClick = { homeViewModel.clearScaleData() },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary))
+                    ) {
+                        Text("Clear Scale Data", color = Color.White)
+                    }
+
+                    Button(
+                        onClick = { homeViewModel.checkScaleProtocol() },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = status == DeviceStatus.OPENED,
+                        colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary))
+                    ) {
+                        Text("Check Scale Protocol", color = Color.White)
+                    }
+
+                    Text(
+                        text = if (status == DeviceStatus.OPENED) {
+                            scaleProtocolStatus.second
+                        } else "",
+                        style = MaterialTheme.typography.headlineLarge,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                horizontal = dimensionResource(id = R.dimen._16sdp),
+                                vertical = dimensionResource(id = R.dimen._10sdp)
+                            )
+                    )
+
+                    if (!scaleProtocolStatus.first && status == DeviceStatus.OPENED && scaleProtocolStatus.second !== "") {
+                        Button(
+                            onClick = { homeViewModel.enableScaleProtocol() },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary))
+                        ) {
+                            Text("Enable Scale Protocol And Reset Device", color = Color.White)
+                        }
+                    }
                 }
             }
         }
