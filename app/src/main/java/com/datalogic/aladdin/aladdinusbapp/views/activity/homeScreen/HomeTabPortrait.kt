@@ -29,6 +29,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
@@ -346,54 +347,57 @@ fun HomeTabPortrait() {
                         enabledStatus = true
                     )
 
-                    CustomButton(
+                    Row(
                         modifier = Modifier
-                            .semantics { contentDescription = "btn_open" }
                             .fillMaxWidth(),
-                        buttonState = (!isEnableScale && status == DeviceStatus.OPENED),
-                        stringResource(id = R.string.enable),
-                        onClick = {
-                            homeViewModel.enableScaleHandler()
-                        }
-                    )
-                    CustomButton(
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        CustomButton(
+                            modifier = Modifier
+                                .semantics { contentDescription = "btn_enable_scale" }
+                                .weight(0.5f),
+                            buttonState = (!isEnableScale && status == DeviceStatus.OPENED),
+                            stringResource(id = R.string.enable),
+                            onClick = {
+                                homeViewModel.enableScaleHandler()
+                            }
+                        )
+                        Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen._10sdp)))
+                        CustomButton(
+                            modifier = Modifier
+                                .semantics { contentDescription = "btn_disable_scale" }
+                                .weight(0.5f),
+                            buttonState = (isEnableScale && status == DeviceStatus.OPENED),
+                            stringResource(id = R.string.disable),
+                            onClick = {
+                                homeViewModel.disableScaleHandler()
+                            }
+                        )
+                    }
+
+                    Row(
                         modifier = Modifier
-                            .semantics { contentDescription = "btn_close" }
                             .fillMaxWidth(),
-                        buttonState = (isEnableScale && status == DeviceStatus.OPENED),
-                        stringResource(id = R.string.disable),
-                        onClick = {
-                            homeViewModel.disableScaleHandler()
-                        }
-                    )
-
-                    CustomButton(
-                        modifier = Modifier.fillMaxWidth(),
-                        buttonState = status == DeviceStatus.OPENED,
-                        stringResource(id = R.string.clear_scale_data),
-                        onClick = { homeViewModel.clearScaleData() }
-                    )
-
-                    CustomButton(
-                        modifier = Modifier.fillMaxWidth(),
-                        buttonState = status == DeviceStatus.OPENED,
-                        stringResource(id = R.string.check_scale_protocol),
-                        onClick = { homeViewModel.checkScaleProtocol() }
-                    )
-
-                    Text(
-                        text = if (status == DeviceStatus.OPENED) {
-                            scaleProtocolStatus.second
-                        } else "",
-                        style = MaterialTheme.typography.headlineLarge,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(
-                                horizontal = dimensionResource(id = R.dimen._16sdp),
-                                vertical = dimensionResource(id = R.dimen._10sdp)
-                            )
-                    )
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        CustomButton(
+                            modifier = Modifier
+                                .semantics { contentDescription = "btn_clear_scale_data" }
+                                .weight(0.5f),
+                            buttonState = status == DeviceStatus.OPENED,
+                            stringResource(id = R.string.clear_scale_data),
+                            onClick = { homeViewModel.clearScaleData() }
+                        )
+                        Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen._10sdp)))
+                        CustomButton(
+                            modifier = Modifier
+                                .semantics {contentDescription = "btn_check_scale_protocol" }
+                                .weight(0.5f),
+                            buttonState = status == DeviceStatus.OPENED,
+                            stringResource(id = R.string.check_scale_protocol),
+                            onClick = { homeViewModel.checkScaleProtocol() }
+                        )
+                    }
 
                     if (!scaleProtocolStatus.first && status == DeviceStatus.OPENED && scaleProtocolStatus.second !== "") {
                         Button(
@@ -401,9 +405,27 @@ fun HomeTabPortrait() {
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary))
                         ) {
-                            Text("Enable Scale Protocol And Reset Device", color = Color.White)
+                            Text(
+                                "Enable Scale Protocol",
+                                color = Color.White,
+                                textAlign = TextAlign.Center
+                            )
                         }
                     }
+
+                    Text(
+                        text = if (status == DeviceStatus.OPENED) {
+                            scaleProtocolStatus.second
+                        } else "",
+                        style = MaterialTheme.typography.headlineLarge,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                horizontal = dimensionResource(id = R.dimen._16sdp),
+                                vertical = dimensionResource(id = R.dimen._10sdp)
+                            )
+                    )
                 }
             }
         }
