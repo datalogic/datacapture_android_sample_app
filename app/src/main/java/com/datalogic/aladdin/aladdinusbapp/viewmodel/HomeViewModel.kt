@@ -35,6 +35,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.lifecycle.viewModelScope
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.commonutils.HHSDevice
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceType
 
 class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) : ViewModel() {
@@ -514,7 +515,13 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
      */
     fun updateWriteConfigData(feature: ConfigurationFeature, value: Boolean, add: Boolean) {
         if (add) {
-            writeConfigData[feature] = if (value) "01" else "00"
+            selectedDevice.value?.let {
+                if (it.deviceType == DeviceType.HHS && feature == ConfigurationFeature.IMB) {
+                    writeConfigData[feature] = if (value) "07" else "00"
+                } else {
+                    writeConfigData[feature] = if (value) "01" else "00"
+                }
+            }
         } else {
             writeConfigData.remove(feature)
         }
