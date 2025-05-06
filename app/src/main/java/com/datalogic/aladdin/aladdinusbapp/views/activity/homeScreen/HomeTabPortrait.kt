@@ -52,7 +52,7 @@ fun HomeTabPortrait() {
     val scanData = homeViewModel.scanData.observeAsState("").value
     val selectedDevice = homeViewModel.selectedDevice.observeAsState(null).value
 
-    var autoDetectChecked = homeViewModel.autoDetectChecked.observeAsState(true).value
+    val autoDetectChecked = homeViewModel.autoDetectChecked.observeAsState(true).value
     val usbDeviceList = homeViewModel.usbDeviceList.observeAsState(ArrayList()).value
     val selectedUsbDevice = homeViewModel.selectedUsbDevice.observeAsState(null).value
     val isEnableScale = homeViewModel.isEnableScale.observeAsState(false).value
@@ -290,7 +290,7 @@ fun HomeTabPortrait() {
             }
         }
 
-        if (selectedDevice?.deviceType?.name == "FRS") {
+        if (selectedDevice?.deviceType?.name == "FRS" && selectedDevice?.connectionType?.name == "USB_COMSC") {
             val scaleStatus by homeViewModel.scaleStatus.observeAsState("")
             val scaleWeight by homeViewModel.scaleWeight.observeAsState("")
             val scaleProtocolStatus by homeViewModel.scaleProtocolStatus.observeAsState(
