@@ -35,14 +35,9 @@ import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbScaleListen
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbScanListener
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import androidx.lifecycle.viewModelScope
-import com.datalogic.aladdin.aladdinusbscannersdk.utils.commonutils.HHSDevice
-import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceType
 
 class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) : ViewModel() {
     private var usbDeviceManager: DatalogicDeviceManager
