@@ -1,6 +1,7 @@
 package com.datalogic.aladdin.aladdinusbapp.views.activity
 
 import android.content.Context
+import android.content.pm.ActivityInfo
 import android.hardware.usb.UsbDevice
 import android.os.Bundle
 import android.os.Handler
@@ -124,7 +125,7 @@ class HomeActivity : AppCompatActivity() {
                 }
             }
         }
-        requestedOrientation = CommonUtils.orientation
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
 
         Log.d(TAG, "UI falls under: " + (resources.getDimension(R.dimen.test) / resources.displayMetrics.density).toInt())
         Log.d(TAG, "UI screen dimension: " + CommonUtils.getScreenResolution(this))
