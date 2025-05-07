@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,9 +22,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
@@ -33,10 +29,12 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils
+import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.CustomButton
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ConnectionTypeDropdown
 import com.datalogic.aladdin.aladdinusbapp.views.compose.DeviceDropdown
 import com.datalogic.aladdin.aladdinusbapp.views.compose.DeviceTypeDropdown
@@ -45,33 +43,28 @@ import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 
 @Composable
 fun HomeTabLandscape() {
-    val homeViewModel = LocalHomeViewModel.current
 
+    val homeViewModel = LocalHomeViewModel.current
     val deviceList = homeViewModel.deviceList.observeAsState(ArrayList()).value
+    val status = homeViewModel.status.observeAsState(DeviceStatus.NONE).value
+
     val scanLabel = homeViewModel.scanLabel.observeAsState("").value
     val scanData = homeViewModel.scanData.observeAsState("").value
-    val status = homeViewModel.status.observeAsState(DeviceStatus.NONE).value
     val selectedDevice = homeViewModel.selectedDevice.observeAsState(null).value
 
-    var autoDetectChecked = homeViewModel.autoDetectChecked.observeAsState(true).value
+    val autoDetectChecked = homeViewModel.autoDetectChecked.observeAsState(true).value
     val usbDeviceList = homeViewModel.usbDeviceList.observeAsState(ArrayList()).value
     val selectedUsbDevice = homeViewModel.selectedUsbDevice.observeAsState(null).value
+    val isEnableScale = homeViewModel.isEnableScale.observeAsState(false).value
 
-    Column(
-        modifier = Modifier
-            .semantics { contentDescription = "home_tab_content_layout" }
-            .padding(
-                start = dimensionResource(id = R.dimen._35sdp),
-                top = dimensionResource(id = R.dimen._20sdp),
-            )
-    ) {
+    val content = @Composable {
+
         if (autoDetectChecked) {
             DeviceDropdown(
                 modifier = Modifier
                     .semantics { contentDescription = "device_list_dropdown" }
-                    .padding(bottom = dimensionResource(id = R.dimen._20sdp))
                     .fillMaxWidth()
-                    .wrapContentHeight(),
+                    .height(dimensionResource(id = R.dimen._55sdp)),
                 deviceList,
                 onDeviceSelected = {
                     homeViewModel.setSelectedDevice(it)
@@ -161,7 +154,7 @@ fun HomeTabLandscape() {
                                 top = dimensionResource(id = R.dimen._10sdp),
                                 bottom = dimensionResource(id = R.dimen._5sdp)
                             ),
-                        text = "VID: " + (selectedUsbDevice?.vendorId?:"None"),
+                        text = "VID: " + (selectedUsbDevice?.vendorId ?: "None"),
                         style = MaterialTheme.typography.labelLarge
                     )
 
@@ -173,7 +166,7 @@ fun HomeTabLandscape() {
                                 top = dimensionResource(id = R.dimen._10sdp),
                                 bottom = dimensionResource(id = R.dimen._5sdp)
                             ),
-                        text = "PID: " + (selectedUsbDevice?.productId?:"None"),
+                        text = "PID: " + (selectedUsbDevice?.productId ?: "None"),
                         style = MaterialTheme.typography.labelLarge
                     )
 
@@ -212,20 +205,26 @@ fun HomeTabLandscape() {
             modifier = Modifier
                 .semantics { contentDescription = "scanner_data" }
                 .fillMaxWidth()
-                .padding(bottom = dimensionResource(id = R.dimen._10sdp))
+                .padding(vertical = dimensionResource(id = R.dimen._10sdp))
         ) {
             Text(
                 modifier = Modifier
                     .semantics { contentDescription = "lbl_scanner_data" }
                     .fillMaxWidth()
-                    .padding(bottom = dimensionResource(id = R.dimen._5sdp)),
+                    .padding(
+                        start = dimensionResource(id = R.dimen._10sdp),
+                        bottom = dimensionResource(id = R.dimen._5sdp)
+                    ),
                 text = stringResource(id = R.string.scanner_data),
                 style = MaterialTheme.typography.headlineLarge
             )
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(BorderStroke(1.dp, Color.Black), RoundedCornerShape(8.dp))
+                    .border(
+                        BorderStroke(1.dp, Color.Black),
+                        RoundedCornerShape(dimensionResource(id = R.dimen._8sdp))
+                    )
                     .padding(horizontal = dimensionResource(id = R.dimen._16sdp)),
             ) {
                 Text(
@@ -243,8 +242,11 @@ fun HomeTabLandscape() {
                     modifier = Modifier
                         .semantics { contentDescription = "scan_data" }
                         .fillMaxWidth()
-                        .weight(1f)
-                        .border(BorderStroke(1.dp, Color.Black), RoundedCornerShape(5.dp))
+                        .height(dimensionResource(id = R.dimen._36sdp))
+                        .border(
+                            BorderStroke(1.dp, Color.Black),
+                            RoundedCornerShape(dimensionResource(id = R.dimen._8sdp))
+                        )
                         .padding(dimensionResource(id = R.dimen._8sdp))
                         .verticalScroll(rememberScrollState()),
                     text = scanData
@@ -263,7 +265,10 @@ fun HomeTabLandscape() {
                         .semantics { contentDescription = "scanned_data_label" }
                         .fillMaxWidth()
                         .height(dimensionResource(id = R.dimen._35sdp))
-                        .border(BorderStroke(1.dp, Color.Black), RoundedCornerShape(5.dp))
+                        .border(
+                            BorderStroke(1.dp, Color.Black),
+                            RoundedCornerShape(dimensionResource(id = R.dimen._8sdp))
+                        )
                         .padding(dimensionResource(id = R.dimen._8sdp)),
                     text = scanLabel
                 )
@@ -285,7 +290,7 @@ fun HomeTabLandscape() {
             }
         }
 
-        if (selectedDevice?.deviceType?.name == "FRS") {
+        if (selectedDevice?.deviceType?.name == "FRS" && selectedDevice?.connectionType?.name == "USB_COMSC") {
             val scaleStatus by homeViewModel.scaleStatus.observeAsState("")
             val scaleWeight by homeViewModel.scaleWeight.observeAsState("")
             val scaleProtocolStatus by homeViewModel.scaleProtocolStatus.observeAsState(
@@ -342,36 +347,57 @@ fun HomeTabLandscape() {
                         enabledStatus = true
                     )
 
-                    Button(
-                        onClick = { homeViewModel.clearScaleData() },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary))
-                    ) {
-                        Text("Clear Scale Data", color = Color.White)
-                    }
-
-                    Button(
-                        onClick = { homeViewModel.checkScaleProtocol() },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = status == DeviceStatus.OPENED,
-                        colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary))
-                    ) {
-                        Text("Check Scale Protocol", color = Color.White)
-                    }
-
-                    Text(
-                        text = if (status == DeviceStatus.OPENED) {
-                            scaleProtocolStatus.second
-                        } else "",
-                        style = MaterialTheme.typography.headlineLarge,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    Row(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(
-                                horizontal = dimensionResource(id = R.dimen._16sdp),
-                                vertical = dimensionResource(id = R.dimen._10sdp)
-                            )
-                    )
+                            .fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        CustomButton(
+                            modifier = Modifier
+                                .semantics { contentDescription = "btn_enable_scale" }
+                                .weight(0.5f),
+                            buttonState = (!isEnableScale && status == DeviceStatus.OPENED),
+                            stringResource(id = R.string.enable),
+                            onClick = {
+                                homeViewModel.enableScaleHandler()
+                            }
+                        )
+                        Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen._10sdp)))
+                        CustomButton(
+                            modifier = Modifier
+                                .semantics { contentDescription = "btn_disable_scale" }
+                                .weight(0.5f),
+                            buttonState = (isEnableScale && status == DeviceStatus.OPENED),
+                            stringResource(id = R.string.disable),
+                            onClick = {
+                                homeViewModel.disableScaleHandler()
+                            }
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        CustomButton(
+                            modifier = Modifier
+                                .semantics { contentDescription = "btn_clear_scale_data" }
+                                .weight(0.5f),
+                            buttonState = status == DeviceStatus.OPENED,
+                            stringResource(id = R.string.clear_scale_data),
+                            onClick = { homeViewModel.clearScaleData() }
+                        )
+                        Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen._10sdp)))
+                        CustomButton(
+                            modifier = Modifier
+                                .semantics {contentDescription = "btn_check_scale_protocol" }
+                                .weight(0.5f),
+                            buttonState = status == DeviceStatus.OPENED,
+                            stringResource(id = R.string.check_scale_protocol),
+                            onClick = { homeViewModel.checkScaleProtocol() }
+                        )
+                    }
 
                     if (!scaleProtocolStatus.first && status == DeviceStatus.OPENED && scaleProtocolStatus.second !== "") {
                         Button(
@@ -379,11 +405,68 @@ fun HomeTabLandscape() {
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary))
                         ) {
-                            Text("Enable Scale Protocol And Reset Device", color = Color.White)
+                            Text(
+                                "Enable Scale Protocol",
+                                color = Color.White,
+                                textAlign = TextAlign.Center
+                            )
                         }
                     }
+
+                    Text(
+                        text = if (status == DeviceStatus.OPENED) {
+                            scaleProtocolStatus.second
+                        } else "",
+                        style = MaterialTheme.typography.headlineLarge,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                horizontal = dimensionResource(id = R.dimen._16sdp),
+                                vertical = dimensionResource(id = R.dimen._10sdp)
+                            )
+                    )
                 }
             }
         }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            CustomButton(
+                modifier = Modifier
+                    .weight(0.5f)
+                    .semantics { contentDescription = "btn_open" },
+                buttonState = (status == DeviceStatus.CLOSED &&
+                        (deviceList.isNotEmpty() || usbDeviceList.isNotEmpty())),
+                stringResource(id = R.string.open),
+                onClick = {
+                    homeViewModel.openDevice()
+                }
+            )
+            Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen._10sdp)))
+            CustomButton(
+                modifier = Modifier
+                    .weight(0.5f)
+                    .semantics { contentDescription = "btn_close" },
+                buttonState = (status == DeviceStatus.OPENED),
+                stringResource(id = R.string.close),
+                onClick = {
+                    homeViewModel.closeDevice()
+                }
+            )
+        }
+    }
+    /**
+     * Vertical scroll only if the screen height is less than the threshold
+     */
+    Column(
+        modifier = Modifier
+            .verticalScroll(rememberScrollState())
+            .padding(vertical = dimensionResource(id = R.dimen._4sdp))
+    ) {
+        content()
     }
 }

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
@@ -38,23 +40,23 @@ import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DIOCmdValue
 
 @Composable
 fun DirectIOTabLandscape() {
+
     val homeViewModel = LocalHomeViewModel.current
     val deviceList = homeViewModel.deviceList.observeAsState(ArrayList()).value
-    val selectedCommand = homeViewModel.selectedCommand.observeAsState(DIOCmdValue.IDENTIFICATION).value
     val selectedDevice = homeViewModel.selectedDevice.observeAsState(null).value
-    val dioData = homeViewModel.dioData.observeAsState("").value
     val dioStatus = homeViewModel.dioStatus.observeAsState("").value
     val status = homeViewModel.status.observeAsState().value
+    val selectedCommand = homeViewModel.selectedCommand.observeAsState(DIOCmdValue.IDENTIFICATION).value
+    val dioData = homeViewModel.dioData.observeAsState("").value
+    val configuration = LocalConfiguration.current
+    val screenHeight = configuration.screenHeightDp
+    /**
+     * Define a threshold for vertical scrolling
+     * */
+    val scrollableThreshold = 500
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .semantics { contentDescription = "direct_i/o_tab_content_layout" }
-            .padding(
-                start = dimensionResource(id = R.dimen._35sdp),
-                top = dimensionResource(id = R.dimen._20sdp),
-            )
-    ) {
+    val content = @Composable {
+
         Column {
             Text(
                 modifier = Modifier
@@ -70,7 +72,8 @@ fun DirectIOTabLandscape() {
             DIODropdown(
                 modifier = Modifier
                     .semantics { contentDescription = "device_list_dropdown" }
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .height(dimensionResource(id = R.dimen._55sdp)),
                 selectedCommand = selectedCommand,
                 onCommandSelected = { command ->
                     homeViewModel.updateSelectedDIOCommand(command)
@@ -84,7 +87,6 @@ fun DirectIOTabLandscape() {
             modifier = Modifier
                 .semantics { contentDescription = "direct_i/o" }
                 .fillMaxWidth()
-                .padding(bottom = dimensionResource(id = R.dimen._10sdp))
         ) {
             Text(
                 modifier = Modifier
@@ -98,14 +100,14 @@ fun DirectIOTabLandscape() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .border(BorderStroke(1.dp, Color.Black), RoundedCornerShape(dimensionResource(id = R.dimen._8sdp)))
-                    .padding(dimensionResource(id = R.dimen._16sdp)),
+                    .padding(horizontal = dimensionResource(id = R.dimen._16sdp)),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
                     modifier = Modifier
                         .semantics { contentDescription = "lbl_data" }
                         .fillMaxWidth()
-                        .padding(bottom = dimensionResource(id = R.dimen._5sdp)),
+                        .padding(bottom = dimensionResource(id = R.dimen._5sdp), top = dimensionResource(id = R.dimen._10sdp)),
                     text = stringResource(id = R.string.data),
                     style = MaterialTheme.typography.labelLarge
                 )
@@ -117,7 +119,8 @@ fun DirectIOTabLandscape() {
                     modifier = Modifier
                         .semantics { contentDescription = "command_data" }
                         .fillMaxWidth()
-                        .border(BorderStroke(1.dp, Color.Black), RoundedCornerShape(dimensionResource(id = R.dimen._5sdp))),
+                        .wrapContentHeight()
+                        .border(BorderStroke(1.dp, Color.Black), RoundedCornerShape(dimensionResource(id = R.dimen._8sdp))),
                     singleLine = true,
                     enabled = true,
                     colors = TextFieldDefaults.colors(
@@ -144,22 +147,25 @@ fun DirectIOTabLandscape() {
                     modifier = Modifier
                         .semantics { contentDescription = "status_message" }
                         .fillMaxWidth()
-                        .weight(1f)
-                        .border(BorderStroke(1.dp, Color.Black), RoundedCornerShape(dimensionResource(id = R.dimen._5sdp)))
+                        .height(dimensionResource(id = R.dimen._dioStatus))
+                        .border(BorderStroke(1.dp, Color.Black), RoundedCornerShape(dimensionResource(id = R.dimen._8sdp)))
                         .padding(dimensionResource(id = R.dimen._8sdp))
                         .verticalScroll(rememberScrollState()),
-                    text = dioStatus
+                    text =  dioStatus,
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Button(
                         modifier = Modifier
                             .semantics { contentDescription = "btn_execute" }
-                            .padding(top = dimensionResource(id = R.dimen._16sdp))
+                            .padding(vertical = dimensionResource(id = R.dimen._16sdp))
                             .wrapContentSize(),
                         enabled = true,
-                        onClick = { homeViewModel.executeDIOCommand() },
+                        onClick = {
+                            homeViewModel.executeDIOCommand()
+                        },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = colorResource(id = R.color.colorPrimary),
                             disabledContainerColor = Color.White
@@ -173,17 +179,17 @@ fun DirectIOTabLandscape() {
                         )
                     }
 
-                    Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen._25sdp)))
+                    Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen._8sdp)))
 
                     Button(
                         modifier = Modifier
                             .semantics { contentDescription = "btn_clear_status_message" }
-                            .padding(top = dimensionResource(id = R.dimen._16sdp))
+                            .padding(vertical = dimensionResource(id = R.dimen._16sdp))
                             .wrapContentSize(),
                         onClick = {
                             homeViewModel.clearDIOStatus()
                         },
-                        colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary))
+                        colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary)),
                     ) {
                         Text(
                             text = stringResource(id = R.string.clear_fields),
@@ -192,6 +198,19 @@ fun DirectIOTabLandscape() {
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Vertical scroll only if the screen height is less than the threshold
+     */
+    if (screenHeight < scrollableThreshold) {
+        Column(modifier = Modifier.padding(vertical = dimensionResource(id = R.dimen._3sdp)).verticalScroll(rememberScrollState())) {
+            content()
+        }
+    } else {
+        Column(modifier = Modifier.fillMaxSize()) {
+            content()
         }
     }
 }

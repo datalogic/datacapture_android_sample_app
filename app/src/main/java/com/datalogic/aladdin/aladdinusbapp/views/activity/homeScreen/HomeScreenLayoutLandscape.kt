@@ -1,14 +1,11 @@
 package com.datalogic.aladdin.aladdinusbapp.views.activity.homeScreen
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -17,115 +14,65 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.activity.imageCapture.ImageCaptureTabPortrait
 import com.datalogic.aladdin.aladdinusbapp.views.compose.BottomNavigationRow
-import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils
-import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.CustomButton
+import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.FooterImageView
+import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.HeaderImageView
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.ShowLoading
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.ShowPopup
-import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 
 @Composable
 fun HomeScreenLayoutLandscape() {
     val homeViewModel = LocalHomeViewModel.current
-
-    val deviceList = homeViewModel.deviceList.observeAsState(ArrayList()).value
-    val status = homeViewModel.status.observeAsState().value
     val deviceStatus = homeViewModel.deviceStatus.observeAsState("").value
     val selectedTab by homeViewModel.selectedTabIndex.observeAsState(0)
     var isLoading = homeViewModel.isLoading.observeAsState().value
-
-    if (isLoading!!) { ShowLoading(onDismiss = {isLoading = false})}
 
     ShowPopup(homeViewModel.openAlert, onDismiss = { homeViewModel.openAlert = false }, stringResource(id = R.string.alert_message_for_open_device))
     ShowPopup(homeViewModel.oemAlert, onDismiss = { homeViewModel.oemAlert = false }, stringResource(id = R.string.alert_message_for_oem_configuration))
     ShowPopup(homeViewModel.connectDeviceAlert, onDismiss = { homeViewModel.connectDeviceAlert = false }, stringResource(id = R.string.alert_message_for_connect_device))
     ShowPopup(homeViewModel.magellanConfigAlert, onDismiss = { homeViewModel.magellanConfigAlert = false }, stringResource(id = R.string.alert_message_for_magellan_config))
 
+    if (isLoading!!) {
+        ShowLoading(onDismiss = { isLoading = false })
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize(),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        ComposableUtils.HeaderImageView(
+        HeaderImageView(
             modifier = Modifier
                 .fillMaxWidth()
                 .wrapContentHeight()
         )
-        Row(
+        Column(
             modifier = Modifier
+                .semantics { contentDescription = "home_tab_content_layout" }
                 .fillMaxSize()
+                .padding(
+                    horizontal = dimensionResource(id = R.dimen._20sdp),
+                    vertical = dimensionResource(id = R.dimen._20sdp)
+                )
                 .weight(1f),
-            horizontalArrangement = Arrangement.SpaceBetween
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth(0.8f)
-                    .fillMaxHeight()
-            ) {
-                when (selectedTab) {
-                    0 -> HomeTabLandscape()
-                    1 -> ConfigurationTabLandscape()
-                    2 -> DirectIOTabLandscape()
-                    3 -> ImageCaptureTabPortrait()
-                }
-            }
-
-            Column(
-                modifier = Modifier
-                    .semantics { contentDescription = "button_layout" }
-                    .fillMaxSize()
-                    .padding(
-                        start = dimensionResource(id = R.dimen._35sdp),
-                        end = dimensionResource(id = R.dimen._35sdp),
-                        top = dimensionResource(id = R.dimen._10sdp),
-                        bottom = dimensionResource(id = R.dimen._10sdp)
-                    ),
-                verticalArrangement = Arrangement.SpaceBetween,
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Image(
-                    modifier = Modifier
-                        .semantics { contentDescription = "device_image" }
-                        .size(
-                            dimensionResource(id = R.dimen._160sdp),
-                            dimensionResource(id = R.dimen._100sdp)
-                        ),
-                    painter = painterResource(id = R.drawable.magellan),
-                    contentDescription = "",
-                    contentScale = ContentScale.FillBounds
-                )
-                CustomButton(
-                    modifier = Modifier
-                        .semantics { contentDescription = "btn_open" }
-                        .fillMaxWidth(),
-                    buttonState = (status == DeviceStatus.CLOSED && deviceList.isNotEmpty()),
-                    stringResource(id = R.string.open),
-                    onClick = {
-                        homeViewModel.openDevice()
-                    }
-                )
-                CustomButton(
-                    modifier = Modifier
-                        .semantics { contentDescription = "btn_close" }
-                        .fillMaxWidth(),
-                    buttonState = (status == DeviceStatus.OPENED),
-                    stringResource(id = R.string.close),
-                    onClick = {
-                        homeViewModel.closeDevice()
-                    }
-                )
+            when (selectedTab) {
+                0 -> HomeTabLandscape()
+                1 -> ConfigurationTabLandscape()
+                2 -> DirectIOTabLandscape()
+                3 -> ImageCaptureTabPortrait()
             }
         }
 
@@ -136,21 +83,23 @@ fun HomeScreenLayoutLandscape() {
             modifier = Modifier
                 .fillMaxWidth()
                 .wrapContentHeight()
-                .padding(horizontal = dimensionResource(id = R.dimen._35sdp))
+                .padding(horizontal = dimensionResource(id = R.dimen._20sdp))
         ) {
             Text(
                 modifier = Modifier
-                    .semantics { contentDescription = "status_msg" }
+                    .semantics { contentDescription = "status_msg"}
                     .fillMaxWidth()
+                    .height(dimensionResource(id = R.dimen._35sdp))
                     .padding(
                         vertical = dimensionResource(id = R.dimen._5sdp),
                         horizontal = dimensionResource(id = R.dimen._15sdp)
                     ),
-                text = stringResource(id = R.string.status_label) + deviceStatus
+                text = stringResource(id = R.string.status_label) + deviceStatus,
+                overflow = TextOverflow.Ellipsis
             )
         }
 
-        ComposableUtils.FooterImageView(
+        FooterImageView(
             modifier = Modifier
                 .fillMaxWidth()
                 .wrapContentHeight()
@@ -164,4 +113,9 @@ fun HomeScreenLayoutLandscape() {
             homeViewModel
         )
     }
+}
+@Preview
+@Composable
+fun PreviewHomeScreenLayoutLandscape() {
+    HomeScreenLayoutLandscape()
 }

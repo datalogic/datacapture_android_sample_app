@@ -42,32 +42,25 @@ fun ConfigurationTabLandscape() {
     val homeViewModel = LocalHomeViewModel.current
     val context = LocalContext.current
     val configData = homeViewModel.readConfigData.observeAsState(hashMapOf()).value
-    val checkedStates = remember { mutableStateMapOf<ConfigurationFeature, Boolean>() }
     val writeResult = homeViewModel.resultLiveData.observeAsState("").value
+    val checkedStates = remember { mutableStateMapOf<ConfigurationFeature, Boolean>() }
 
-    if (configData.size > 0) {
-        configData.forEach { (feature, value) ->
-            if (checkedStates[feature] == null) {
-                checkedStates[feature] = value
-            }
+    configData.forEach { (feature, value) ->
+        if (checkedStates[feature] == null) {
+            checkedStates[feature] = value
         }
     }
-
-    val isButtonClicked = remember { mutableStateOf(false) }
 
     if (writeResult.isNotBlank()) {
         Toast.makeText(context, writeResult, Toast.LENGTH_SHORT).show()
         homeViewModel.resultLiveData.value = ""
     }
 
+    val isButtonClicked = remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(
-                start = dimensionResource(id = R.dimen._35sdp),
-                top = dimensionResource(id = R.dimen._20sdp),
-                bottom = dimensionResource(id = R.dimen._10sdp)
-            ),
+            .fillMaxSize(),
     ) {
         Text(
             modifier = Modifier
@@ -88,7 +81,7 @@ fun ConfigurationTabLandscape() {
                 .verticalScroll(rememberScrollState())
                 .background(
                     colorResource(id = R.color.history_card_view_background),
-                    RoundedCornerShape(dimensionResource(id = R.dimen._8sdp))
+                    RoundedCornerShape(dimensionResource(id = R.dimen._5sdp))
                 )
                 .padding(dimensionResource(id = R.dimen._8sdp)),
             verticalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen._30sdp))
