@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.Button
@@ -18,10 +20,12 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -35,6 +39,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.datalogic.aladdin.aladdinusbapp.R
@@ -173,5 +178,52 @@ object ComposableUtils {
                 )
             },
         )
+    }
+    
+    /**
+     * A custom TextField component used throughout the application.
+     * 
+     * @param textValue The current text value to display.
+     * @param onValueChange Callback when the text value changes.
+     * @param readOnly Whether the text field should be read-only.
+     * @param labelText Label text to display above the text field.
+     * @param enabledStatus Whether the text field is enabled.
+     * @param keyboardType Optional keyboard type (defaults to Text).
+     */
+    @Composable
+    fun CustomTextField(
+        textValue: String,
+        onValueChange: (String) -> Unit,
+        readOnly: Boolean,
+        labelText: String,
+        enabledStatus: Boolean,
+        keyboardType: KeyboardType = KeyboardType.Text
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp)
+        ) {
+            OutlinedTextField(
+                value = textValue,
+                onValueChange = onValueChange,
+                readOnly = readOnly,
+                label = { Text(labelText) },
+                enabled = enabledStatus,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp),
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent,
+                    disabledContainerColor = Color.Transparent,
+                    focusedIndicatorColor = colorResource(id = R.color.colorPrimary),
+                    unfocusedIndicatorColor = colorResource(id = R.color.colorPrimary),
+                    focusedLabelColor = colorResource(id = R.color.colorPrimary),
+                    unfocusedLabelColor = colorResource(id = R.color.colorPrimary),
+                ),
+                keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+                singleLine = true
+            )
+        }
     }
 }
