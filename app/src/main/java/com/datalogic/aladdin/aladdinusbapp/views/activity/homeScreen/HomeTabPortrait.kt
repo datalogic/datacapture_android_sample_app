@@ -17,25 +17,23 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
+import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.CustomButton
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ConnectionTypeDropdown
 import com.datalogic.aladdin.aladdinusbapp.views.compose.DeviceDropdown
@@ -54,9 +52,10 @@ fun HomeTabPortrait() {
     val scanData = homeViewModel.scanData.observeAsState("").value
     val selectedDevice = homeViewModel.selectedDevice.observeAsState(null).value
 
-    var autoDetectChecked = homeViewModel.autoDetectChecked.observeAsState(true).value
+    val autoDetectChecked = homeViewModel.autoDetectChecked.observeAsState(true).value
     val usbDeviceList = homeViewModel.usbDeviceList.observeAsState(ArrayList()).value
     val selectedUsbDevice = homeViewModel.selectedUsbDevice.observeAsState(null).value
+    val isEnableScale = homeViewModel.isEnableScale.observeAsState(false).value
 
     val content = @Composable {
 
@@ -155,7 +154,7 @@ fun HomeTabPortrait() {
                                 top = dimensionResource(id = R.dimen._10sdp),
                                 bottom = dimensionResource(id = R.dimen._5sdp)
                             ),
-                        text = "VID: " + (selectedUsbDevice?.vendorId?:"None"),
+                        text = "VID: " + (selectedUsbDevice?.vendorId ?: "None"),
                         style = MaterialTheme.typography.labelLarge
                     )
 
@@ -167,7 +166,7 @@ fun HomeTabPortrait() {
                                 top = dimensionResource(id = R.dimen._10sdp),
                                 bottom = dimensionResource(id = R.dimen._5sdp)
                             ),
-                        text = "PID: " + (selectedUsbDevice?.productId?:"None"),
+                        text = "PID: " + (selectedUsbDevice?.productId ?: "None"),
                         style = MaterialTheme.typography.labelLarge
                     )
 
@@ -222,7 +221,10 @@ fun HomeTabPortrait() {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(BorderStroke(1.dp, Color.Black), RoundedCornerShape(dimensionResource(id = R.dimen._8sdp)))
+                    .border(
+                        BorderStroke(1.dp, Color.Black),
+                        RoundedCornerShape(dimensionResource(id = R.dimen._8sdp))
+                    )
                     .padding(horizontal = dimensionResource(id = R.dimen._16sdp)),
             ) {
                 Text(
@@ -241,7 +243,10 @@ fun HomeTabPortrait() {
                         .semantics { contentDescription = "scan_data" }
                         .fillMaxWidth()
                         .height(dimensionResource(id = R.dimen._36sdp))
-                        .border(BorderStroke(1.dp, Color.Black), RoundedCornerShape(dimensionResource(id = R.dimen._8sdp)))
+                        .border(
+                            BorderStroke(1.dp, Color.Black),
+                            RoundedCornerShape(dimensionResource(id = R.dimen._8sdp))
+                        )
                         .padding(dimensionResource(id = R.dimen._8sdp))
                         .verticalScroll(rememberScrollState()),
                     text = scanData
@@ -260,7 +265,10 @@ fun HomeTabPortrait() {
                         .semantics { contentDescription = "scanned_data_label" }
                         .fillMaxWidth()
                         .height(dimensionResource(id = R.dimen._35sdp))
-                        .border(BorderStroke(1.dp, Color.Black), RoundedCornerShape(dimensionResource(id = R.dimen._8sdp)))
+                        .border(
+                            BorderStroke(1.dp, Color.Black),
+                            RoundedCornerShape(dimensionResource(id = R.dimen._8sdp))
+                        )
                         .padding(dimensionResource(id = R.dimen._8sdp)),
                     text = scanLabel
                 )
@@ -277,6 +285,146 @@ fun HomeTabPortrait() {
                     Text(
                         text = stringResource(id = R.string.clear_fields),
                         color = Color.White
+                    )
+                }
+            }
+        }
+
+        if (selectedDevice?.deviceType?.name == "FRS" && selectedDevice?.connectionType?.name == "USB_COMSC") {
+            val scaleStatus by homeViewModel.scaleStatus.observeAsState("")
+            val scaleWeight by homeViewModel.scaleWeight.observeAsState("")
+            val scaleProtocolStatus by homeViewModel.scaleProtocolStatus.observeAsState(
+                Pair(
+                    false,
+                    ""
+                )
+            )
+
+            Column(
+                modifier = Modifier
+                    .semantics { contentDescription = "scale_data" }
+                    .fillMaxWidth()
+                    .padding(vertical = dimensionResource(id = R.dimen._10sdp))
+            ) {
+                Text(
+                    modifier = Modifier
+                        .semantics { contentDescription = "lbl_scale_data" }
+                        .fillMaxWidth()
+                        .padding(
+                            start = dimensionResource(id = R.dimen._10sdp),
+                            bottom = dimensionResource(id = R.dimen._5sdp)
+                        ),
+                    text = "Scale",
+                    style = MaterialTheme.typography.headlineLarge
+                )
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(
+                            BorderStroke(1.dp, Color.Black),
+                            RoundedCornerShape(dimensionResource(id = R.dimen._8sdp))
+                        )
+                        .padding(
+                            horizontal = dimensionResource(id = R.dimen._16sdp),
+                            vertical = dimensionResource(id = R.dimen._10sdp)
+                        ),
+                    verticalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen._8sdp))
+                ) {
+                    ComposableUtils.CustomTextField(
+                        textValue = scaleStatus,
+                        onValueChange = { },
+                        readOnly = true,
+                        labelText = "Scale Status",
+                        enabledStatus = true
+                    )
+
+                    ComposableUtils.CustomTextField(
+                        textValue = scaleWeight,
+                        onValueChange = { },
+                        readOnly = true,
+                        labelText = "Weight",
+                        enabledStatus = true
+                    )
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        CustomButton(
+                            modifier = Modifier
+                                .semantics { contentDescription = "btn_enable_scale" }
+                                .weight(0.5f),
+                            buttonState = (!isEnableScale && status == DeviceStatus.OPENED),
+                            stringResource(id = R.string.enable),
+                            onClick = {
+                                homeViewModel.enableScaleHandler()
+                            }
+                        )
+                        Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen._10sdp)))
+                        CustomButton(
+                            modifier = Modifier
+                                .semantics { contentDescription = "btn_disable_scale" }
+                                .weight(0.5f),
+                            buttonState = (isEnableScale && status == DeviceStatus.OPENED),
+                            stringResource(id = R.string.disable),
+                            onClick = {
+                                homeViewModel.disableScaleHandler()
+                            }
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        CustomButton(
+                            modifier = Modifier
+                                .semantics { contentDescription = "btn_clear_scale_data" }
+                                .weight(0.5f),
+                            buttonState = status == DeviceStatus.OPENED,
+                            stringResource(id = R.string.clear_scale_data),
+                            onClick = { homeViewModel.clearScaleData() }
+                        )
+                        Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen._10sdp)))
+                        CustomButton(
+                            modifier = Modifier
+                                .semantics {contentDescription = "btn_check_scale_protocol" }
+                                .weight(0.5f),
+                            buttonState = status == DeviceStatus.OPENED,
+                            stringResource(id = R.string.check_scale_protocol),
+                            onClick = { homeViewModel.checkScaleProtocol() }
+                        )
+                    }
+
+                    if (!scaleProtocolStatus.first && status == DeviceStatus.OPENED && scaleProtocolStatus.second !== "") {
+                        Button(
+                            onClick = { homeViewModel.enableScaleProtocol() },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary))
+                        ) {
+                            Text(
+                                "Enable Scale Protocol",
+                                color = Color.White,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+
+                    Text(
+                        text = if (status == DeviceStatus.OPENED) {
+                            scaleProtocolStatus.second
+                        } else "",
+                        style = MaterialTheme.typography.headlineLarge,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                horizontal = dimensionResource(id = R.dimen._16sdp),
+                                vertical = dimensionResource(id = R.dimen._10sdp)
+                            )
                     )
                 }
             }
@@ -311,11 +459,14 @@ fun HomeTabPortrait() {
             )
         }
     }
-
     /**
      * Vertical scroll only if the screen height is less than the threshold
      */
-    Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(vertical = dimensionResource(id = R.dimen._4sdp))) {
+    Column(
+        modifier = Modifier
+            .verticalScroll(rememberScrollState())
+            .padding(vertical = dimensionResource(id = R.dimen._4sdp))
+    ) {
         content()
     }
 }
