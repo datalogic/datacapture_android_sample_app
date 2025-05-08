@@ -43,8 +43,11 @@
     <string name="apply">Apply</string>
     <string name="configuration_save_failure">Configuration Save Failure</string>
     <string name="scale">Scale</string>
+    <string name="start">Start</string>
+    <string name="stop">Stop</string>
     <string name="more">More</string>
+    <string name="clear">Clear</string>
     <string name="clear_scale_data">Clear Scale Data</string>
-    <string name="check_scale_protocol">Check Scale Protocol</string>
+    <string name="check_scale">Check Scale</string>
 
 </resources>

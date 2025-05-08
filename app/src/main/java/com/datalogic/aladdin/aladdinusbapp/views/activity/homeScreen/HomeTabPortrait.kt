@@ -293,12 +293,13 @@ fun HomeTabPortrait() {
         if (selectedDevice?.deviceType?.name == "FRS" && selectedDevice?.connectionType?.name == "USB_COMSC") {
             val scaleStatus by homeViewModel.scaleStatus.observeAsState("")
             val scaleWeight by homeViewModel.scaleWeight.observeAsState("")
-            val scaleProtocolStatus by homeViewModel.scaleProtocolStatus.observeAsState(
+            val scaleUnit by homeViewModel.scaleUnit.observeAsState("")
+            /*val scaleProtocolStatus by homeViewModel.scaleProtocolStatus.observeAsState(
                 Pair(
                     false,
                     ""
                 )
-            )
+            )*/
 
             Column(
                 modifier = Modifier
@@ -347,6 +348,14 @@ fun HomeTabPortrait() {
                         enabledStatus = true
                     )
 
+                    ComposableUtils.CustomTextField(
+                        textValue = scaleUnit,
+                        onValueChange = { },
+                        readOnly = true,
+                        labelText = "Unit",
+                        enabledStatus = true
+                    )
+
                     Row(
                         modifier = Modifier
                             .fillMaxWidth(),
@@ -357,49 +366,49 @@ fun HomeTabPortrait() {
                                 .semantics { contentDescription = "btn_enable_scale" }
                                 .weight(0.5f),
                             buttonState = (!isEnableScale && status == DeviceStatus.OPENED),
-                            stringResource(id = R.string.enable),
+                            stringResource(id = R.string.start),
                             onClick = {
-                                homeViewModel.enableScaleHandler()
+                                homeViewModel.stopScaleHandler()
                             }
                         )
-                        Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen._10sdp)))
+                        Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen._5sdp)))
                         CustomButton(
                             modifier = Modifier
                                 .semantics { contentDescription = "btn_disable_scale" }
                                 .weight(0.5f),
                             buttonState = (isEnableScale && status == DeviceStatus.OPENED),
-                            stringResource(id = R.string.disable),
+                            stringResource(id = R.string.stop),
                             onClick = {
-                                homeViewModel.disableScaleHandler()
+                                homeViewModel.stopScaleHandler()
                             }
+                        )
+                        Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen._5sdp)))
+                        CustomButton(
+                            modifier = Modifier
+                                .semantics { contentDescription = "btn_clear_scale_data" }
+                                .weight(0.5f),
+                            buttonState = status == DeviceStatus.OPENED,
+                            stringResource(id = R.string.clear),
+                            onClick = { homeViewModel.clearScaleData() }
                         )
                     }
 
-                    Row(
+                    /*Row(
                         modifier = Modifier
                             .fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         CustomButton(
                             modifier = Modifier
-                                .semantics { contentDescription = "btn_clear_scale_data" }
+                                .semantics {contentDescription = "btn_check_scale" }
                                 .weight(0.5f),
                             buttonState = status == DeviceStatus.OPENED,
-                            stringResource(id = R.string.clear_scale_data),
-                            onClick = { homeViewModel.clearScaleData() }
-                        )
-                        Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen._10sdp)))
-                        CustomButton(
-                            modifier = Modifier
-                                .semantics {contentDescription = "btn_check_scale_protocol" }
-                                .weight(0.5f),
-                            buttonState = status == DeviceStatus.OPENED,
-                            stringResource(id = R.string.check_scale_protocol),
+                            stringResource(id = R.string.check_scale),
                             onClick = { homeViewModel.checkScaleProtocol() }
                         )
-                    }
+                    }*/
 
-                    if (!scaleProtocolStatus.first && status == DeviceStatus.OPENED && scaleProtocolStatus.second !== "") {
+                    /*if (!scaleProtocolStatus.first && status == DeviceStatus.OPENED && scaleProtocolStatus.second !== "") {
                         Button(
                             onClick = { homeViewModel.enableScaleProtocol() },
                             modifier = Modifier.fillMaxWidth(),
@@ -425,7 +434,7 @@ fun HomeTabPortrait() {
                                 horizontal = dimensionResource(id = R.dimen._16sdp),
                                 vertical = dimensionResource(id = R.dimen._10sdp)
                             )
-                    )
+                    )*/
                 }
             }
         }

@@ -127,8 +127,11 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     private val _scaleWeight = MutableLiveData<String>("")
     val scaleWeight: LiveData<String> = _scaleWeight
 
-    private val _scaleProtocolStatus = MutableLiveData<Pair<Boolean, String>>(Pair(false, ""))
-    val scaleProtocolStatus: LiveData<Pair<Boolean, String>> = _scaleProtocolStatus
+    private val _scaleUnit = MutableLiveData<String>("")
+    val scaleUnit: LiveData<String> = _scaleUnit
+
+    /*private val _scaleProtocolStatus = MutableLiveData<Pair<Boolean, String>>(Pair(false, ""))
+    val scaleProtocolStatus: LiveData<Pair<Boolean, String>> = _scaleProtocolStatus*/
 
     private val _isEnableScale = MutableLiveData<Boolean>(false)
     val isEnableScale: LiveData<Boolean> = _isEnableScale
@@ -215,7 +218,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         clearScanData()
         clearDIOStatus()
         clearScaleData()
-        disableScaleHandler()
+        stopScaleHandler()
 
         // Check if this is our selected device
         selectedDevice.value?.let {
@@ -350,6 +353,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                                 Handler(Looper.getMainLooper()).post {
                                     _scaleStatus.postValue(scaleData.status)
                                     _scaleWeight.postValue(scaleData.weight)
+                                    _scaleUnit.postValue(scaleData.weight)
                                 }
                             }
                         }
@@ -829,11 +833,11 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         if (tabIndex == 0) {
             setSelectedTabIndex(tabIndex)
             // Check scale protocol if available and device is open
-            if (selectedDevice.value?.deviceType == DeviceType.FRS &&
+            /*if (selectedDevice.value?.deviceType == DeviceType.FRS &&
                 status.value == DeviceStatus.OPENED
             ) {
                 checkScaleProtocol()
-            }
+            }*/
             return true
         }
 
@@ -887,7 +891,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     /**
      * Check if the selected device has scale protocol enabled
      */
-    fun checkScaleProtocol() {
+    /*fun checkScaleProtocol() {
         selectedDevice.value?.let { device ->
             if (device.status != DeviceStatus.OPENED) {
                 _scaleProtocolStatus.postValue(Pair(false, "Device must be opened first"))
@@ -914,13 +918,13 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                 }
             }
         } ?: _scaleProtocolStatus.postValue(Pair(false, "No device selected"))
-    }
+    }*/
 
     /**
      * Enable scale protocol on the selected device
      * Will require device reset to take effect
      */
-    fun enableScaleProtocol() {
+    /*fun enableScaleProtocol() {
         selectedDevice.value?.let { device ->
             if (device.status != DeviceStatus.OPENED) {
                 showToast(context, "Device must be opened first")
@@ -954,15 +958,15 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                 }
             }
         } ?: showToast(context, "No device selected")
-    }
+    }*/
 
-    fun enableScaleHandler() {
-        selectedDevice.value?.enableScale()
+    fun startScaleHandler() {
+        selectedDevice.value?.startScale()
         _isEnableScale.postValue(true)
     }
 
-    fun disableScaleHandler() {
-        selectedDevice.value?.disableScale()
+    fun stopScaleHandler() {
+        selectedDevice.value?.stopScale()
         _isEnableScale.postValue(false)
     }
 
@@ -972,5 +976,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     fun clearScaleData() {
         _scaleStatus.postValue("")
         _scaleWeight.postValue("")
+        _scaleUnit.postValue("")
     }
 }
