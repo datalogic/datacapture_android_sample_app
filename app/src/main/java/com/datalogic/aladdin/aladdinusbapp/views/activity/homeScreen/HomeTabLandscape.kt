@@ -349,7 +349,7 @@ fun HomeTabLandscape() {
                     )
 
                     ComposableUtils.CustomTextField(
-                        textValue = scaleUnit,
+                        textValue = scaleUnit.toString(),
                         onValueChange = { },
                         readOnly = true,
                         labelText = "Unit",
@@ -368,7 +368,7 @@ fun HomeTabLandscape() {
                             buttonState = (!isEnableScale && status == DeviceStatus.OPENED),
                             stringResource(id = R.string.start),
                             onClick = {
-                                homeViewModel.stopScaleHandler()
+                                homeViewModel.startScaleHandler()
                             }
                         )
                         Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen._5sdp)))

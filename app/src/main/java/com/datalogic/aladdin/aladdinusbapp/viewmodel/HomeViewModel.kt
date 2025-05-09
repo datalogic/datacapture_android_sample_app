@@ -30,6 +30,7 @@ import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ConnectionType
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DIOCmdValue
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceType
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ScaleUnit
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbDioListener
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbScaleListener
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbScanListener
@@ -127,8 +128,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     private val _scaleWeight = MutableLiveData<String>("")
     val scaleWeight: LiveData<String> = _scaleWeight
 
-    private val _scaleUnit = MutableLiveData<String>("")
-    val scaleUnit: LiveData<String> = _scaleUnit
+    private val _scaleUnit = MutableLiveData<ScaleUnit>(ScaleUnit.NONE)
+    val scaleUnit: LiveData<ScaleUnit> = _scaleUnit
 
     /*private val _scaleProtocolStatus = MutableLiveData<Pair<Boolean, String>>(Pair(false, ""))
     val scaleProtocolStatus: LiveData<Pair<Boolean, String>> = _scaleProtocolStatus*/
@@ -353,7 +354,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                                 Handler(Looper.getMainLooper()).post {
                                     _scaleStatus.postValue(scaleData.status)
                                     _scaleWeight.postValue(scaleData.weight)
-                                    _scaleUnit.postValue(scaleData.weight)
+                                    _scaleUnit.postValue(scaleData.unit)
                                 }
                             }
                         }
@@ -976,6 +977,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     fun clearScaleData() {
         _scaleStatus.postValue("")
         _scaleWeight.postValue("")
-        _scaleUnit.postValue("")
+        _scaleUnit.postValue(ScaleUnit.NONE)
     }
 }
