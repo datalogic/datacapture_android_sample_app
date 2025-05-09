@@ -62,6 +62,9 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     private val _scanData = MutableLiveData("")
     val scanData: LiveData<String> = _scanData
 
+    private val _scanRawData = MutableLiveData("")
+    val scanRawData: LiveData<String> = _scanRawData
+
     private val _isLoading = MutableLiveData(false)
     val isLoading: LiveData<Boolean> = _isLoading
 
@@ -253,12 +256,19 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         }
     }
 
+    @JvmOverloads
+    fun ByteArray.toHexString(separator: CharSequence = " ",  prefix: CharSequence = "[",  postfix: CharSequence = "]") =
+        this.joinToString(separator, prefix, postfix) {
+            String.format("0x%02X", it)
+        }
+
     /**
      * Set scanned data from listener
      */
     fun setScannedData(scannedData: UsbScanData) {
         _scanData.postValue(scannedData.barcodeData)
         _scanLabel.postValue(scannedData.barcodeType)
+        _scanRawData.postValue(scannedData.rawData.toHexString())
     }
 
     /**
@@ -267,6 +277,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     fun clearScanData() {
         _scanLabel.postValue("")
         _scanData.postValue("")
+        _scanRawData.postValue("")
     }
 
     /**

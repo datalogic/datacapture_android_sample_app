@@ -50,6 +50,7 @@ fun HomeTabLandscape() {
 
     val scanLabel = homeViewModel.scanLabel.observeAsState("").value
     val scanData = homeViewModel.scanData.observeAsState("").value
+    val scanRawData = homeViewModel.scanRawData.observeAsState("").value
     val selectedDevice = homeViewModel.selectedDevice.observeAsState(null).value
 
     val autoDetectChecked = homeViewModel.autoDetectChecked.observeAsState(true).value
@@ -227,6 +228,31 @@ fun HomeTabLandscape() {
                     )
                     .padding(horizontal = dimensionResource(id = R.dimen._16sdp)),
             ) {
+                Text(
+                    modifier = Modifier
+                        .semantics { contentDescription = "lbl_scan_raw_data" }
+                        .fillMaxWidth()
+                        .padding(
+                            top = dimensionResource(id = R.dimen._15sdp),
+                            bottom = dimensionResource(id = R.dimen._5sdp)
+                        ),
+                    text = stringResource(id = R.string.scan_raw_data),
+                    style = MaterialTheme.typography.labelLarge
+                )
+                Text(
+                    modifier = Modifier
+                        .semantics { contentDescription = "scan_raw_data" }
+                        .fillMaxWidth()
+                        .height(dimensionResource(id = R.dimen._81sdp))
+                        .border(
+                            BorderStroke(1.dp, Color.Black),
+                            RoundedCornerShape(dimensionResource(id = R.dimen._8sdp))
+                        )
+                        .padding(dimensionResource(id = R.dimen._8sdp))
+                        .verticalScroll(rememberScrollState()),
+                    text = scanRawData
+                )
+                Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen._15sdp)))
                 Text(
                     modifier = Modifier
                         .semantics { contentDescription = "lbl_scan_data" }

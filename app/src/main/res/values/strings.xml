@@ -12,6 +12,7 @@
     <string name="device_settings">Device Settings</string>
     <string name="scanner_data">Scanner Data</string>
     <string name="scan_data">Scan Data</string>
+    <string name="scan_raw_data">Scan Raw Data</string>
     <string name="scan_data_label">Scan Data Label</string>
     <string name="clear_fields">Clear Fields</string>
     <string name="open">Open</string>
