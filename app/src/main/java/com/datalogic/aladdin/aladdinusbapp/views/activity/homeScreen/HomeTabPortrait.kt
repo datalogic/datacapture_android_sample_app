@@ -316,7 +316,7 @@ fun HomeTabPortrait() {
             }
         }
 
-        if (selectedDevice?.deviceType?.name == "FRS" && selectedDevice?.connectionType?.name == "USB_COMSC") {
+        if (selectedDevice?.deviceType?.name == "FRS" && (selectedDevice?.connectionType?.name == "USB_COMSC" || selectedDevice?.connectionType?.name == "USB_OEM")) {
             val scaleStatus by homeViewModel.scaleStatus.observeAsState("")
             val scaleWeight by homeViewModel.scaleWeight.observeAsState("")
             val scaleUnit by homeViewModel.scaleUnit.observeAsState("")
