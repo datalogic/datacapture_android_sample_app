@@ -140,6 +140,11 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     private val _isEnableScale = MutableLiveData<Boolean>(false)
     val isEnableScale: LiveData<Boolean> = _isEnableScale
 
+    //Custom configuration
+    private val _customConfiguration =
+        MutableLiveData("")
+    val customConfiguration: LiveData<String> = _customConfiguration
+
     init {
         this.usbDeviceManager = usbDeviceManager
         _status.postValue(DeviceStatus.CLOSED)
@@ -689,6 +694,37 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         } ?: resultLiveData.postValue("No device selected")
     }
 
+    /**
+     * Function to read custom Configuration of the scanner.
+     */
+    fun readCustomConfig() {
+        selectedDevice.value?.let { device ->
+            if (device.status != DeviceStatus.OPENED) {
+                resultLiveData.postValue("Device must be opened first")
+                return
+            }
+
+            _isLoading.postValue(true)
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    Log.d("HomeViewModel", "Reading config data for device: ${device.displayName}")
+                    val configData = device.getCCF()
+                    _customConfiguration.postValue(configData)
+                    Log.d(TAG, "Reading custom config data for device: ${device.displayName} value $configData")
+                } catch (e: Exception) {
+                    Log.e("HomeViewModel", "Error reading config: ${e.message}", e)
+                    withContext(Dispatchers.Main) {
+                        resultLiveData.postValue("Error: ${e.message}")
+                    }
+                } finally {
+                    withContext(Dispatchers.Main) {
+                        _isLoading.postValue(false)
+                    }
+                }
+            }
+        } ?: resultLiveData.postValue("No device selected")
+    }
+
     public override fun onCleared() {
         super.onCleared()
 
@@ -887,7 +923,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                 return true
             }
 
-            3 -> { // Image capture tab
+            3,4 -> { // Image capture tab, custom configuration
                 if (selectedDevice.value?.connectionType == ConnectionType.USB_OEM) {
                     oemAlert = true
                     return false
