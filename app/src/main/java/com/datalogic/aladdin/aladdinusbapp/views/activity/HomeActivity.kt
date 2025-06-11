@@ -3,12 +3,14 @@ package com.datalogic.aladdin.aladdinusbapp.views.activity
 import android.content.Context
 import android.content.pm.ActivityInfo
 import android.hardware.usb.UsbDevice
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.fillMaxSize
@@ -165,5 +167,24 @@ class HomeActivity : AppCompatActivity() {
         homeViewModel.onCleared()
         usbDeviceManager.unregisterUsbListener(usbListener)
         usbDeviceManager.unregisterStatusListener(statusListener)
+    }
+
+    val filePickerLauncher = registerForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            val text = readTextFromUri(it)
+            // Do something with the text, e.g., show in a TextView
+            Log.d("FileText", text)
+        }
+    }
+
+    //filePickerLauncher.launch("text/plain") // Filters for .txt files
+
+    private fun readTextFromUri(uri: Uri): String {
+        contentResolver.openInputStream(uri)?.use { inputStream ->
+            return inputStream.bufferedReader().use { it.readText() }
+        }
+        return ""
     }
 }

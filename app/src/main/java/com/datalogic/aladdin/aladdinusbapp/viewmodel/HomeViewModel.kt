@@ -11,8 +11,10 @@ import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
+import android.text.TextUtils
 import android.util.Log
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -20,6 +22,8 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.datalogic.aladdin.aladdinusbapp.R
+import com.datalogic.aladdin.aladdinusbapp.utils.FileUtils
 import com.datalogic.aladdin.aladdinusbapp.utils.USBConstants
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDeviceManager
@@ -725,6 +729,35 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         } ?: resultLiveData.postValue("No device selected")
     }
 
+    /**
+     * Function to write custom Configuration of the scanner.
+     */
+    fun writeCustomConfig(configurationData: String) {
+        selectedDevice.value?.let { device ->
+            if (device.status != DeviceStatus.OPENED) {
+                resultLiveData.postValue("Device must be opened first")
+                return
+            }
+
+            _isLoading.postValue(true)
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val configData = device.writeConfiguration(configurationData)
+                    Log.d(TAG, "Writing custom config data for device: ${device.displayName} value $configData")
+                } catch (e: Exception) {
+                    Log.e("HomeViewModel", "Error writing config: ${e.message}", e)
+                    withContext(Dispatchers.Main) {
+                        resultLiveData.postValue("Error: ${e.message}")
+                    }
+                } finally {
+                    withContext(Dispatchers.Main) {
+                        _isLoading.postValue(false)
+                    }
+                }
+            }
+        } ?: resultLiveData.postValue("No device selected")
+    }
+
     public override fun onCleared() {
         super.onCleared()
 
@@ -1026,4 +1059,18 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         _scaleWeight.postValue("")
         _scaleUnit.postValue(ScaleUnit.NONE)
     }
+
+    fun saveConfigData() {
+        if(!TextUtils.isEmpty(customConfiguration.value.toString()))
+            FileUtils.saveTextToDownloads(
+                context, "custom_configuration", customConfiguration.value.toString())
+        else
+            Toast.makeText(context, context.getString(R.string.configuration_empty), Toast.LENGTH_SHORT).show()
+
+    }
+
+    fun updateCustomConfiguration(newConfig: String) {
+        _customConfiguration.value = newConfig
+    }
+
 }

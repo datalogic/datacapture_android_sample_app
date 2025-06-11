@@ -53,5 +53,9 @@
     <string name="check_scale">Check Scale</string>
     <string name="btn_read">Read</string>
     <string name="btn_write">Write</string>
+    <string name="btn_load">Load</string>
+    <string name="btn_save">Save</string>
+    <string name="file_saved">File saved to Downloads</string>
+    <string name="configuration_empty">Configuration is empty</string>
 
 </resources>
