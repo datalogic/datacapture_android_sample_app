@@ -371,8 +371,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                         }
                         device.registerUsbScaleListener(scaleListener)
 
-                        // Enable scanner
-                        device.dioCommand(DIOCmdValue.ENABLE_SCANNER, "", context)
                     }
 
                     else -> {
@@ -394,10 +392,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             _isLoading.postValue(true)
 
             CoroutineScope(Dispatchers.IO).launch {
-                // Disable scanner
-                device.dioCommand(DIOCmdValue.DISABLE_SCANNER, "", context)
 
-                val result = device.closeDevice()
+                val result = device.closeDevice(context)
 
                 withContext(Dispatchers.Main) {
                     when (result) {
