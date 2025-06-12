@@ -158,7 +158,7 @@ class HomeActivity : AppCompatActivity() {
     override fun onStop() {
         super.onStop()
         Log.d(TAG, "onStop called")
-        homeViewModel.appInBackground()
+        //homeViewModel.appInBackground()
     }
 
     override fun onDestroy() {
