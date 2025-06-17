@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
@@ -42,6 +43,8 @@ fun CustomConfigurationPortrait() {
     val configData = homeViewModel.customConfiguration.observeAsState().value ?: ""
     val textState = remember { mutableStateOf(configData ?: "") } // Initialize with configData
     val context = LocalContext.current
+    val showDialog = remember { mutableStateOf(false) }
+    val fileName = remember { mutableStateOf("") }
 
     // If the ViewModel's data changes (e.g., after a "Read" operation), update the local textState
     LaunchedEffect(configData) {
@@ -113,8 +116,7 @@ fun CustomConfigurationPortrait() {
                         .weight(0.5f)
                         .padding(horizontal = dimensionResource(id = R.dimen._16sdp))
                         .wrapContentSize(),
-                    onClick = { homeViewModel.writeCustomConfig(textState.value)
-                    },
+                    onClick = { homeViewModel.writeCustomConfig(configurationData = textState.value) },
                     colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary)),
                 ) {
                     Text(
@@ -152,7 +154,7 @@ fun CustomConfigurationPortrait() {
                         .weight(0.5f)
                         .padding(horizontal = dimensionResource(id = R.dimen._16sdp))
                         .wrapContentSize(),
-                    onClick = { homeViewModel.saveConfigData() },
+                    onClick = { showDialog.value = true},
                     colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary)),
                 ) {
                     Text(
@@ -162,5 +164,35 @@ fun CustomConfigurationPortrait() {
                 }
             }
         }
+    }
+    if (showDialog.value) {
+        AlertDialog(
+            onDismissRequest = { showDialog.value = false },
+            title = { Text("Enter File Name") },
+            text = {
+                TextField(
+                    value = fileName.value,
+                    onValueChange = { fileName.value = it },
+                    label = { Text("File Name") }
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDialog.value = false
+                        homeViewModel.saveConfigData(fileName.value)
+                    }
+                ) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = { showDialog.value = false }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }

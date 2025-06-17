@@ -712,7 +712,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     Log.d("HomeViewModel", "Reading config data for device: ${device.displayName}")
-                    val configData = device.getCCF()
+                    val configData = device.getCustomConfiguration()
                     _customConfiguration.postValue(configData)
                     Log.d(TAG, "Reading custom config data for device: ${device.displayName} value $configData")
                 } catch (e: Exception) {
@@ -742,7 +742,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             _isLoading.postValue(true)
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    val configData = device.writeConfiguration(configurationData)
+                    val configData = device.writeCustomConfiguration(configurationData)
                     Log.d(TAG, "Writing custom config data for device: ${device.displayName} value $configData")
                 } catch (e: Exception) {
                     Log.e("HomeViewModel", "Error writing config: ${e.message}", e)
@@ -1060,12 +1060,29 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         _scaleUnit.postValue(ScaleUnit.NONE)
     }
 
-    fun saveConfigData() {
-        if(!TextUtils.isEmpty(customConfiguration.value.toString()))
-            FileUtils.saveTextToDownloads(
-                context, "custom_configuration", customConfiguration.value.toString())
-        else
-            Toast.makeText(context, context.getString(R.string.configuration_empty), Toast.LENGTH_SHORT).show()
+    fun saveConfigData(fileName: String) {
+        if (!TextUtils.isEmpty(customConfiguration.value.toString()))
+        // Save to file if fileName is provided
+            if (fileName.isNotEmpty()) {
+                FileUtils.saveTextToDownloads(
+                    context,
+                    fileName,
+                    customConfiguration.value.toString()
+                )
+            } else {
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.file_name_empty),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        else {
+            Toast.makeText(
+                context,
+                context.getString(R.string.configuration_empty),
+                Toast.LENGTH_SHORT
+            ).show()
+        }
 
     }
 
