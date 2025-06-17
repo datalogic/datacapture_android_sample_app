@@ -370,6 +370,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                             }
                         }
                         device.registerUsbScaleListener(scaleListener)
+
                     }
 
                     else -> {
@@ -391,7 +392,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             _isLoading.postValue(true)
 
             CoroutineScope(Dispatchers.IO).launch {
-                val result = device.closeDevice()
+
+                val result = device.closeDevice(context)
 
                 withContext(Dispatchers.Main) {
                     when (result) {
