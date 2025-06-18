@@ -57,5 +57,6 @@
     <string name="btn_save">Save</string>
     <string name="file_saved">File saved to Downloads</string>
     <string name="configuration_empty">Configuration is empty</string>
+    <string name="file_name_empty">File name is empty</string>
 
 </resources>
