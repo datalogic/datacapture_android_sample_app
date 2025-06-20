@@ -96,6 +96,7 @@ class HomeActivity : AppCompatActivity() {
                         }
                         DeviceStatus.CLOSED -> {
                             showToast(applicationContext, "Device closed")
+                            homeViewModel.clearConfig()
                         }
                         else -> {}
                     }

@@ -417,6 +417,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                             _deviceStatus.postValue("Device closed")
                             _status.postValue(DeviceStatus.CLOSED)
                             clearScanData()
+                            clearConfig()
 
                             //Clear listeners
                             device.unregisterUsbScanListener(scanEvent)
@@ -1098,4 +1099,9 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         _customConfiguration.value = newConfig
     }
 
+    fun clearConfig(){
+        if(selectedDevice.value?.status == DeviceStatus.CLOSED){
+            _customConfiguration.value = ""
+        }
+    }
 }
