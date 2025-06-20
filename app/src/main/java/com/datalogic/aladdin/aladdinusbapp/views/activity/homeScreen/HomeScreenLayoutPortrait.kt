@@ -26,6 +26,7 @@ import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.activity.customConfigurationScreen.CustomConfigurationPortrait
 import com.datalogic.aladdin.aladdinusbapp.views.activity.imageCapture.ImageCaptureTabPortrait
+import com.datalogic.aladdin.aladdinusbapp.views.activity.updateFirmware.UpdateFirmwareScreen
 import com.datalogic.aladdin.aladdinusbapp.views.compose.BottomNavigationRow
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.FooterImageView
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.HeaderImageView
@@ -75,6 +76,7 @@ fun HomeScreenLayoutPortrait() {
                 2 -> DirectIOTabPortrait()
                 3 -> ImageCaptureTabPortrait()
                 4 -> CustomConfigurationPortrait()
+                5 -> UpdateFirmwareScreen()
             }
         }
 
