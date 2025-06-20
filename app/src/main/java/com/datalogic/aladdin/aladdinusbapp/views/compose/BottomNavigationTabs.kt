@@ -47,7 +47,8 @@ fun BottomNavigationRow(modifier: Modifier, homeViewModel: HomeViewModel) {
         stringResource(id = R.string.home),
         stringResource(id = R.string.configuration),
         stringResource(id = R.string.direct_io),
-        stringResource(id = R.string.image_capture)
+        stringResource(id = R.string.image_capture),
+        stringResource(id = R.string.custom_configuration)
     )
     val selectedTab by homeViewModel.selectedTabIndex.observeAsState(0)
     val status = homeViewModel.status.observeAsState(DeviceStatus.CLOSED).value

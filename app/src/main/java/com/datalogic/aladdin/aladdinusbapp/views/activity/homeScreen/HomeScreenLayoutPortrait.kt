@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
+import com.datalogic.aladdin.aladdinusbapp.views.activity.customConfigurationScreen.CustomConfigurationPortrait
 import com.datalogic.aladdin.aladdinusbapp.views.activity.imageCapture.ImageCaptureTabPortrait
 import com.datalogic.aladdin.aladdinusbapp.views.compose.BottomNavigationRow
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.FooterImageView
@@ -73,6 +74,7 @@ fun HomeScreenLayoutPortrait() {
                 1 -> ConfigurationTabPortrait()
                 2 -> DirectIOTabPortrait()
                 3 -> ImageCaptureTabPortrait()
+                4 -> CustomConfigurationPortrait()
             }
         }
 
