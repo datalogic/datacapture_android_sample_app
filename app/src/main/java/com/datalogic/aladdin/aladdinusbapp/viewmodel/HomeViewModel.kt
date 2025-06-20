@@ -350,35 +350,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                         reattachedDevices.remove(deviceId)
 
                         //Setup listener
-                        scanEvent = object : UsbScanListener {
-                            override fun onScan(scanData: UsbScanData) {
-                                setScannedData(scanData)
-                            }
-                        }
-                        device.registerUsbScanListener(scanEvent)
-
-                        usbErrorListener = object : UsbDioListener {
-                            override fun fireDioErrorEvent(
-                                errorCode: Int,
-                                message: String
-                            ) {
-                                showToast(context, message + errorCode)
-                            }
-                        }
-                        device.registerUsbDioListener(usbErrorListener)
-
-                        // Setup scale listener
-                        val scaleListener = object : UsbScaleListener {
-                            override fun onScale(scaleData: ScaleData) {
-                                // Update UI with scale data on main thread
-                                Handler(Looper.getMainLooper()).post {
-                                    _scaleStatus.postValue(scaleData.status)
-                                    _scaleWeight.postValue(scaleData.weight)
-                                    _scaleUnit.postValue(scaleData.unit)
-                                }
-                            }
-                        }
-                        device.registerUsbScaleListener(scaleListener)
+                        setupCustomListeners(device)
                     }
 
                     else -> {
@@ -392,6 +364,41 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         }
     }
 
+    fun setupCustomListeners(device: DatalogicDevice?) {
+        if (device != null) {
+            //Setup listener
+            scanEvent = object : UsbScanListener {
+                override fun onScan(scanData: UsbScanData) {
+                    setScannedData(scanData)
+                }
+            }
+            device.registerUsbScanListener(scanEvent)
+
+            usbErrorListener = object : UsbDioListener {
+                override fun fireDioErrorEvent(
+                    errorCode: Int,
+                    message: String
+                ) {
+                    showToast(context, message + errorCode)
+                }
+            }
+            device.registerUsbDioListener(usbErrorListener)
+
+            // Setup scale listener
+            val scaleListener = object : UsbScaleListener {
+                override fun onScale(scaleData: ScaleData) {
+                    // Update UI with scale data on main thread
+                    Handler(Looper.getMainLooper()).post {
+                        _scaleStatus.postValue(scaleData.status)
+                        _scaleWeight.postValue(scaleData.weight)
+                        _scaleUnit.postValue(scaleData.unit)
+                    }
+                }
+            }
+            device.registerUsbScaleListener(scaleListener)
+        }
+    }
+
     /**
      * Close device - perform full disable, release, close operation
      */
@@ -400,7 +407,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             _isLoading.postValue(true)
 
             CoroutineScope(Dispatchers.IO).launch {
-                val result = device.closeDevice()
+
+                val result = device.closeDevice(context)
 
                 withContext(Dispatchers.Main) {
                     when (result) {
