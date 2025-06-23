@@ -50,5 +50,6 @@
     <string name="clear">Clear</string>
     <string name="clear_scale_data">Clear Scale Data</string>
     <string name="check_scale">Check Scale</string>
-
+    <string name="reset_device_title">Reset Device</string>
+    <string name="reset_device_message">"Do you want to reset device to apply configuration changes?"</string>
 </resources>
