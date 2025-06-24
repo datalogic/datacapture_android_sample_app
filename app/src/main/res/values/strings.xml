@@ -58,7 +58,11 @@
     <string name="file_saved">File saved to Downloads</string>
     <string name="configuration_empty">Configuration is empty</string>
     <string name="file_name_empty">File name is empty</string>
-
+    <string name="update_firmware">Update Firmware</string>
+    <string name="btn_load_file">Load file</string>
+    <string name="btn_upgrade_firmware">Upgrade firmware</string>
+    <string name="btn_upgrade_complete">Upgrade complete</string>
+    <string name="txt_done">Upgrade Completed!</string>
     <string name="reset_device_title">Reset Device</string>
     <string name="reset_device_message">"Do you want to reset device to apply configuration changes?"</string>
 </resources>

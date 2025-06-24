@@ -10,7 +10,6 @@ import android.os.Looper
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,15 +25,13 @@ import com.datalogic.aladdin.aladdinusbapp.utils.CommonUtils
 import com.datalogic.aladdin.aladdinusbapp.viewmodel.HomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.theme.AladdinUSBAppTheme
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDeviceManager
-import com.datalogic.aladdin.aladdinusbscannersdk.model.UsbScanData
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.AladdinConstants.CLAIM_FAILURE
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.AladdinConstants.ENABLE_FAILURE
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.AladdinConstants.OPEN_FAILURE
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.StatusListener
-import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbDioListener
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbListener
-import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbScanListener
+import java.io.File
 
 val LocalHomeViewModel = staticCompositionLocalOf<HomeViewModel> {
     error("No HomeViewModel provided")
@@ -172,22 +169,4 @@ class HomeActivity : AppCompatActivity() {
         usbDeviceManager.unregisterStatusListener(statusListener)
     }
 
-    val filePickerLauncher = registerForActivityResult(
-        ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        uri?.let {
-            val text = readTextFromUri(it)
-            // Do something with the text, e.g., show in a TextView
-            Log.d("FileText", text)
-        }
-    }
-
-    //filePickerLauncher.launch("text/plain") // Filters for .txt files
-
-    private fun readTextFromUri(uri: Uri): String {
-        contentResolver.openInputStream(uri)?.use { inputStream ->
-            return inputStream.bufferedReader().use { it.readText() }
-        }
-        return ""
-    }
 }

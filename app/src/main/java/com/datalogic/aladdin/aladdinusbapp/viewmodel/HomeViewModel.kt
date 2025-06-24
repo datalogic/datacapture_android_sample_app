@@ -44,6 +44,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
 
 class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) : ViewModel() {
     private var usbDeviceManager: DatalogicDeviceManager
@@ -143,6 +146,12 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
 
     private val _isEnableScale = MutableLiveData<Boolean>(false)
     val isEnableScale: LiveData<Boolean> = _isEnableScale
+
+    private val _progressUpgrade = MutableLiveData(0f)
+    val progressUpgrade: LiveData<Float> = _progressUpgrade
+
+    private val _isCompleteUpgrade = MutableLiveData(false)
+    val isCompleteUpgrade: LiveData<Boolean> = _isCompleteUpgrade
 
     //Custom configuration
     private val _customConfiguration =
@@ -997,7 +1006,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                 return true
             }
 
-            3,4 -> { // Image capture tab, custom configuration
+            3,4,5 -> { // Image capture tab, custom configuration, update firmware
                 if (selectedDevice.value?.connectionType == ConnectionType.USB_OEM) {
                     oemAlert = true
                     return false
@@ -1136,4 +1145,20 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             _customConfiguration.value = ""
         }
     }
+
+    fun upgradeFirmware(file: File) {
+        viewModelScope.launch(Dispatchers.IO) {
+            selectedDevice.value?.let {
+                val firmwareUpdater = it.updateFirmware(file)
+                firmwareUpdater.update { progress ->
+                    run {
+                        viewModelScope.launch(Dispatchers.Main) {
+                            _progressUpgrade.postValue(progress.toFloat())
+                        }
+                    }
+                }
+            }
+        }
+    }
+
 }
