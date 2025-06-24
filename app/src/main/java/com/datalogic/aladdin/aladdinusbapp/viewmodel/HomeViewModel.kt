@@ -24,6 +24,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.utils.FileUtils
+import com.datalogic.aladdin.aladdinusbapp.utils.ResultContants
 import com.datalogic.aladdin.aladdinusbapp.utils.USBConstants
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDeviceManager
@@ -114,8 +115,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     val dioData: LiveData<String> = _dioData
 
     // Configuration related state
-    private val _readConfigData =
-        MutableLiveData<HashMap<ConfigurationFeature, Boolean>>(hashMapOf())
+    private val _readConfigData = MutableLiveData<HashMap<ConfigurationFeature, Boolean>>(hashMapOf())
     val readConfigData: LiveData<HashMap<ConfigurationFeature, Boolean>> = _readConfigData
 
     var writeConfigData: HashMap<ConfigurationFeature, String> = hashMapOf()
@@ -157,6 +157,9 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     private val _customConfiguration =
         MutableLiveData("")
     val customConfiguration: LiveData<String> = _customConfiguration
+
+    //Reset device notify pop-up
+    var showResetDeviceDialog by mutableStateOf(false)
 
     init {
         this.usbDeviceManager = usbDeviceManager
@@ -607,17 +610,46 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     }
 
     /**
-     * Function to apply the modified Configuration to the scanner.
+     * Dismisses the reset device dialog without performing any device operations.
+     * This method is called when the user cancels the reset operation.
      */
+    fun dismissResetDialog() {
+        showResetDeviceDialog = false
+    }
+
+    /**
+     * Resets the device and dismisses the dialog.
+     * This method is called when the user confirms the reset operation.
+     */
+    fun resetDevice() {
+        selectedDevice.value?.let { device ->
+            _isLoading.postValue(true)
+            CoroutineScope(Dispatchers.IO).launch {
+                val result = device.resetDevice()
+
+                withContext(Dispatchers.Main) {
+                    if (result.equals(USBConstants.SUCCESS)) {
+                        _deviceStatus.postValue(ResultContants.DEVICE_RESET_SUCCESS)
+                    } else {
+                        _deviceStatus.postValue(ResultContants.DEVICE_RESET_FAILED)
+                    }
+                    _isLoading.postValue(false)
+                }
+            }
+        } ?: run {
+            _deviceStatus.postValue("No device selected")
+        }
+    }
+    // Modify the applyConfiguration method to set the dialog state
     fun applyConfiguration() {
         selectedDevice.value?.let { device ->
             if (device.status != DeviceStatus.OPENED) {
-                resultLiveData.postValue("Device must be opened first")
+                resultLiveData.postValue(ResultContants.OPEN_DEVICE_FIRST)
                 return
             }
 
             if (writeConfigData.isEmpty()) {
-                resultLiveData.postValue("No configuration changes to apply")
+                resultLiveData.postValue(ResultContants.NO_CONFIGURATION_CHANGES)
                 return
             }
 
@@ -640,16 +672,20 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                         }
 
                         val resultMessage = if (failure.isEmpty()) {
-                            "Configuration saved successfully"
+                            ResultContants.CONFIGURATION_SAVED
                         } else {
-                            "Failed to save: $failure"
+                            ResultContants.CONFIGURATION_SAVED_FAILED + "$failure"
                         }
                         withContext(Dispatchers.Main) {
                             resultLiveData.postValue(resultMessage)
+                            // Show reset dialog only on successful configuration save
+                            if (failure.isEmpty()) {
+                                showResetDeviceDialog = true
+                            }
                         }
                     } else {
                         withContext(Dispatchers.Main) {
-                            resultLiveData.postValue("Configuration save failed")
+                            resultLiveData.postValue(ResultContants.CONFIGURATION_SAVED_FAILED)
                         }
                     }
                 } catch (e: Exception) {
@@ -662,15 +698,11 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                         _isLoading.postValue(false)
                     }
 
-                    // Refresh config data after write
-                    delay(500) // Give device time to process changes
-                    readConfigData()
-
                     // Clear write data
                     writeConfigData.clear()
                 }
             }
-        } ?: resultLiveData.postValue("No device selected")
+        } ?: resultLiveData.postValue(ResultContants.NO_DEVICE_SELECTED)
     }
 
     /**
@@ -694,7 +726,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                         val booleanMap = convertToBoolean(configData)
                         Log.d("HomeViewModel", "Converted to boolean map: $booleanMap")
                         withContext(Dispatchers.Main) {
-                            _readConfigData.postValue(booleanMap)
+                            _readConfigData.postValue(HashMap(booleanMap))
                         }
                     } else {
                         Log.e("HomeViewModel", "Received empty config data")
