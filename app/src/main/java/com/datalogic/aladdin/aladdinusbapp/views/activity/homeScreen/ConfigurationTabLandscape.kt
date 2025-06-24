@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.sp
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.CustomSwitch
+import com.datalogic.aladdin.aladdinusbapp.views.compose.ResetDeviceAlertDialog
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ConfigurationFeature
 
 @Composable
@@ -54,6 +55,11 @@ fun ConfigurationTabLandscape() {
     if (writeResult.isNotBlank()) {
         Toast.makeText(context, writeResult, Toast.LENGTH_SHORT).show()
         homeViewModel.resultLiveData.value = ""
+    }
+
+    // Add this after the existing UI components
+    if (homeViewModel.showResetDeviceDialog) {
+        ResetDeviceAlertDialog(homeViewModel)
     }
 
     val isButtonClicked = remember { mutableStateOf(false) }
