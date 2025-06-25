@@ -1202,4 +1202,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     fun setBulkTransferSupported(value: Boolean) {
         _isBulkTransferSupported.value = value
     }
+
+    fun isFRS(): Boolean {
+        return selectedDevice.value?.deviceType == DeviceType.FRS
+    }
 }

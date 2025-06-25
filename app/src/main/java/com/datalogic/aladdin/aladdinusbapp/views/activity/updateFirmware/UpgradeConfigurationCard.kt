@@ -20,14 +20,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.datalogic.aladdin.aladdinusbapp.R
 
 @Composable
 fun UpgradeConfigurationCard(
     checkPidEnabled: Boolean,
     bulkTransferEnabled: Boolean,
     onCheckPidToggle: (Boolean) -> Unit,
-    onBulkTransferToggle: (Boolean) -> Unit
+    onBulkTransferToggle: (Boolean) -> Unit,
+    isFRS: Boolean = false
 ) {
     Card(
         shape = RoundedCornerShape(8.dp),
@@ -46,7 +49,7 @@ fun UpgradeConfigurationCard(
                     tint = Color(0xFF1A2B46)
                 )
                 Text(
-                    text = "Upgrade Configuration",
+                    text = stringResource(id = R.string.upgrade_configuration_title),
                     color = Color(0xFF1A2B46),
                     modifier = Modifier.padding(start = 4.dp)
                 )
@@ -60,8 +63,14 @@ fun UpgradeConfigurationCard(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            ToggleRow(label = "Check PID", checked = checkPidEnabled, onCheckedChange = onCheckPidToggle)
-            ToggleRow(label = "Bulk Transfer", checked = bulkTransferEnabled, onCheckedChange = onBulkTransferToggle)
+            ToggleRow(label = stringResource(id = R.string.check_pid_label), checked = checkPidEnabled, onCheckedChange = onCheckPidToggle)
+            if (isFRS) {
+                ToggleRow(
+                    label = stringResource(id = R.string.bulk_transfer_label),
+                    checked = bulkTransferEnabled,
+                    onCheckedChange = onBulkTransferToggle
+                )
+            }
         }
     }
 }

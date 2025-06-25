@@ -65,4 +65,11 @@
     <string name="txt_done">Upgrade Completed!</string>
     <string name="reset_device_title">Reset Device</string>
     <string name="reset_device_message">"Do you want to reset device to apply configuration changes?"</string>
+    <string name="release_information_title">RELEASE INFORMATION</string>
+    <string name="sw_release_label">SW Release</string>
+    <string name="pid_label">PID</string>
+    <string name="directory_label">Directory</string>
+    <string name="upgrade_configuration_title">Upgrade Configuration</string>
+    <string name="check_pid_label">Check PID</string>
+    <string name="bulk_transfer_label">Bulk Transfer</string>
 </resources>

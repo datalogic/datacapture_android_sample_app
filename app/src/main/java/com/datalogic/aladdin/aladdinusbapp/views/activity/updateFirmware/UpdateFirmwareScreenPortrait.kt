@@ -99,7 +99,8 @@ fun UpdateFirmwareScreen() {
                     onBulkTransferToggle = {
                         bulkTransfer = it
                         homeViewModel.setBulkTransferSupported(it)
-                    }
+                    },
+                    isFRS = homeViewModel.isFRS()
                 )
             }
             // Progress Section
@@ -141,7 +142,6 @@ fun UpdateFirmwareScreen() {
                         .weight(1f)
                         .fillMaxHeight(), // <-- makes this button match height
                     onClick = {
-                        Log.d("Upgrade button", "on clicked ${file.value?.name}")
                         file.value?.let {
                             homeViewModel.upgradeFirmware(it)
                         }
