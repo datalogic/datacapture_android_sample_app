@@ -150,8 +150,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     private val _progressUpgrade = MutableLiveData(0f)
     val progressUpgrade: LiveData<Float> = _progressUpgrade
 
-    private val _isCompleteUpgrade = MutableLiveData(false)
-    val isCompleteUpgrade: LiveData<Boolean> = _isCompleteUpgrade
+    private val _isBulkTransferSupported = MutableLiveData(false)
+    val isBulkTransferSupported: LiveData<Boolean> = _isBulkTransferSupported
 
     //Custom configuration
     private val _customConfiguration =
@@ -1171,6 +1171,24 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                         }
                     }
                 }
+            }
+        }
+    }
+
+    fun getPid(file: File?): String?{
+        selectedDevice.value?.let {
+            return it.getPid(file)
+        }
+        return ""
+    }
+
+    fun getBulkTransferSupported(file: File?){
+        _isLoading.postValue(true)
+        viewModelScope.launch(Dispatchers.IO) {
+            selectedDevice.value?.let {
+                _isBulkTransferSupported.postValue(
+                    it.isBulkTransferSupported(file))
+                _isLoading.postValue(false)
             }
         }
     }

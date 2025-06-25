@@ -1,10 +1,8 @@
 package com.datalogic.aladdin.aladdinusbapp.views.activity.updateFirmware
 
 import android.net.Uri
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -49,16 +46,25 @@ fun UpdateFirmwareScreen() {
     val isLoadFile = remember { mutableStateOf(false) }
     val context = LocalContext.current
     val progress = homeViewModel.progressUpgrade.observeAsState().value ?: 0
+    val isBulkTransferSupported = homeViewModel.isBulkTransferSupported.observeAsState().value ?: false
     var checkPid by remember { mutableStateOf(true) }
     var bulkTransfer by remember { mutableStateOf(false) }
     var file: File? = null
+    val swName = remember { mutableStateOf("") }
+    val filePath = remember { mutableStateOf("") }
+    val pid = remember { mutableStateOf("") }
 
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri: Uri? ->
             uri?.let {
+                swName.value = FileUtils.getFileNameFromUri(context, it)
+                    .toString().replace(".S37", "")
                 file = FileUtils.getFileFromUri(context, it)
+                filePath.value = file?.parent.toString()
                 isLoadFile.value = true
+                pid.value = homeViewModel.getPid(file).toString()
+                homeViewModel.getBulkTransferSupported(file)
             }
         }
     )
@@ -75,11 +81,11 @@ fun UpdateFirmwareScreen() {
         ) {
             // FW information
             if(isLoadFile.value) {
-                ReleaseInformationCard()
+                ReleaseInformationCard(swName.value, pid.value, filePath.value)
                 Spacer(modifier = Modifier.height(4.dp))
                 UpgradeConfigurationCard(
                     checkPidEnabled = checkPid,
-                    bulkTransferEnabled = bulkTransfer,
+                    bulkTransferEnabled = isBulkTransferSupported,
                     onCheckPidToggle = { checkPid = it },
                     onBulkTransferToggle = { bulkTransfer = it }
                 )
@@ -96,20 +102,6 @@ fun UpdateFirmwareScreen() {
                         color = colorResource(id = R.color.colorPrimary)
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                } else {
-                    // Placeholder when not updating
-                    Box(
-                        modifier = Modifier
-                            .size(60.dp)
-                            .padding(8.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "Ready",
-                            fontSize = 14.sp,
-                            color = colorResource(id = R.color.colorPrimary)
-                        )
-                    }
                 }
             }
             
@@ -136,6 +128,7 @@ fun UpdateFirmwareScreen() {
                     Text(
                         stringResource(R.string.btn_load_file),
                         color = colorResource(R.color.white),
+                        fontSize = 14.sp,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -161,6 +154,7 @@ fun UpdateFirmwareScreen() {
                     Text(
                         stringResource(R.string.btn_upgrade_firmware),
                         color = colorResource(R.color.white),
+                        fontSize = 14.sp,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth()
                     )

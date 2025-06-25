@@ -18,9 +18,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-@Preview(showBackground = true)
 @Composable
-fun ReleaseInformationCard() {
+fun ReleaseInformationCard(swRelease: String, pid: String, directory: String) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -35,8 +34,8 @@ fun ReleaseInformationCard() {
 
         Spacer(modifier = Modifier.height(2.dp))
 
-        InfoRow(label = "SW Release", value = "610099054")
-        InfoRow(label = "PID", value = "122F")
+        InfoRow(label = "SW Release", value = swRelease)
+        InfoRow(label = "PID", value = pid)
 
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -46,7 +45,7 @@ fun ReleaseInformationCard() {
                 .background(Color(0xFFF1F1F1), shape = RoundedCornerShape(4.dp))
                 .padding(4.dp)
         ) {
-            InfoRow(label = "Directory", value = "\\S37_FW_DGD4500\\610099054.S37")
+            InfoRow(label = "Directory", value = directory)
         }
     }
 }
@@ -65,6 +64,7 @@ fun InfoRow(label: String, value: String) {
             color = Color.Gray
         )
         Text(
+            modifier = Modifier.padding(start = 48.dp),
             text = value,
             fontSize = 14.sp,
             color = Color.Black

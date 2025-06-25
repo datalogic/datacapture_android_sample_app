@@ -57,7 +57,7 @@ object FileUtils {
     }
 
 
-    private fun getFileNameFromUri(context: Context, uri: Uri): String? {
+    fun getFileNameFromUri(context: Context, uri: Uri): String? {
         var fileName: String? = null
 
         if (uri.scheme == ContentResolver.SCHEME_CONTENT) {
@@ -74,6 +74,24 @@ object FileUtils {
         }
 
         return fileName
+    }
+
+    fun getRealPathFromUri(context: Context, uri: Uri): String? {
+        val cursor = context.contentResolver.query(uri, null, null, null, null)
+        cursor?.use {
+            val columnIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            cursor.moveToFirst()
+            val fileName = cursor.getString(columnIndex)
+
+            val tempFile = File(context.cacheDir, fileName)
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                FileOutputStream(tempFile).use { output ->
+                    input.copyTo(output)
+                }
+            }
+            return tempFile.absolutePath
+        }
+        return null
     }
 
 }
