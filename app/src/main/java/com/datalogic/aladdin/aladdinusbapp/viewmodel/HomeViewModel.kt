@@ -1149,16 +1149,29 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     fun upgradeFirmware(file: File) {
         viewModelScope.launch(Dispatchers.IO) {
             selectedDevice.value?.let {
-                val firmwareUpdater = it.updateFirmware(file)
-                firmwareUpdater.update { progress ->
-                    run {
-                        viewModelScope.launch(Dispatchers.Main) {
+                val firmwareUpdater = it.getFirmwareUpdater(file)
+                if (it.deviceType == DeviceType.HHS) {
+                    firmwareUpdater.upgrade { progress ->
+                        run {
                             _progressUpgrade.postValue(progress.toFloat())
+                        }
+                    }
+                } else {
+                    if (firmwareUpdater.isSupportedBulkTransfer()) {
+                        firmwareUpdater.upgradeByBulkTransfer { progress ->
+                            run {
+                                _progressUpgrade.postValue(progress.toFloat())
+                            }
+                        }
+                    } else {
+                        firmwareUpdater.upgrade { progress ->
+                            run {
+                                _progressUpgrade.postValue(progress.toFloat())
+                            }
                         }
                     }
                 }
             }
         }
     }
-
 }

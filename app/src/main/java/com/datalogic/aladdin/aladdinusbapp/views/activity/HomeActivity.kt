@@ -41,7 +41,7 @@ class HomeActivity : AppCompatActivity() {
 
     private var TAG = HomeActivity::class.java.simpleName
     private lateinit var usbDeviceManager: DatalogicDeviceManager
-    private lateinit var usbListener: UsbListener
+    private var usbListener: UsbListener? = null
     private lateinit var statusListener: StatusListener
     private val homeViewModel: HomeViewModel by viewModels {
         MyViewModelFactory(usbDeviceManager, applicationContext)
@@ -76,7 +76,9 @@ class HomeActivity : AppCompatActivity() {
                 homeViewModel.handleDeviceDisconnection(device)
             }
         }
-        usbDeviceManager.registerUsbListener(usbListener)
+        usbListener?.let {
+            usbDeviceManager.registerUsbListener(it)
+        }
 
         // USB connection status listener implementation
         val statusListener = object : StatusListener {
@@ -165,7 +167,7 @@ class HomeActivity : AppCompatActivity() {
         super.onDestroy()
         Log.d(TAG, "Destroy called")
         homeViewModel.onCleared()
-        usbDeviceManager.unregisterUsbListener(usbListener)
+        usbListener?.let { usbDeviceManager.unregisterUsbListener(it) }
         usbDeviceManager.unregisterStatusListener(statusListener)
     }
 
