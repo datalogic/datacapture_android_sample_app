@@ -153,6 +153,22 @@ object ComposableUtils {
     }
 
     @Composable
+    fun ShowPercentLoading(onDismiss: () -> Unit, percent: String) {
+        Dialog(onDismissRequest = onDismiss) {
+            Column(
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                CircularProgressIndicator(
+                    color = Color.Blue,
+                    strokeWidth = dimensionResource(id = R.dimen._4sdp)
+                )
+                Text(text = percent)
+            }
+        }
+    }
+
+    @Composable
     fun CustomSwitch(checkedState: Boolean, onClick: (Boolean) -> Unit) {
         Switch(
             modifier = Modifier

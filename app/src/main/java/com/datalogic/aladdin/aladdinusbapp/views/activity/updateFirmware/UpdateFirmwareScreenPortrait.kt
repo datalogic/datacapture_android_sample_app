@@ -1,6 +1,7 @@
 package com.datalogic.aladdin.aladdinusbapp.views.activity.updateFirmware
 
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -19,6 +20,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -42,14 +44,12 @@ import java.io.File
 @Composable
 fun UpdateFirmwareScreen() {
     val homeViewModel = LocalHomeViewModel.current
-    val isUpgrade = remember { mutableStateOf(false) }
     val isLoadFile = remember { mutableStateOf(false) }
     val context = LocalContext.current
-    val progress = homeViewModel.progressUpgrade.observeAsState().value ?: 0
     val isBulkTransferSupported = homeViewModel.isBulkTransferSupported.observeAsState().value ?: false
     var checkPid by remember { mutableStateOf(true) }
     var bulkTransfer by remember { mutableStateOf(false) }
-    var file: File? = null
+    val file = remember { mutableStateOf<File?>(null) }
     val swName = remember { mutableStateOf("") }
     val filePath = remember { mutableStateOf("") }
     val pid = remember { mutableStateOf("") }
@@ -60,14 +60,23 @@ fun UpdateFirmwareScreen() {
             uri?.let {
                 swName.value = FileUtils.getFileNameFromUri(context, it)
                     .toString().replace(".S37", "")
-                file = FileUtils.getFileFromUri(context, it)
-                filePath.value = file?.parent.toString()
+                file.value = FileUtils.getFileFromUri(context, it)
                 isLoadFile.value = true
-                pid.value = homeViewModel.getPid(file).toString()
-                homeViewModel.getBulkTransferSupported(file)
+                pid.value = homeViewModel.getPid(file.value).toString()
+                homeViewModel.getBulkTransferSupported(file.value)
+                filePath.value = file.value?.absolutePath ?: ""
+                val realPath = FileUtils.getRealPathFromUri(context, it)
+                if (realPath != null) {
+                    val file1 = File(realPath)
+                    filePath.value = file1.parent?.toString() ?: ""
+                }
             }
         }
     )
+
+    LaunchedEffect(isBulkTransferSupported) {
+        bulkTransfer = isBulkTransferSupported
+    }
 
     Box(
         modifier = Modifier
@@ -85,25 +94,15 @@ fun UpdateFirmwareScreen() {
                 Spacer(modifier = Modifier.height(4.dp))
                 UpgradeConfigurationCard(
                     checkPidEnabled = checkPid,
-                    bulkTransferEnabled = isBulkTransferSupported,
+                    bulkTransferEnabled = bulkTransfer,
                     onCheckPidToggle = { checkPid = it },
-                    onBulkTransferToggle = { bulkTransfer = it }
+                    onBulkTransferToggle = {
+                        bulkTransfer = it
+                        homeViewModel.setBulkTransferSupported(it)
+                    }
                 )
             }
             // Progress Section
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(horizontal = 12.dp)
-            ) {
-                if (isUpgrade.value) {
-                    Text(
-                        text = if (progress.toFloat() >= 100) stringResource(R.string.txt_done) else "$progress%",
-                        fontSize = 14.sp,
-                        color = colorResource(id = R.color.colorPrimary)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-            }
             
             Spacer(modifier = Modifier.weight(1f))
             
@@ -118,7 +117,8 @@ fun UpdateFirmwareScreen() {
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight(),
-                    onClick = { filePickerLauncher.launch("*/*") },
+                    onClick = {
+                        filePickerLauncher.launch("application/octet-stream") },
                     enabled = true,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = colorResource(id = R.color.colorPrimary),
@@ -141,11 +141,12 @@ fun UpdateFirmwareScreen() {
                         .weight(1f)
                         .fillMaxHeight(), // <-- makes this button match height
                     onClick = {
-                        file?.let {
+                        Log.d("Upgrade button", "on clicked ${file.value?.name}")
+                        file.value?.let {
                             homeViewModel.upgradeFirmware(it)
                         }
-                        isUpgrade.value = true
                     },
+                    enabled = isLoadFile.value,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = colorResource(id = R.color.colorPrimary),
                         disabledContainerColor = colorResource(id = R.color.colorPrimary).copy(alpha = 0.5f)

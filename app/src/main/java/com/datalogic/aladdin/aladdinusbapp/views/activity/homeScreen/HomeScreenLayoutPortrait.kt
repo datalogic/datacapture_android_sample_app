@@ -31,6 +31,7 @@ import com.datalogic.aladdin.aladdinusbapp.views.compose.BottomNavigationRow
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.FooterImageView
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.HeaderImageView
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.ShowLoading
+import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.ShowPercentLoading
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.ShowPopup
 
 @Composable
@@ -39,6 +40,8 @@ fun HomeScreenLayoutPortrait() {
     val deviceStatus = homeViewModel.deviceStatus.observeAsState("").value
     val selectedTab by homeViewModel.selectedTabIndex.observeAsState(0)
     var isLoading = homeViewModel.isLoading.observeAsState().value
+    var isLoadingPercent = homeViewModel.isLoadingPercent.observeAsState().value
+    var progressUpgrade = homeViewModel.progressUpgrade.observeAsState().value
 
     ShowPopup(homeViewModel.openAlert, onDismiss = { homeViewModel.openAlert = false }, stringResource(id = R.string.alert_message_for_open_device))
     ShowPopup(homeViewModel.oemAlert, onDismiss = { homeViewModel.oemAlert = false }, stringResource(id = R.string.alert_message_for_oem_configuration))
@@ -47,6 +50,10 @@ fun HomeScreenLayoutPortrait() {
 
     if (isLoading!!) {
         ShowLoading(onDismiss = { isLoading = false })
+    }
+
+    if (isLoadingPercent!!) {
+        ShowPercentLoading(onDismiss = { isLoading = false }, "$progressUpgrade%")
     }
 
     Column(

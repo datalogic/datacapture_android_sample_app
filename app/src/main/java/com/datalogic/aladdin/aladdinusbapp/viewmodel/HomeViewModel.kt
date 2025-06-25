@@ -73,8 +73,11 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     private val _scanRawData = MutableLiveData("")
     val scanRawData: LiveData<String> = _scanRawData
 
-    private val _isLoading = MutableLiveData(false)
+    val _isLoading = MutableLiveData(false)
     val isLoading: LiveData<Boolean> = _isLoading
+
+    val _isLoadingPercent = MutableLiveData(false)
+    val isLoadingPercent: LiveData<Boolean> = _isLoadingPercent
 
     private val _autoDetectChecked = MutableLiveData(true)
     val autoDetectChecked: LiveData<Boolean> = _autoDetectChecked
@@ -147,10 +150,10 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     private val _isEnableScale = MutableLiveData<Boolean>(false)
     val isEnableScale: LiveData<Boolean> = _isEnableScale
 
-    private val _progressUpgrade = MutableLiveData(0f)
-    val progressUpgrade: LiveData<Float> = _progressUpgrade
+    private val _progressUpgrade = MutableLiveData(0)
+    val progressUpgrade: LiveData<Int> = _progressUpgrade
 
-    private val _isBulkTransferSupported = MutableLiveData(false)
+    val _isBulkTransferSupported = MutableLiveData(false)
     val isBulkTransferSupported: LiveData<Boolean> = _isBulkTransferSupported
 
     //Custom configuration
@@ -1147,30 +1150,33 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     }
 
     fun upgradeFirmware(file: File) {
+        _isLoadingPercent.postValue(true)
         viewModelScope.launch(Dispatchers.IO) {
             selectedDevice.value?.let {
                 val firmwareUpdater = it.getFirmwareUpdater(file)
                 if (it.deviceType == DeviceType.HHS) {
                     firmwareUpdater.upgrade { progress ->
                         run {
-                            _progressUpgrade.postValue(progress.toFloat())
+                            _progressUpgrade.postValue(progress)
                         }
                     }
                 } else {
-                    if (firmwareUpdater.isSupportedBulkTransfer()) {
+                    if (isBulkTransferSupported.value == true) {
                         firmwareUpdater.upgradeByBulkTransfer { progress ->
                             run {
-                                _progressUpgrade.postValue(progress.toFloat())
+                                _progressUpgrade.postValue(progress)
                             }
                         }
                     } else {
                         firmwareUpdater.upgrade { progress ->
                             run {
-                                _progressUpgrade.postValue(progress.toFloat())
+                                _progressUpgrade.postValue(progress)
                             }
                         }
                     }
                 }
+                _isLoadingPercent.postValue(false)
+                resetDevice()
             }
         }
     }
@@ -1191,5 +1197,9 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                 _isLoading.postValue(false)
             }
         }
+    }
+
+    fun setBulkTransferSupported(value: Boolean) {
+        _isBulkTransferSupported.value = value
     }
 }
