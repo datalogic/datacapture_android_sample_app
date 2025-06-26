@@ -1,7 +1,7 @@
 package com.datalogic.aladdin.aladdinusbapp.views.activity.updateFirmware
 
 import android.net.Uri
-import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -20,9 +20,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -38,6 +37,7 @@ import androidx.compose.ui.unit.sp
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.utils.FileUtils
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
+import kotlinx.coroutines.delay
 import java.io.File
 
 @Preview(showBackground = true)
@@ -46,37 +46,32 @@ fun UpdateFirmwareScreen() {
     val homeViewModel = LocalHomeViewModel.current
     val isLoadFile = remember { mutableStateOf(false) }
     val context = LocalContext.current
-    val isBulkTransferSupported = homeViewModel.isBulkTransferSupported.observeAsState().value ?: false
-    var checkPid by remember { mutableStateOf(true) }
-    var bulkTransfer by remember { mutableStateOf(false) }
-    val file = remember { mutableStateOf<File?>(null) }
-    val swName = remember { mutableStateOf("") }
-    val filePath = remember { mutableStateOf("") }
-    val pid = remember { mutableStateOf("") }
+    val checkPid by homeViewModel.isCheckPid.collectAsState()
+    var isCheckPidToggle by remember { mutableStateOf(false) }
+    var isBulkTransferToggle by remember { mutableStateOf(false) }
+    var file by remember { mutableStateOf<File?>(null) }
+    var swName by remember { mutableStateOf("") }
+    var filePath by remember { mutableStateOf("") }
+    var pid by remember { mutableStateOf("") }
 
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri: Uri? ->
             uri?.let {
-                swName.value = FileUtils.getFileNameFromUri(context, it)
+                swName = FileUtils.getFileNameFromUri(context, it)
                     .toString().replace(".S37", "")
-                file.value = FileUtils.getFileFromUri(context, it)
+                file = FileUtils.getFileFromUri(context, it)
                 isLoadFile.value = true
-                pid.value = homeViewModel.getPid(file.value).toString()
-                homeViewModel.getBulkTransferSupported(file.value)
-                filePath.value = file.value?.absolutePath ?: ""
+                pid = homeViewModel.getPid(file).toString()
+                filePath = file?.absolutePath ?: ""
                 val realPath = FileUtils.getRealPathFromUri(context, it)
                 if (realPath != null) {
                     val file1 = File(realPath)
-                    filePath.value = file1.parent?.toString() ?: ""
+                    filePath = file1.parent?.toString() ?: ""
                 }
             }
         }
     )
-
-    LaunchedEffect(isBulkTransferSupported) {
-        bulkTransfer = isBulkTransferSupported
-    }
 
     Box(
         modifier = Modifier
@@ -90,15 +85,18 @@ fun UpdateFirmwareScreen() {
         ) {
             // FW information
             if(isLoadFile.value) {
-                ReleaseInformationCard(swName.value, pid.value, filePath.value)
+                ReleaseInformationCard(swName, pid, filePath)
                 Spacer(modifier = Modifier.height(4.dp))
                 UpgradeConfigurationCard(
-                    checkPidEnabled = checkPid,
-                    bulkTransferEnabled = bulkTransfer,
-                    onCheckPidToggle = { checkPid = it },
+                    checkPidEnabled = isCheckPidToggle,
+                    bulkTransferEnabled = isBulkTransferToggle,
+                    onCheckPidToggle = {
+                        isCheckPidToggle = it
+                    },
                     onBulkTransferToggle = {
-                        bulkTransfer = it
-                        homeViewModel.setBulkTransferSupported(it)
+                        isBulkTransferToggle = it
+                        if (!isBulkTransferToggle)
+                            homeViewModel._isBulkTransferSupported.postValue(false)
                     },
                     isFRS = homeViewModel.isFRS()
                 )
@@ -142,7 +140,30 @@ fun UpdateFirmwareScreen() {
                         .weight(1f)
                         .fillMaxHeight(), // <-- makes this button match height
                     onClick = {
-                        file.value?.let {
+                        file?.let {
+                            if(isCheckPidToggle){
+                                homeViewModel.setPid(it) { isValid ->
+                                    if (isCheckPidToggle != isValid) {
+                                        Toast.makeText(context, context.getString(R.string.pid_is_not_valid), Toast.LENGTH_LONG).show()
+                                        return@setPid
+                                    }
+                                }
+                            }
+                            if(isBulkTransferToggle) {
+                                homeViewModel.getBulkTransferSupported(it) { supported ->
+                                    if (isBulkTransferToggle != supported) {
+                                        Toast.makeText(
+                                            context,
+                                            context.getString(R.string.bulk_transfer_is_not_valid),
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                        return@getBulkTransferSupported
+                                    } else {
+                                        homeViewModel.upgradeFirmware(it)
+                                        return@getBulkTransferSupported
+                                    }
+                                }
+                            }
                             homeViewModel.upgradeFirmware(it)
                         }
                     },

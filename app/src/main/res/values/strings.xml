@@ -72,4 +72,6 @@
     <string name="upgrade_configuration_title">Upgrade Configuration</string>
     <string name="check_pid_label">Check PID</string>
     <string name="bulk_transfer_label">Bulk Transfer</string>
+    <string name="pid_is_not_valid">PID is not valid</string>
+    <string name="bulk_transfer_is_not_valid">Bulk Transfer is not valid</string>
 </resources>

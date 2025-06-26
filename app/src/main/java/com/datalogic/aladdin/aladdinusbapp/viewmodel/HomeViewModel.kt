@@ -15,6 +15,7 @@ import android.text.TextUtils
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -42,6 +43,9 @@ import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbScanListene
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -155,6 +159,9 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
 
     val _isBulkTransferSupported = MutableLiveData(false)
     val isBulkTransferSupported: LiveData<Boolean> = _isBulkTransferSupported
+
+    private var _isCheckPid = MutableStateFlow(false)
+    val isCheckPid: StateFlow<Boolean> = _isCheckPid.asStateFlow()
 
     //Custom configuration
     private val _customConfiguration =
@@ -1188,13 +1195,14 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         return ""
     }
 
-    fun getBulkTransferSupported(file: File?){
-        _isLoading.postValue(true)
+    fun getBulkTransferSupported(file: File?, onResult: (Boolean) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             selectedDevice.value?.let {
-                _isBulkTransferSupported.postValue(
-                    it.isBulkTransferSupported(file))
-                _isLoading.postValue(false)
+                val supported = it.isBulkTransferSupported(file)
+                _isBulkTransferSupported.postValue(supported)
+                withContext(Dispatchers.Main) {
+                    supported?.let { supported -> onResult(supported) }
+                }
             }
         }
     }
@@ -1205,5 +1213,15 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
 
     fun isFRS(): Boolean {
         return selectedDevice.value?.deviceType == DeviceType.FRS
+    }
+
+    fun setPid(file: File?, onResult: (Boolean) -> Unit) {
+        val result = selectedDevice.value?.isCheckPid(file) ?: false
+        setCheckPid(result)
+        onResult(result)
+    }
+
+    private fun setCheckPid(value: Boolean) {
+        _isCheckPid.value = value
     }
 }
