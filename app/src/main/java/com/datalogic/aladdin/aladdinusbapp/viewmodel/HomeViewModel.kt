@@ -15,6 +15,7 @@ import android.text.TextUtils
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -42,6 +43,9 @@ import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbScanListene
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -73,8 +77,11 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     private val _scanRawData = MutableLiveData("")
     val scanRawData: LiveData<String> = _scanRawData
 
-    private val _isLoading = MutableLiveData(false)
+    val _isLoading = MutableLiveData(false)
     val isLoading: LiveData<Boolean> = _isLoading
+
+    val _isLoadingPercent = MutableLiveData(false)
+    val isLoadingPercent: LiveData<Boolean> = _isLoadingPercent
 
     private val _autoDetectChecked = MutableLiveData(true)
     val autoDetectChecked: LiveData<Boolean> = _autoDetectChecked
@@ -147,11 +154,14 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     private val _isEnableScale = MutableLiveData<Boolean>(false)
     val isEnableScale: LiveData<Boolean> = _isEnableScale
 
-    private val _progressUpgrade = MutableLiveData(0f)
-    val progressUpgrade: LiveData<Float> = _progressUpgrade
+    private val _progressUpgrade = MutableLiveData(0)
+    val progressUpgrade: LiveData<Int> = _progressUpgrade
 
-    private val _isCompleteUpgrade = MutableLiveData(false)
-    val isCompleteUpgrade: LiveData<Boolean> = _isCompleteUpgrade
+    val _isBulkTransferSupported = MutableLiveData(false)
+    val isBulkTransferSupported: LiveData<Boolean> = _isBulkTransferSupported
+
+    private var _isCheckPid = MutableStateFlow(false)
+    val isCheckPid: StateFlow<Boolean> = _isCheckPid.asStateFlow()
 
     //Custom configuration
     private val _customConfiguration =
@@ -1147,18 +1157,71 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     }
 
     fun upgradeFirmware(file: File) {
+        _isLoadingPercent.postValue(true)
         viewModelScope.launch(Dispatchers.IO) {
             selectedDevice.value?.let {
-                val firmwareUpdater = it.updateFirmware(file)
-                firmwareUpdater.update { progress ->
-                    run {
-                        viewModelScope.launch(Dispatchers.Main) {
-                            _progressUpgrade.postValue(progress.toFloat())
+                val firmwareUpdater = it.getFirmwareUpdater(file)
+                if (it.deviceType == DeviceType.HHS) {
+                    firmwareUpdater.upgrade { progress ->
+                        run {
+                            _progressUpgrade.postValue(progress)
                         }
                     }
+                } else {
+                    if (isBulkTransferSupported.value == true) {
+                        firmwareUpdater.upgradeByBulkTransfer { progress ->
+                            run {
+                                _progressUpgrade.postValue(progress)
+                            }
+                        }
+                    } else {
+                        firmwareUpdater.upgrade { progress ->
+                            run {
+                                _progressUpgrade.postValue(progress)
+                            }
+                        }
+                    }
+                }
+                _isLoadingPercent.postValue(false)
+                resetDevice()
+            }
+        }
+    }
+
+    fun getPid(file: File?): String?{
+        selectedDevice.value?.let {
+            return it.getPid(file)
+        }
+        return ""
+    }
+
+    fun getBulkTransferSupported(file: File?, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            selectedDevice.value?.let {
+                val supported = it.isBulkTransferSupported(file)
+                _isBulkTransferSupported.postValue(supported)
+                withContext(Dispatchers.Main) {
+                    supported?.let { supported -> onResult(supported) }
                 }
             }
         }
     }
 
+    fun setBulkTransferSupported(value: Boolean) {
+        _isBulkTransferSupported.value = value
+    }
+
+    fun isFRS(): Boolean {
+        return selectedDevice.value?.deviceType == DeviceType.FRS
+    }
+
+    fun setPid(file: File?, onResult: (Boolean) -> Unit) {
+        val result = selectedDevice.value?.isCheckPid(file) ?: false
+        setCheckPid(result)
+        onResult(result)
+    }
+
+    private fun setCheckPid(value: Boolean) {
+        _isCheckPid.value = value
+    }
 }

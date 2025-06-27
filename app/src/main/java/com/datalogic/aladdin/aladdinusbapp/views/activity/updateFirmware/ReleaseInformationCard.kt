@@ -14,13 +14,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.datalogic.aladdin.aladdinusbapp.R
 
-@Preview(showBackground = true)
 @Composable
-fun ReleaseInformationCard() {
+fun ReleaseInformationCard(swRelease: String, pid: String, directory: String) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -28,15 +28,15 @@ fun ReleaseInformationCard() {
             .padding(8.dp)
     ) {
         Text(
-            text = "RELEASE INFORMATION",
+            text = stringResource(id = R.string.release_information_title),
             color = Color(0xFF002144), // dark navy
             fontSize = 16.sp
         )
 
         Spacer(modifier = Modifier.height(2.dp))
 
-        InfoRow(label = "SW Release", value = "610099054")
-        InfoRow(label = "PID", value = "122F")
+        InfoRow(label = stringResource(id = R.string.sw_release_label), value = swRelease)
+        InfoRow(label = stringResource(id = R.string.pid_label), value = pid)
 
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -46,7 +46,7 @@ fun ReleaseInformationCard() {
                 .background(Color(0xFFF1F1F1), shape = RoundedCornerShape(4.dp))
                 .padding(4.dp)
         ) {
-            InfoRow(label = "Directory", value = "\\S37_FW_DGD4500\\610099054.S37")
+            InfoRow(label = stringResource(id = R.string.directory_label), value = directory)
         }
     }
 }
@@ -65,6 +65,7 @@ fun InfoRow(label: String, value: String) {
             color = Color.Gray
         )
         Text(
+            modifier = Modifier.padding(start = 48.dp),
             text = value,
             fontSize = 14.sp,
             color = Color.Black

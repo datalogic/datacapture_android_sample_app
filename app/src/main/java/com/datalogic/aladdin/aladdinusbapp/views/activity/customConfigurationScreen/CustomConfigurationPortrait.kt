@@ -51,7 +51,6 @@ fun CustomConfigurationPortrait() {
     val context = LocalContext.current
     val showDialog = remember { mutableStateOf(false) }
     val fileName = remember { mutableStateOf("") }
-    val textState1 = remember { mutableStateOf(TextFieldValue())}
 
         // If the ViewModel's data changes (e.g., after a "Read" operation), update the local textState
     LaunchedEffect(configData) {
