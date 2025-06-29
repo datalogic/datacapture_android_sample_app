@@ -39,6 +39,8 @@ import com.datalogic.aladdin.aladdinusbapp.utils.FileUtils
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import kotlinx.coroutines.delay
 import java.io.File
+import android.content.Context
+import com.datalogic.aladdin.aladdinusbapp.viewmodel.HomeViewModel
 
 @Preview(showBackground = true)
 @Composable
@@ -141,30 +143,17 @@ fun UpdateFirmwareScreen() {
                         .fillMaxHeight(), // <-- makes this button match height
                     onClick = {
                         file?.let {
-                            if(isCheckPidToggle){
+                            if (isCheckPidToggle) {
                                 homeViewModel.setPid(it) { isValid ->
                                     if (isCheckPidToggle != isValid) {
                                         Toast.makeText(context, context.getString(R.string.pid_is_not_valid), Toast.LENGTH_LONG).show()
                                         return@setPid
                                     }
+                                    handleBulkTransferAndUpgrade(it, isBulkTransferToggle, homeViewModel, context)
                                 }
+                                return@let
                             }
-                            if(isBulkTransferToggle) {
-                                homeViewModel.getBulkTransferSupported(it) { supported ->
-                                    if (isBulkTransferToggle != supported) {
-                                        Toast.makeText(
-                                            context,
-                                            context.getString(R.string.bulk_transfer_is_not_valid),
-                                            Toast.LENGTH_LONG
-                                        ).show()
-                                        return@getBulkTransferSupported
-                                    } else {
-                                        homeViewModel.upgradeFirmware(it)
-                                        return@getBulkTransferSupported
-                                    }
-                                }
-                            }
-                            homeViewModel.upgradeFirmware(it)
+                            handleBulkTransferAndUpgrade(it, isBulkTransferToggle, homeViewModel, context)
                         }
                     },
                     enabled = isLoadFile.value,
@@ -184,4 +173,29 @@ fun UpdateFirmwareScreen() {
             }
         }
     }
-} 
+}
+
+fun handleBulkTransferAndUpgrade(
+    file: File,
+    isBulkTransferToggle: Boolean,
+    homeViewModel: HomeViewModel,
+    context: Context
+) {
+    if (isBulkTransferToggle) {
+        homeViewModel.getBulkTransferSupported(file) { supported ->
+            if (isBulkTransferToggle != supported) {
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.bulk_transfer_is_not_valid),
+                    Toast.LENGTH_LONG
+                ).show()
+                return@getBulkTransferSupported
+            } else {
+                homeViewModel.upgradeFirmware(file)
+                return@getBulkTransferSupported
+            }
+        }
+    } else {
+        homeViewModel.upgradeFirmware(file)
+    }
+}
