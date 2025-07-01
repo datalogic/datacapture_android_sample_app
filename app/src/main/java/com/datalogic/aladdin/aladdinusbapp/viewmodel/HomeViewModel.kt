@@ -1156,11 +1156,11 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         }
     }
 
-    fun upgradeFirmware(file: File) {
+    fun upgradeFirmware(file: File, fileType: String) {
         _isLoadingPercent.postValue(true)
         viewModelScope.launch(Dispatchers.IO) {
             selectedDevice.value?.let {
-                val firmwareUpdater = it.getFirmwareUpdater(file)
+                val firmwareUpdater = it.getFirmwareUpdater(file, fileType)
                 if (it.deviceType == DeviceType.HHS) {
                     firmwareUpdater.upgrade { progress ->
                         run {
@@ -1188,18 +1188,17 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         }
     }
 
-    fun getPid(file: File?): String?{
+    fun getPid(file: File?, fileType: String): String?{
         selectedDevice.value?.let {
-            return it.getPid(file)
+            return it.getPid(file, fileType)
         }
         return ""
     }
 
-    fun getBulkTransferSupported(file: File?, onResult: (Boolean) -> Unit) {
-        _isLoading.postValue(true)
+    fun getBulkTransferSupported(file: File?, fileType: String, onResult: (Boolean) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             selectedDevice.value?.let {
-                val supported = it.isBulkTransferSupported(file)
+                val supported = it.isBulkTransferSupported(file, fileType)
                 _isBulkTransferSupported.postValue(supported)
                 withContext(Dispatchers.Main) {
                     supported?.let { supported -> onResult(supported) }
@@ -1217,8 +1216,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         return selectedDevice.value?.deviceType == DeviceType.FRS
     }
 
-    fun setPid(file: File?, onResult: (Boolean) -> Unit) {
-        val result = selectedDevice.value?.isCheckPid(file) ?: false
+    fun setPid(file: File?, fileType: String, onResult: (Boolean) -> Unit) {
+        val result = selectedDevice.value?.isCheckPid(file, fileType) ?: false
         setCheckPid(result)
         onResult(result)
     }

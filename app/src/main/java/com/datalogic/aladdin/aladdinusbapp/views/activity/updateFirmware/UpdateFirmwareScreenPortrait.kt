@@ -56,6 +56,7 @@ fun UpdateFirmwareScreen() {
     var swName by remember { mutableStateOf("") }
     var filePath by remember { mutableStateOf("") }
     var pid by remember { mutableStateOf("") }
+    var fileType by remember { mutableStateOf("") }
 
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
@@ -63,9 +64,11 @@ fun UpdateFirmwareScreen() {
             uri?.let {
                 swName = FileUtils.getFileNameFromUri(context, it)
                     .toString().replace(".S37", "")
+                fileType = FileUtils.getFileNameFromUri(context, it)
+                    ?.let { it1 -> FileUtils.getFileExtension(it1) }.toString()
                 file = FileUtils.getFileFromUri(context, it)
                 isLoadFile.value = true
-                pid = homeViewModel.getPid(file).toString()
+                pid = homeViewModel.getPid(file, fileType).toString()
                 filePath = file?.absolutePath ?: ""
                 val realPath = FileUtils.getRealPathFromUri(context, it)
                 if (realPath != null) {
@@ -149,16 +152,16 @@ fun UpdateFirmwareScreen() {
                     onClick = {
                         file?.let {
                             if (isCheckPidToggle) {
-                                homeViewModel.setPid(it) { isValid ->
+                                homeViewModel.setPid(it, fileType) { isValid ->
                                     if (isCheckPidToggle != isValid) {
                                         Toast.makeText(context, context.getString(R.string.pid_is_not_valid), Toast.LENGTH_LONG).show()
                                         return@setPid
                                     }
-                                    handleBulkTransferAndUpgrade(it, isBulkTransferToggle, homeViewModel, context)
+                                    handleBulkTransferAndUpgrade(it, isBulkTransferToggle, homeViewModel, context, fileType)
                                 }
                                 return@let
                             }
-                            handleBulkTransferAndUpgrade(it, isBulkTransferToggle, homeViewModel, context)
+                            handleBulkTransferAndUpgrade(it, isBulkTransferToggle, homeViewModel, context, fileType)
                         }
                     },
                     enabled = isLoadFile.value,
@@ -184,10 +187,11 @@ fun handleBulkTransferAndUpgrade(
     file: File,
     isBulkTransferToggle: Boolean,
     homeViewModel: HomeViewModel,
-    context: Context
+    context: Context,
+    fileType: String
 ) {
     if (isBulkTransferToggle) {
-        homeViewModel.getBulkTransferSupported(file) { supported ->
+        homeViewModel.getBulkTransferSupported(file, fileType) { supported ->
             if (isBulkTransferToggle != supported) {
                 Toast.makeText(
                     context,
@@ -196,11 +200,11 @@ fun handleBulkTransferAndUpgrade(
                 ).show()
                 return@getBulkTransferSupported
             } else {
-                homeViewModel.upgradeFirmware(file)
+                homeViewModel.upgradeFirmware(file, fileType)
                 return@getBulkTransferSupported
             }
         }
     } else {
-        homeViewModel.upgradeFirmware(file)
+        homeViewModel.upgradeFirmware(file, fileType)
     }
 }
