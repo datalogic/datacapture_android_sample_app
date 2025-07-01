@@ -49,7 +49,7 @@ fun UpdateFirmwareScreen() {
     val isLoadFile = remember { mutableStateOf(false) }
     val context = LocalContext.current
     val checkPid by homeViewModel.isCheckPid.collectAsState()
-    var isCheckPidToggle by remember { mutableStateOf(false) }
+    var isCheckPidToggle by remember { mutableStateOf(true) }
     var isBulkTransferToggle by remember { mutableStateOf(false) }
     var file by remember { mutableStateOf<File?>(null) }
     var swName by remember { mutableStateOf("") }
