@@ -1196,12 +1196,14 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     }
 
     fun getBulkTransferSupported(file: File?, onResult: (Boolean) -> Unit) {
+        _isLoading.postValue(true)
         viewModelScope.launch(Dispatchers.IO) {
             selectedDevice.value?.let {
                 val supported = it.isBulkTransferSupported(file)
                 _isBulkTransferSupported.postValue(supported)
                 withContext(Dispatchers.Main) {
                     supported?.let { supported -> onResult(supported) }
+                    _isLoading.postValue(false)
                 }
             }
         }
