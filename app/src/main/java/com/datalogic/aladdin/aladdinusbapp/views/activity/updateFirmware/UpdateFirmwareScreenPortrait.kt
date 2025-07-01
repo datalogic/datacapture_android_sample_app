@@ -40,6 +40,7 @@ import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import kotlinx.coroutines.delay
 import java.io.File
 import android.content.Context
+import androidx.compose.runtime.LaunchedEffect
 import com.datalogic.aladdin.aladdinusbapp.viewmodel.HomeViewModel
 
 @Preview(showBackground = true)
@@ -74,6 +75,10 @@ fun UpdateFirmwareScreen() {
             }
         }
     )
+
+    LaunchedEffect(Unit) {
+        homeViewModel._isBulkTransferSupported.value = false
+    }
 
     Box(
         modifier = Modifier
