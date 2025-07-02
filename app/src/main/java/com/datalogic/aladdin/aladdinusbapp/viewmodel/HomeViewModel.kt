@@ -1225,4 +1225,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     private fun setCheckPid(value: Boolean) {
         _isCheckPid.value = value
     }
+
+    fun isSWUValid(file: File): Boolean?{
+        return selectedDevice.value?.isSWUFirmwareValid(file)
+    }
 }

@@ -74,4 +74,5 @@
     <string name="bulk_transfer_label">Bulk Transfer</string>
     <string name="pid_is_not_valid">PID is not valid</string>
     <string name="bulk_transfer_is_not_valid">Bulk Transfer is not valid</string>
+    <string name="swu_is_not_valid">SWU firmware is invalid.</string>
 </resources>
