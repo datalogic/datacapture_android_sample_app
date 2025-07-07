@@ -48,6 +48,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.dzungvu.packlog.LogcatHelper
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -97,6 +98,18 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
 
     // Track reattached devices
     private val reattachedDevices = mutableSetOf<String>()
+
+    // Log toggle state
+    private val _isLoggingEnabled = MutableLiveData(false)
+    val isLoggingEnabled: LiveData<Boolean> = _isLoggingEnabled
+
+    // LogcatHelper instance - direct usage without Application dependency
+    private val logcatHelper: LogcatHelper by lazy {
+        LogcatHelper.LogcatBuilder()
+            .setMaxFileSize(2 * 1024 * 1024) // 2MB
+            .setMaxFolderSize(10 * 1024 * 1024) // 10MB
+            .build(context)
+    }
 
     // UI alert states
     var openAlert by mutableStateOf(false)
@@ -821,6 +834,9 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     public override fun onCleared() {
         super.onCleared()
 
+        // Stop logging when ViewModel is cleared
+        logcatHelper.stop()
+
         // Close any open devices
         selectedDevice.value?.let {
             if (it.status == DeviceStatus.OPENED) {
@@ -1224,6 +1240,26 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
 
     private fun setCheckPid(value: Boolean) {
         _isCheckPid.value = value
+    }
+
+    // Log control functions
+    fun toggleLogging() {
+        if (_isLoggingEnabled.value == true) {
+            logcatHelper.stop()
+            _isLoggingEnabled.value = false
+            Log.d(TAG, "Logging stopped via UI toggle")
+        } else {
+            logcatHelper.start()
+            _isLoggingEnabled.value = true
+            Log.d(TAG, "Logging started via UI toggle")
+        }
+    }
+
+    // REMOVED: saveLogsToFile() function - no longer needed since logs are only stored as SDK_log files
+    // Output folder functionality has been removed
+
+    fun initializeLoggingState() {
+        _isLoggingEnabled.value = logcatHelper.isActive()
     }
 
     fun isSWUValid(file: File): Boolean?{

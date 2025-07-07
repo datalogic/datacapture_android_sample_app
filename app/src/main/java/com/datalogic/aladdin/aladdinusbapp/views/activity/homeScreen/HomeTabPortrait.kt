@@ -96,6 +96,39 @@ fun HomeTabPortrait() {
                 ),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
+            val isLoggingEnabled by homeViewModel.isLoggingEnabled.observeAsState(false)
+            
+            Switch(
+                checked = isLoggingEnabled,
+                onCheckedChange = {
+                    homeViewModel.toggleLogging()
+                }
+            )
+
+            Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen._15sdp)))
+
+            Text(
+                modifier = Modifier
+                    .semantics { contentDescription = "lbl_logging_toggle" }
+                    .fillMaxWidth()
+                    .padding(
+                        top = dimensionResource(id = R.dimen._15sdp),
+                        bottom = dimensionResource(id = R.dimen._5sdp)
+                    ),
+                text = if (isLoggingEnabled) "Logging Enabled" else "Logging Disabled",
+                style = MaterialTheme.typography.labelLarge
+            )
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    top = dimensionResource(id = R.dimen._15sdp),
+                    bottom = dimensionResource(id = R.dimen._5sdp)
+                ),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
             Switch(
                 checked = autoDetectChecked,
                 onCheckedChange = {

@@ -133,6 +133,9 @@ class HomeActivity : AppCompatActivity() {
 
         Log.d(TAG, "UI falls under: " + (resources.getDimension(R.dimen.test) / resources.displayMetrics.density).toInt())
         Log.d(TAG, "UI screen dimension: " + CommonUtils.getScreenResolution(this))
+
+        // Initialize logging state
+        homeViewModel.initializeLoggingState()
     }
 
     override fun onRequestPermissionsResult(
