@@ -30,7 +30,8 @@ fun UpgradeConfigurationCard(
     bulkTransferEnabled: Boolean,
     onCheckPidToggle: (Boolean) -> Unit,
     onBulkTransferToggle: (Boolean) -> Unit,
-    isFRS: Boolean = false
+    isFRS: Boolean = false,
+    isSwu: Boolean = false
 ) {
     Card(
         shape = RoundedCornerShape(8.dp),
@@ -63,13 +64,19 @@ fun UpgradeConfigurationCard(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            ToggleRow(label = stringResource(id = R.string.check_pid_label), checked = checkPidEnabled, onCheckedChange = onCheckPidToggle)
-            if (isFRS) {
+            if(!isSwu) {
                 ToggleRow(
-                    label = stringResource(id = R.string.bulk_transfer_label),
-                    checked = bulkTransferEnabled,
-                    onCheckedChange = onBulkTransferToggle
+                    label = stringResource(id = R.string.check_pid_label),
+                    checked = checkPidEnabled,
+                    onCheckedChange = onCheckPidToggle
                 )
+                if (isFRS) {
+                    ToggleRow(
+                        label = stringResource(id = R.string.bulk_transfer_label),
+                        checked = bulkTransferEnabled,
+                        onCheckedChange = onBulkTransferToggle
+                    )
+                }
             }
         }
     }

@@ -94,4 +94,8 @@ object FileUtils {
         return null
     }
 
+    fun getFileExtension(fileName: String): String {
+        return fileName.substringAfterLast('.', "")
+    }
+
 }
