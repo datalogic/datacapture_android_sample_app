@@ -1,5 +1,6 @@
 package com.datalogic.aladdin.aladdinusbapp.views.activity.updateFirmware
 
+import android.content.Context
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -20,7 +21,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,13 +36,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.datalogic.aladdin.aladdinusbapp.R
+import com.datalogic.aladdin.aladdinusbapp.utils.FileConstants
 import com.datalogic.aladdin.aladdinusbapp.utils.FileUtils
-import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
-import kotlinx.coroutines.delay
-import java.io.File
-import android.content.Context
-import androidx.compose.runtime.LaunchedEffect
 import com.datalogic.aladdin.aladdinusbapp.viewmodel.HomeViewModel
+import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
+import java.io.File
 
 @Preview(showBackground = true)
 @Composable
@@ -49,13 +48,13 @@ fun UpdateFirmwareScreen() {
     val homeViewModel = LocalHomeViewModel.current
     val isLoadFile = remember { mutableStateOf(false) }
     val context = LocalContext.current
-    val checkPid by homeViewModel.isCheckPid.collectAsState()
     var isCheckPidToggle by remember { mutableStateOf(true) }
     var isBulkTransferToggle by remember { mutableStateOf(false) }
     var file by remember { mutableStateOf<File?>(null) }
     var swName by remember { mutableStateOf("") }
     var filePath by remember { mutableStateOf("") }
     var pid by remember { mutableStateOf("") }
+    var fileType by remember { mutableStateOf("") }
 
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
@@ -63,9 +62,12 @@ fun UpdateFirmwareScreen() {
             uri?.let {
                 swName = FileUtils.getFileNameFromUri(context, it)
                     .toString().replace(".S37", "")
+                    .replace(".swu", "")
+                fileType = FileUtils.getFileNameFromUri(context, it)
+                    ?.let { it1 -> FileUtils.getFileExtension(it1) }.toString().uppercase()
                 file = FileUtils.getFileFromUri(context, it)
                 isLoadFile.value = true
-                pid = homeViewModel.getPid(file).toString()
+                pid = homeViewModel.getPid(file, fileType).toString()
                 filePath = file?.absolutePath ?: ""
                 val realPath = FileUtils.getRealPathFromUri(context, it)
                 if (realPath != null) {
@@ -105,7 +107,8 @@ fun UpdateFirmwareScreen() {
                         if (!isBulkTransferToggle)
                             homeViewModel._isBulkTransferSupported.postValue(false)
                     },
-                    isFRS = homeViewModel.isFRS()
+                    isFRS = homeViewModel.isFRS(),
+                    isSwu = (fileType.uppercase() == FileConstants.SWU_FILE_TYPE)
                 )
             }
             // Progress Section
@@ -149,16 +152,16 @@ fun UpdateFirmwareScreen() {
                     onClick = {
                         file?.let {
                             if (isCheckPidToggle) {
-                                homeViewModel.setPid(it) { isValid ->
+                                homeViewModel.setPid(it, fileType) { isValid ->
                                     if (isCheckPidToggle != isValid) {
                                         Toast.makeText(context, context.getString(R.string.pid_is_not_valid), Toast.LENGTH_LONG).show()
                                         return@setPid
                                     }
-                                    handleBulkTransferAndUpgrade(it, isBulkTransferToggle, homeViewModel, context)
+                                    handleBulkTransferAndUpgrade(it, isBulkTransferToggle, homeViewModel, context, fileType)
                                 }
                                 return@let
                             }
-                            handleBulkTransferAndUpgrade(it, isBulkTransferToggle, homeViewModel, context)
+                            handleBulkTransferAndUpgrade(it, isBulkTransferToggle, homeViewModel, context, fileType)
                         }
                     },
                     enabled = isLoadFile.value,
@@ -184,10 +187,11 @@ fun handleBulkTransferAndUpgrade(
     file: File,
     isBulkTransferToggle: Boolean,
     homeViewModel: HomeViewModel,
-    context: Context
+    context: Context,
+    fileType: String
 ) {
     if (isBulkTransferToggle) {
-        homeViewModel.getBulkTransferSupported(file) { supported ->
+        homeViewModel.getBulkTransferSupported(file, fileType) { supported ->
             if (isBulkTransferToggle != supported) {
                 Toast.makeText(
                     context,
@@ -196,11 +200,21 @@ fun handleBulkTransferAndUpgrade(
                 ).show()
                 return@getBulkTransferSupported
             } else {
-                homeViewModel.upgradeFirmware(file)
+                homeViewModel.upgradeFirmware(file, fileType)
                 return@getBulkTransferSupported
             }
         }
     } else {
-        homeViewModel.upgradeFirmware(file)
+        if (fileType == FileConstants.SWU_FILE_TYPE) {
+            if (!homeViewModel.isSWUValid(file)!!) {
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.swu_is_not_valid),
+                    Toast.LENGTH_LONG
+                ).show()
+                return
+            }
+        }
+        homeViewModel.upgradeFirmware(file, fileType)
     }
 }
