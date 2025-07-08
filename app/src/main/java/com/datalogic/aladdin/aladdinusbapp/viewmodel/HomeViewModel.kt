@@ -24,9 +24,11 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.datalogic.aladdin.aladdinusbapp.R
+import com.datalogic.aladdin.aladdinusbapp.utils.FileConstants
 import com.datalogic.aladdin.aladdinusbapp.utils.FileUtils
 import com.datalogic.aladdin.aladdinusbapp.utils.ResultContants
 import com.datalogic.aladdin.aladdinusbapp.utils.USBConstants
+import com.datalogic.aladdin.aladdinusbscannersdk.feature.upgradefirmware.FirmwareUpdater
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDeviceManager
 import com.datalogic.aladdin.aladdinusbscannersdk.model.ScaleData
@@ -170,6 +172,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
 
     //Reset device notify pop-up
     var showResetDeviceDialog by mutableStateOf(false)
+    var isDFWUpgrade by mutableStateOf(false)
 
     init {
         this.usbDeviceManager = usbDeviceManager
@@ -235,6 +238,25 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
 
         if (_autoDetectChecked.value == true) {
             usbDeviceManager.detectDevice(context) { devices ->
+                _deviceList.postValue(ArrayList(devices))
+                _isLoading.postValue(false)
+            }
+        } else {
+            usbDeviceManager.getAllUsbDevice(context) { devices ->
+                _usbDeviceList.postValue(ArrayList(devices))
+                _isLoading.postValue(false)
+            }
+        }
+    }
+
+    /**
+     * Check for connected HID devices
+     */
+    private fun detectHIDDevice() {
+        _isLoading.postValue(true)
+
+        if (_autoDetectChecked.value == true) {
+            usbDeviceManager.detectHIDDevice(context) { devices ->
                 _deviceList.postValue(ArrayList(devices))
                 _isLoading.postValue(false)
             }
@@ -640,6 +662,34 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                 withContext(Dispatchers.Main) {
                     if (result.equals(USBConstants.SUCCESS)) {
                         _deviceStatus.postValue(ResultContants.DEVICE_RESET_SUCCESS)
+                    } else {
+                        _deviceStatus.postValue(ResultContants.DEVICE_RESET_FAILED)
+                    }
+                    _isLoading.postValue(false)
+                }
+            }
+        } ?: run {
+            _deviceStatus.postValue("No device selected")
+        }
+    }
+
+    /**
+     * Resets the HID device
+     */
+    fun resetHIDDevice() {
+        selectedDevice.value?.let { device ->
+            _isLoading.postValue(true)
+            CoroutineScope(Dispatchers.IO).launch {
+                val result = device.resetDeviceHID()
+                delay(3000)
+
+                withContext(Dispatchers.Main) {
+                    if (result.equals(USBConstants.SUCCESS)) {
+                        _deviceStatus.postValue(ResultContants.DEVICE_RESET_SUCCESS)
+                        repeat(10){
+                            detectHIDDevice()
+                            delay(10000)
+                        }
                     } else {
                         _deviceStatus.postValue(ResultContants.DEVICE_RESET_FAILED)
                     }
@@ -1159,23 +1209,46 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     fun upgradeFirmware(file: File, fileType: String) {
         _isLoadingPercent.postValue(true)
         viewModelScope.launch(Dispatchers.IO) {
+            var firmwareDFWUpdater: FirmwareUpdater? = null
+            var firmwareUpdater: FirmwareUpdater? = null
             selectedDevice.value?.let {
-                val firmwareUpdater = it.getFirmwareUpdater(file, fileType)
+                when (fileType) {
+                    FileConstants.DFW_FILE_TYPE -> {
+                        firmwareDFWUpdater = it.getDFWFirmwareUpdater(file, fileType, context)
+                    }
+
+                    else -> {
+                        firmwareUpdater = it.getFirmwareUpdater(file, fileType)
+                    }
+                }
                 if (it.deviceType == DeviceType.HHS) {
-                    firmwareUpdater.upgrade { progress ->
-                        run {
-                            _progressUpgrade.postValue(progress)
+                    when(fileType){
+                        FileConstants.DFW_FILE_TYPE -> {
+                            resetHIDDevice()
+                            //detectHIDDevice()
+                            firmwareDFWUpdater?.upgrade { progress ->
+                                run {
+                                    _progressUpgrade.postValue(progress)
+                                }
+                            }
+                        }
+                        else -> {
+                            firmwareUpdater?.upgrade { progress ->
+                                run {
+                                    _progressUpgrade.postValue(progress)
+                                }
+                            }
                         }
                     }
                 } else {
                     if (isBulkTransferSupported.value == true) {
-                        firmwareUpdater.upgradeByBulkTransfer { progress ->
+                        firmwareUpdater?.upgradeByBulkTransfer { progress ->
                             run {
                                 _progressUpgrade.postValue(progress)
                             }
                         }
                     } else {
-                        firmwareUpdater.upgrade { progress ->
+                        firmwareUpdater?.upgrade { progress ->
                             run {
                                 _progressUpgrade.postValue(progress)
                             }
