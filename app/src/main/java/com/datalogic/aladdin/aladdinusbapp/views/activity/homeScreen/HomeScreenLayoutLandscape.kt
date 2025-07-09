@@ -39,7 +39,7 @@ fun HomeScreenLayoutLandscape() {
     var isLoading = homeViewModel.isLoading.observeAsState().value
 
     ShowPopup(homeViewModel.openAlert, onDismiss = { homeViewModel.openAlert = false }, stringResource(id = R.string.alert_message_for_open_device))
-    ShowPopup(homeViewModel.oemAlert, onDismiss = { homeViewModel.oemAlert = false }, stringResource(id = R.string.alert_message_for_oem_configuration))
+    ShowPopup(homeViewModel.oemAlert, onDismiss = { homeViewModel.oemAlert = false }, stringResource(id = R.string.oem_device_feature_restriction))
     ShowPopup(homeViewModel.connectDeviceAlert, onDismiss = { homeViewModel.connectDeviceAlert = false }, stringResource(id = R.string.alert_message_for_connect_device))
     ShowPopup(homeViewModel.magellanConfigAlert, onDismiss = { homeViewModel.magellanConfigAlert = false }, stringResource(id = R.string.alert_message_for_magellan_config))
 
