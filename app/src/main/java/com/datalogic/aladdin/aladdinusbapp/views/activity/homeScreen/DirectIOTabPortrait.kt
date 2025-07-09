@@ -103,35 +103,37 @@ fun DirectIOTabPortrait() {
                     .padding(horizontal = dimensionResource(id = R.dimen._16sdp)),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(
-                    modifier = Modifier
-                        .semantics { contentDescription = "lbl_data" }
-                        .fillMaxWidth()
-                        .padding(bottom = dimensionResource(id = R.dimen._5sdp), top = dimensionResource(id = R.dimen._10sdp)),
-                    text = stringResource(id = R.string.data),
-                    style = MaterialTheme.typography.labelLarge
-                )
-                TextField(
-                    value = dioData,
-                    onValueChange = {
-                        homeViewModel.updateDIODataField(it)
-                    },
-                    modifier = Modifier
-                        .semantics { contentDescription = "command_data" }
-                        .fillMaxWidth()
-                        .wrapContentHeight()
-                        .border(BorderStroke(1.dp, Color.Black), RoundedCornerShape(dimensionResource(id = R.dimen._8sdp))),
-                    singleLine = true,
-                    enabled = true,
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White,
-                        disabledContainerColor = Color.White,
-                        focusedIndicatorColor = Color.White,
-                        unfocusedIndicatorColor = Color.White,
-                        disabledIndicatorColor = Color.White
-                    ),
-                )
+                if (selectedCommand == DIOCmdValue.OTHER) {
+                    Text(
+                        modifier = Modifier
+                            .semantics { contentDescription = "lbl_data" }
+                            .fillMaxWidth()
+                            .padding(bottom = dimensionResource(id = R.dimen._5sdp), top = dimensionResource(id = R.dimen._10sdp)),
+                        text = stringResource(id = R.string.data),
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                    TextField(
+                        value = dioData,
+                        onValueChange = {
+                            homeViewModel.updateDIODataField(it)
+                        },
+                        modifier = Modifier
+                            .semantics { contentDescription = "command_data" }
+                            .fillMaxWidth()
+                            .wrapContentHeight()
+                            .border(BorderStroke(1.dp, Color.Black), RoundedCornerShape(dimensionResource(id = R.dimen._8sdp))),
+                        singleLine = true,
+                        enabled = true,
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White,
+                            disabledContainerColor = Color.White,
+                            focusedIndicatorColor = Color.White,
+                            unfocusedIndicatorColor = Color.White,
+                            disabledIndicatorColor = Color.White
+                        ),
+                    )
+                }
                 Text(
                     modifier = Modifier
                         .semantics { contentDescription = "lbl_status_message" }
