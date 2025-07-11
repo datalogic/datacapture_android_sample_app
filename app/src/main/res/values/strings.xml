@@ -33,7 +33,7 @@
     <string name="alert">Alert!</string>
     <string name="alert_message_for_open_device">Device is not opened.</string>
     <string name="alert_message_for_device_change">Current device state and data will be lost if you change the device.</string>
-    <string name="alert_message_for_oem_configuration">Configuration not supported for OEM devices.</string>
+    <string name="oem_device_feature_restriction">This feature is not supported on OEM devices</string>
     <string name="alert_message_for_claim_device">Claim the device.</string>
     <string name="alert_message_for_connect_device">Connect a device.</string>
     <string name="alert_message_for_magellan_config">Switch to Service Port Mode to access Configuration.</string>
