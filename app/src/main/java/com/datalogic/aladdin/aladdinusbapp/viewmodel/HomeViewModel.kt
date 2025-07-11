@@ -29,6 +29,7 @@ import com.datalogic.aladdin.aladdinusbapp.utils.FileUtils
 import com.datalogic.aladdin.aladdinusbapp.utils.ResultContants
 import com.datalogic.aladdin.aladdinusbapp.utils.USBConstants
 import com.datalogic.aladdin.aladdinusbscannersdk.feature.upgradefirmware.FirmwareUpdater
+import com.datalogic.aladdin.aladdinusbscannersdk.feature.upgradefirmware.dfw.FirmwareUpgradeDFW
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDeviceManager
 import com.datalogic.aladdin.aladdinusbscannersdk.model.ScaleData
@@ -172,7 +173,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
 
     //Reset device notify pop-up
     var showResetDeviceDialog by mutableStateOf(false)
-    var isDFWUpgrade by mutableStateOf(false)
 
     init {
         this.usbDeviceManager = usbDeviceManager
@@ -249,9 +249,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         }
     }
 
-    /**
-     * Check for connected HID devices
-     */
     private fun detectHIDDevice() {
         _isLoading.postValue(true)
 
@@ -686,9 +683,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                 withContext(Dispatchers.Main) {
                     if (result.equals(USBConstants.SUCCESS)) {
                         _deviceStatus.postValue(ResultContants.DEVICE_RESET_SUCCESS)
-                        repeat(10){
+                        repeat(3){
                             detectHIDDevice()
-                            delay(10000)
                         }
                     } else {
                         _deviceStatus.postValue(ResultContants.DEVICE_RESET_FAILED)
@@ -1222,11 +1218,25 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                     }
                 }
                 if (it.deviceType == DeviceType.HHS) {
-                    when(fileType){
+                    when(fileType) {
                         FileConstants.DFW_FILE_TYPE -> {
+                            FirmwareUpgradeDFW.isUpgradeDFW = true
+                            val fw = (firmwareDFWUpdater as FirmwareUpgradeDFW)
                             resetHIDDevice()
-                            //detectHIDDevice()
-                            firmwareDFWUpdater?.upgrade { progress ->
+                            Thread.sleep(3000)
+                            usbDeviceManager.startScanPidHID(5000, 3)
+                            repeat(2){
+                                if (usbDeviceManager.usbConnection != null && usbDeviceManager.usbInterface != null && usbDeviceManager.usbEndpointIn != null) {
+                                    fw.setUsbConnection(
+                                        usbDeviceManager.usbConnection,
+                                        usbDeviceManager.usbInterface,
+                                        usbDeviceManager.usbEndpointIn,
+                                        usbDeviceManager.usbEndpointOut
+                                    )
+                                }
+                                delay(500)
+                            }
+                            fw.upgrade { progress ->
                                 run {
                                     _progressUpgrade.postValue(progress)
                                 }
