@@ -157,7 +157,7 @@ class HomeActivity : AppCompatActivity() {
         Log.d(TAG, "Resume called")
         super.onResume()
         homeViewModel.detectDevice()
-        homeViewModel.appInForeground()
+        // homeViewModel.appInForeground()
     }
 
     override fun onStop() {
