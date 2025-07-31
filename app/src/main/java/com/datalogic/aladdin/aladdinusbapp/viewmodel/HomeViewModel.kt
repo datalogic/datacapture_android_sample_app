@@ -815,8 +815,38 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             _isLoading.postValue(true)
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    val configData = device.writeCustomConfiguration(configurationData)
-                    Log.d(TAG, "Writing custom config data for device: ${device.displayName} value $configData")
+                    val configResult = device.writeCustomConfiguration(configurationData)
+                    Log.d(TAG, "Writing custom config data for device: ${device.displayName}")
+                    
+                    withContext(Dispatchers.Main) {
+                        if (configResult.isSuccess) {
+                            resultLiveData.postValue("Configuration applied successfully")
+                            configurationCallback?.onConfigurationResult(
+                                true, 
+                                "SUCCESSFULLY", 
+                                "Configuration applied successfully"
+                            )
+                        } else {
+                            val errorMessage = buildString {
+                                append("Configuration failed with ${configResult.errorCommands.size} error(s):\n\n")
+                                configResult.errorCommands.forEachIndexed { index, error ->
+                                    append("Line ${error.rowNumber}: ${error.rowData}")
+                                    if (error.errorMessage.isNotEmpty()) {
+                                        append("\n- ${error.errorMessage}")
+                                    }
+                                    if (index < configResult.errorCommands.size - 1) {
+                                        append("\n\n")
+                                    }
+                                }
+                            }
+                            resultLiveData.postValue(errorMessage)
+                            configurationCallback?.onConfigurationResult(
+                                false, 
+                                "ERROR",
+                                errorMessage
+                            )
+                        }
+                    }
                 } catch (e: Exception) {
                     Log.e("HomeViewModel", "Error writing config: ${e.message}", e)
                     withContext(Dispatchers.Main) {
@@ -853,6 +883,17 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         Handler(Looper.getMainLooper()).post {
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }
+    }
+
+    // Callback interface for configuration results
+    interface ConfigurationResultCallback {
+        fun onConfigurationResult(isSuccess: Boolean, title: String, message: String)
+    }
+
+    private var configurationCallback: ConfigurationResultCallback? = null
+
+    fun setConfigurationResultCallback(callback: ConfigurationResultCallback?) {
+        configurationCallback = callback
     }
 
     /**
