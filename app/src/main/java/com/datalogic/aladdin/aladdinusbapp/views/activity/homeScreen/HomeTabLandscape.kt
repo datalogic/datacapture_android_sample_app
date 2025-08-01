@@ -29,7 +29,6 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
@@ -57,6 +56,7 @@ fun HomeTabLandscape() {
     val usbDeviceList = homeViewModel.usbDeviceList.observeAsState(ArrayList()).value
     val selectedUsbDevice = homeViewModel.selectedUsbDevice.observeAsState(null).value
     val isEnableScale = homeViewModel.isEnableScale.observeAsState(false).value
+    val isScaleAvailable = homeViewModel.isScaleAvailable.observeAsState(false).value
 
     val content = @Composable {
 
@@ -316,7 +316,7 @@ fun HomeTabLandscape() {
             }
         }
 
-        if (selectedDevice?.deviceType?.name == "FRS" && (selectedDevice?.connectionType?.name == "USB_COMSC" || selectedDevice?.connectionType?.name == "USB_OEM")) {
+        if (isScaleAvailable) {
             val scaleStatus by homeViewModel.scaleStatus.observeAsState("")
             val scaleWeight by homeViewModel.scaleWeight.observeAsState("")
             val scaleUnit by homeViewModel.scaleUnit.observeAsState("")

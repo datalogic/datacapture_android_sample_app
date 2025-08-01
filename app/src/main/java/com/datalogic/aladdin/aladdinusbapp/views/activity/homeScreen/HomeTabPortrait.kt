@@ -57,6 +57,7 @@ fun HomeTabPortrait() {
     val usbDeviceList = homeViewModel.usbDeviceList.observeAsState(ArrayList()).value
     val selectedUsbDevice = homeViewModel.selectedUsbDevice.observeAsState(null).value
     val isEnableScale = homeViewModel.isEnableScale.observeAsState(false).value
+    val isScaleAvailable = homeViewModel.isScaleAvailable.observeAsState(false).value
 
     val content = @Composable {
 
@@ -349,7 +350,7 @@ fun HomeTabPortrait() {
             }
         }
 
-        if (selectedDevice?.deviceType?.name == "FRS" && (selectedDevice?.connectionType?.name == "USB_COMSC" || selectedDevice?.connectionType?.name == "USB_OEM")) {
+        if (isScaleAvailable) {
             val scaleStatus by homeViewModel.scaleStatus.observeAsState("")
             val scaleWeight by homeViewModel.scaleWeight.observeAsState("")
             val scaleUnit by homeViewModel.scaleUnit.observeAsState("")

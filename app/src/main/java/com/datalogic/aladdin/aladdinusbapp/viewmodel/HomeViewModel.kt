@@ -14,8 +14,6 @@ import android.provider.MediaStore
 import android.text.TextUtils
 import android.util.Log
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -40,9 +38,9 @@ import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ScaleUnit
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbDioListener
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbScaleListener
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbScanListener
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.ScaleAvailableListener
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -50,8 +48,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.dzungvu.packlog.LogcatHelper
 import java.io.File
-import java.io.FileInputStream
-import java.io.FileOutputStream
 
 class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) : ViewModel() {
     private var usbDeviceManager: DatalogicDeviceManager
@@ -148,6 +144,10 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     private lateinit var scanEvent: UsbScanListener
     private lateinit var usbErrorListener: UsbDioListener
 
+    private lateinit var scaleListener: UsbScaleListener
+
+    private lateinit var scaleAvailableListener: ScaleAvailableListener
+
     private var currentDeviceType: DeviceType = DeviceType.HHS
     private var currentConnectionType: ConnectionType = ConnectionType.USB_COM
 
@@ -166,6 +166,9 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
 
     private val _isEnableScale = MutableLiveData<Boolean>(false)
     val isEnableScale: LiveData<Boolean> = _isEnableScale
+
+    private val _isScaleAvailable = MutableLiveData<Boolean>(false)
+    val isScaleAvailable: LiveData<Boolean> = _isScaleAvailable
 
     private val _progressUpgrade = MutableLiveData(0)
     val progressUpgrade: LiveData<Int> = _progressUpgrade
@@ -371,7 +374,14 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     fun coroutineOpenDevice(device: DatalogicDevice) {
         CoroutineScope(Dispatchers.IO).launch {
             val deviceId = device.usbDevice.productId.toString()
-
+            // Register scale available listener before opening the device
+            scaleAvailableListener = object : ScaleAvailableListener {
+                override fun onScaleAvailable(isAvailable: Boolean) {
+                    _isScaleAvailable.postValue(isAvailable)
+                }
+            }
+            device.registerScaleAvailableListener(scaleAvailableListener)
+            // Open the device
             val result = device.openDevice(context)
 
             withContext(Dispatchers.Main) {
@@ -420,7 +430,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             device.registerUsbDioListener(usbErrorListener)
 
             // Setup scale listener
-            val scaleListener = object : UsbScaleListener {
+            scaleListener = object : UsbScaleListener {
                 override fun onScale(scaleData: ScaleData) {
                     // Update UI with scale data on main thread
                     Handler(Looper.getMainLooper()).post {
@@ -457,6 +467,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                             //Clear listeners
                             device.unregisterUsbScanListener(scanEvent)
                             device.unregisterUsbDioListener(usbErrorListener)
+                            device.unregisterUsbScaleListener(scaleListener)
+                            device.unregisterScaleAvailableListener(scaleAvailableListener)
 
                             // Clear scale listener if it was registered
                             if (device.deviceType == DeviceType.FRS) {
