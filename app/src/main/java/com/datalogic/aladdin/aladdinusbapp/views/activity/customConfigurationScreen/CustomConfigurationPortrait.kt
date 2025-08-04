@@ -41,16 +41,33 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
+import com.datalogic.aladdin.aladdinusbapp.viewmodel.HomeViewModel
 
 @Preview
 @Composable
 fun CustomConfigurationPortrait() {
     val homeViewModel = LocalHomeViewModel.current
     val configData = homeViewModel.customConfiguration.observeAsState().value ?: ""
-    val textState = remember { mutableStateOf(configData ?: "") } // Initialize with configData
+    val textState = remember { mutableStateOf(configData) } // Initialize with configData
     val context = LocalContext.current
     val showDialog = remember { mutableStateOf(false) }
     val fileName = remember { mutableStateOf("") }
+    
+    // Configuration result dialog state
+    val showConfigResultDialog = remember { mutableStateOf(false) }
+    val configResultTitle = remember { mutableStateOf("") }
+    val configResultMessage = remember { mutableStateOf("") }
+
+    // Set up callback for configuration results
+    LaunchedEffect(Unit) {
+        homeViewModel.setConfigurationResultCallback(object : HomeViewModel.ConfigurationResultCallback {
+            override fun onConfigurationResult(isSuccess: Boolean, title: String, message: String) {
+                configResultTitle.value = title
+                configResultMessage.value = message
+                showConfigResultDialog.value = true
+            }
+        })
+    }
 
         // If the ViewModel's data changes (e.g., after a "Read" operation), update the local textState
     LaunchedEffect(configData) {
@@ -202,6 +219,22 @@ fun CustomConfigurationPortrait() {
                     onClick = { showDialog.value = false }
                 ) {
                     Text("Cancel")
+                }
+            }
+        )
+    }
+    
+    // Configuration result dialog
+    if (showConfigResultDialog.value) {
+        AlertDialog(
+            onDismissRequest = { showConfigResultDialog.value = false },
+            title = { Text(configResultTitle.value) },
+            text = { Text(configResultMessage.value) },
+            confirmButton = {
+                Button(
+                    onClick = { showConfigResultDialog.value = false }
+                ) {
+                    Text("OK")
                 }
             }
         )
