@@ -29,7 +29,7 @@ import com.datalogic.aladdin.aladdinusbapp.utils.FileUtils
 import com.datalogic.aladdin.aladdinusbapp.utils.ResultContants
 import com.datalogic.aladdin.aladdinusbapp.utils.USBConstants
 import com.datalogic.aladdin.aladdinusbscannersdk.feature.upgradefirmware.FirmwareUpdater
-import com.datalogic.aladdin.aladdinusbscannersdk.feature.upgradefirmware.dfw.FirmwareUpgradeDFW
+import com.datalogic.aladdin.aladdinusbscannersdk.feature.upgradefirmware.dfw.UpgradeDFW
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDeviceManager
 import com.datalogic.aladdin.aladdinusbscannersdk.model.ScaleData
@@ -673,7 +673,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     /**
      * Resets the HID device
      */
-    fun resetHIDDevice() {
+    /*fun resetHIDDevice() {
         selectedDevice.value?.let { device ->
             _isLoading.postValue(true)
             CoroutineScope(Dispatchers.IO).launch {
@@ -695,7 +695,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         } ?: run {
             _deviceStatus.postValue("No device selected")
         }
-    }
+    }*/
     // Modify the applyConfiguration method to set the dialog state
     fun applyConfiguration() {
         selectedDevice.value?.let { device ->
@@ -1220,23 +1220,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                 if (it.deviceType == DeviceType.HHS) {
                     when(fileType) {
                         FileConstants.DFW_FILE_TYPE -> {
-                            FirmwareUpgradeDFW.isUpgradeDFW = true
-                            val fw = (firmwareDFWUpdater as FirmwareUpgradeDFW)
-                            resetHIDDevice()
-                            Thread.sleep(3000)
-                            usbDeviceManager.startScanPidHID(5000, 3)
-                            repeat(2){
-                                if (usbDeviceManager.usbConnection != null && usbDeviceManager.usbInterface != null && usbDeviceManager.usbEndpointIn != null) {
-                                    fw.setUsbConnection(
-                                        usbDeviceManager.usbConnection,
-                                        usbDeviceManager.usbInterface,
-                                        usbDeviceManager.usbEndpointIn,
-                                        usbDeviceManager.usbEndpointOut
-                                    )
-                                }
-                                delay(500)
-                            }
-                            fw.upgrade { progress ->
+                            firmwareDFWUpdater?.upgrade { progress ->
                                 run {
                                     _progressUpgrade.postValue(progress)
                                 }

@@ -69,7 +69,9 @@ fun UpdateFirmwareScreen() {
                     ?.let { it1 -> FileUtils.getFileExtension(it1) }.toString().uppercase()
                 file = FileUtils.getFileFromUri(context, it)
                 isLoadFile.value = true
-                pid = homeViewModel.getPid(file, fileType).toString()
+                if(fileType != FileConstants.DFW_FILE_TYPE) {
+                    pid = homeViewModel.getPid(file, fileType).toString()
+                }
                 filePath = file?.absolutePath ?: ""
                 val realPath = FileUtils.getRealPathFromUri(context, it)
                 if (realPath != null) {
@@ -110,7 +112,7 @@ fun UpdateFirmwareScreen() {
                             homeViewModel._isBulkTransferSupported.postValue(false)
                     },
                     isFRS = homeViewModel.isFRS(),
-                    isSwu = (fileType.uppercase() == FileConstants.SWU_FILE_TYPE)
+                    isS37 = (fileType.uppercase() == FileConstants.S37_FILE_TYPE)
                 )
             }
             // Progress Section
@@ -153,7 +155,7 @@ fun UpdateFirmwareScreen() {
                         .fillMaxHeight(), // <-- makes this button match height
                     onClick = {
                         file?.let {
-                            if (isCheckPidToggle) {
+                            if (isCheckPidToggle && fileType == FileConstants.S37_FILE_TYPE) {
                                 homeViewModel.setPid(it, fileType) { isValid ->
                                     if (isCheckPidToggle != isValid) {
                                         Toast.makeText(context, context.getString(R.string.pid_is_not_valid), Toast.LENGTH_LONG).show()

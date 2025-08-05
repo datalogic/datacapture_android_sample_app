@@ -42,7 +42,7 @@ class HomeActivity : AppCompatActivity() {
     private var TAG = HomeActivity::class.java.simpleName
     private lateinit var usbDeviceManager: DatalogicDeviceManager
     private var usbListener: UsbListener? = null
-    private lateinit var statusListener: StatusListener
+    private var statusListener: StatusListener? = null
     private val homeViewModel: HomeViewModel by viewModels {
         MyViewModelFactory(usbDeviceManager, applicationContext)
     }
@@ -168,7 +168,7 @@ class HomeActivity : AppCompatActivity() {
         Log.d(TAG, "Destroy called")
         homeViewModel.onCleared()
         usbListener?.let { usbDeviceManager.unregisterUsbListener(it) }
-        usbDeviceManager.unregisterStatusListener(statusListener)
+        statusListener?.let { usbDeviceManager.unregisterStatusListener(it) }
     }
 
 }
