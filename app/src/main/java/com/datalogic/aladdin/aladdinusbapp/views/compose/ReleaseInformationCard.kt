@@ -1,4 +1,4 @@
-package com.datalogic.aladdin.aladdinusbapp.views.activity.updateFirmware
+package com.datalogic.aladdin.aladdinusbapp.views.compose
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
