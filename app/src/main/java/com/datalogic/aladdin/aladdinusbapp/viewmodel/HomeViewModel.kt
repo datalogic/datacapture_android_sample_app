@@ -262,22 +262,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         }
     }
 
-    private fun detectHIDDevice() {
-        _isLoading.postValue(true)
-
-        if (_autoDetectChecked.value == true) {
-            usbDeviceManager.detectHIDDevice(context) { devices ->
-                _deviceList.postValue(ArrayList(devices))
-                _isLoading.postValue(false)
-            }
-        } else {
-            usbDeviceManager.getAllUsbDevice(context) { devices ->
-                _usbDeviceList.postValue(ArrayList(devices))
-                _isLoading.postValue(false)
-            }
-        }
-    }
-
     /**
      * Handle device disconnection
      */
@@ -683,32 +667,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         }
     }
 
-    /**
-     * Resets the HID device
-     */
-    /*fun resetHIDDevice() {
-        selectedDevice.value?.let { device ->
-            _isLoading.postValue(true)
-            CoroutineScope(Dispatchers.IO).launch {
-                val result = device.resetDeviceHID()
-                delay(3000)
-
-                withContext(Dispatchers.Main) {
-                    if (result.equals(USBConstants.SUCCESS)) {
-                        _deviceStatus.postValue(ResultContants.DEVICE_RESET_SUCCESS)
-                        repeat(3){
-                            detectHIDDevice()
-                        }
-                    } else {
-                        _deviceStatus.postValue(ResultContants.DEVICE_RESET_FAILED)
-                    }
-                    _isLoading.postValue(false)
-                }
-            }
-        } ?: run {
-            _deviceStatus.postValue("No device selected")
-        }
-    }*/
     // Modify the applyConfiguration method to set the dialog state
     fun applyConfiguration() {
         selectedDevice.value?.let { device ->
