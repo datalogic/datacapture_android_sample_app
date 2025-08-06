@@ -41,7 +41,6 @@ import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ScaleUnit
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbDioListener
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbScaleListener
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbScanListener
-import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.ScaleAvailableListener
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -148,8 +147,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     private lateinit var usbErrorListener: UsbDioListener
 
     private lateinit var scaleListener: UsbScaleListener
-
-    private lateinit var scaleAvailableListener: ScaleAvailableListener
 
     private var currentDeviceType: DeviceType = DeviceType.HHS
     private var currentConnectionType: ConnectionType = ConnectionType.USB_COM
@@ -289,6 +286,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         clearDIOStatus()
         clearScaleData()
         stopScaleHandler()
+        //Disable scale section
+        _isScaleAvailable.postValue(false)
 
         // Check if this is our selected device
         selectedDevice.value?.let {
@@ -393,26 +392,13 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     fun coroutineOpenDevice(device: DatalogicDevice) {
         CoroutineScope(Dispatchers.IO).launch {
             val deviceId = device.usbDevice.productId.toString()
-            // Register scale available listener before opening the device
-            scaleAvailableListener = object : ScaleAvailableListener {
-                override fun onScaleAvailable(isAvailable: Boolean) {
-                    _isScaleAvailable.postValue(isAvailable)
-                }
-            }
-            device.registerScaleAvailableListener(scaleAvailableListener)
             // Open the device
             val result = device.openDevice(context)
 
             withContext(Dispatchers.Main) {
                 when (result) {
                     USBConstants.SUCCESS -> {
-                        Log.d(TAG, "Device opened successfully: ${device.displayName}")
-                        _deviceStatus.postValue("Device opened")
-                        _status.postValue(DeviceStatus.OPENED)
-
-                        // Remove from reattached list since we've handled it
-                        reattachedDevices.remove(deviceId)
-
+                        onOpenDeviceSuccessResultAction(deviceId)
                         //Setup listener
                         setupCustomListeners(device)
                     }
@@ -426,6 +412,23 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                 _isLoading.postValue(false)
             }
         }
+    }
+
+    fun onOpenDeviceSuccessResultAction(deviceId: String) {
+        val device: DatalogicDevice = selectedDevice.value ?: run {
+            Log.e(TAG, "No device selected for opening")
+            _deviceStatus.postValue("No device selected")
+            return
+        }
+
+        Log.d(TAG, "Device opened successfully: ${device.displayName}")
+        _deviceStatus.postValue("Device opened")
+        _status.postValue(DeviceStatus.OPENED)
+        if(device.isScaleAvailable()) {
+            _isScaleAvailable.postValue(true)
+        }
+        // Remove from reattached list since we've handled it
+        reattachedDevices.remove(deviceId)
     }
 
     fun setupCustomListeners(device: DatalogicDevice?) {
@@ -483,11 +486,12 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                             clearScanData()
                             clearConfig()
 
+                            _isScaleAvailable.postValue(false)
+
                             //Clear listeners
                             device.unregisterUsbScanListener(scanEvent)
                             device.unregisterUsbDioListener(usbErrorListener)
                             device.unregisterUsbScaleListener(scaleListener)
-                            device.unregisterScaleAvailableListener(scaleAvailableListener)
 
                             // Clear scale listener if it was registered
                             if (device.deviceType == DeviceType.FRS) {
@@ -1217,13 +1221,20 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     }*/
 
     fun startScaleHandler() {
-        selectedDevice.value?.startScale()
-        _isEnableScale.postValue(true)
+        if (selectedDevice.value?.startScale() ?: false) {
+            _isEnableScale.postValue(true)
+        } else {
+            _scaleStatus.postValue("Failed to start scale")
+        }
+
     }
 
     fun stopScaleHandler() {
-        selectedDevice.value?.stopScale()
-        _isEnableScale.postValue(false)
+        if(selectedDevice.value?.stopScale() ?: false) {
+            _isEnableScale.postValue(false)
+        } else {
+            _scaleStatus.postValue("Failed to stop scale")
+        }
     }
 
     /**
