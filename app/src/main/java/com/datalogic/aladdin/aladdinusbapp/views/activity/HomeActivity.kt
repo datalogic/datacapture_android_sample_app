@@ -89,6 +89,7 @@ class HomeActivity : AppCompatActivity() {
                     // Update UI based on new status
                     when (status) {
                         DeviceStatus.OPENED -> {
+                            homeViewModel.onOpenDeviceSuccessResultAction(productId)
                             //Setup listener
                             homeViewModel.setupCustomListeners(homeViewModel.selectedDevice.value)
                             showToast(applicationContext, "Device successfully opened")

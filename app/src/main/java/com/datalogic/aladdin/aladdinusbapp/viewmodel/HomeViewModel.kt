@@ -14,8 +14,6 @@ import android.provider.MediaStore
 import android.text.TextUtils
 import android.util.Log
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -45,7 +43,6 @@ import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbScaleListen
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbScanListener
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -53,8 +50,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.dzungvu.packlog.LogcatHelper
 import java.io.File
-import java.io.FileInputStream
-import java.io.FileOutputStream
 
 class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) : ViewModel() {
     private var usbDeviceManager: DatalogicDeviceManager
@@ -151,6 +146,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     private lateinit var scanEvent: UsbScanListener
     private lateinit var usbErrorListener: UsbDioListener
 
+    private lateinit var scaleListener: UsbScaleListener
+
     private var currentDeviceType: DeviceType = DeviceType.HHS
     private var currentConnectionType: ConnectionType = ConnectionType.USB_COM
 
@@ -169,6 +166,9 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
 
     private val _isEnableScale = MutableLiveData<Boolean>(false)
     val isEnableScale: LiveData<Boolean> = _isEnableScale
+
+    private val _isScaleAvailable = MutableLiveData<Boolean>(false)
+    val isScaleAvailable: LiveData<Boolean> = _isScaleAvailable
 
     private val _progressUpgrade = MutableLiveData(0)
     val progressUpgrade: LiveData<Int> = _progressUpgrade
@@ -270,6 +270,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         clearDIOStatus()
         clearScaleData()
         stopScaleHandler()
+        //Disable scale section
+        _isScaleAvailable.postValue(false)
 
         // Check if this is our selected device
         selectedDevice.value?.let {
@@ -374,19 +376,13 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     fun coroutineOpenDevice(device: DatalogicDevice) {
         CoroutineScope(Dispatchers.IO).launch {
             val deviceId = device.usbDevice.productId.toString()
-
+            // Open the device
             val result = device.openDevice(context)
 
             withContext(Dispatchers.Main) {
                 when (result) {
                     USBConstants.SUCCESS -> {
-                        Log.d(TAG, "Device opened successfully: ${device.displayName}")
-                        _deviceStatus.postValue("Device opened")
-                        _status.postValue(DeviceStatus.OPENED)
-
-                        // Remove from reattached list since we've handled it
-                        reattachedDevices.remove(deviceId)
-
+                        onOpenDeviceSuccessResultAction(deviceId)
                         //Setup listener
                         setupCustomListeners(device)
                     }
@@ -400,6 +396,23 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                 _isLoading.postValue(false)
             }
         }
+    }
+
+    fun onOpenDeviceSuccessResultAction(deviceId: String) {
+        val device: DatalogicDevice = selectedDevice.value ?: run {
+            Log.e(TAG, "No device selected for opening")
+            _deviceStatus.postValue("No device selected")
+            return
+        }
+
+        Log.d(TAG, "Device opened successfully: ${device.displayName}")
+        _deviceStatus.postValue("Device opened")
+        _status.postValue(DeviceStatus.OPENED)
+        if(device.isScaleAvailable()) {
+            _isScaleAvailable.postValue(true)
+        }
+        // Remove from reattached list since we've handled it
+        reattachedDevices.remove(deviceId)
     }
 
     fun setupCustomListeners(device: DatalogicDevice?) {
@@ -423,7 +436,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             device.registerUsbDioListener(usbErrorListener)
 
             // Setup scale listener
-            val scaleListener = object : UsbScaleListener {
+            scaleListener = object : UsbScaleListener {
                 override fun onScale(scaleData: ScaleData) {
                     // Update UI with scale data on main thread
                     Handler(Looper.getMainLooper()).post {
@@ -457,9 +470,12 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                             clearScanData()
                             clearConfig()
 
+                            _isScaleAvailable.postValue(false)
+
                             //Clear listeners
                             device.unregisterUsbScanListener(scanEvent)
                             device.unregisterUsbDioListener(usbErrorListener)
+                            device.unregisterUsbScaleListener(scaleListener)
 
                             // Clear scale listener if it was registered
                             if (device.deviceType == DeviceType.FRS) {
@@ -1163,13 +1179,20 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     }*/
 
     fun startScaleHandler() {
-        selectedDevice.value?.startScale()
-        _isEnableScale.postValue(true)
+        if (selectedDevice.value?.startScale() ?: false) {
+            _isEnableScale.postValue(true)
+        } else {
+            _scaleStatus.postValue("Failed to start scale")
+        }
+
     }
 
     fun stopScaleHandler() {
-        selectedDevice.value?.stopScale()
-        _isEnableScale.postValue(false)
+        if(selectedDevice.value?.stopScale() ?: false) {
+            _isEnableScale.postValue(false)
+        } else {
+            _scaleStatus.postValue("Failed to stop scale")
+        }
     }
 
     /**
