@@ -1225,7 +1225,9 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             selectedDevice.value?.let {
                 when (fileType) {
                     FileConstants.DFW_FILE_TYPE -> {
-                        firmwareDFWUpdater = it.getDFWFirmwareUpdater(file, fileType, context)
+                        firmwareDFWUpdater = it.getDFWFirmwareUpdater(file, fileType, context){
+                            showResetDeviceDialog = true
+                        }
                     }
 
                     else -> {

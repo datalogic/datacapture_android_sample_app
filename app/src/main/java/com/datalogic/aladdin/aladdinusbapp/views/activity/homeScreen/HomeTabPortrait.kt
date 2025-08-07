@@ -29,7 +29,6 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
@@ -38,6 +37,7 @@ import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.CustomB
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ConnectionTypeDropdown
 import com.datalogic.aladdin.aladdinusbapp.views.compose.DeviceDropdown
 import com.datalogic.aladdin.aladdinusbapp.views.compose.DeviceTypeDropdown
+import com.datalogic.aladdin.aladdinusbapp.views.compose.RestartDeviceDialog
 import com.datalogic.aladdin.aladdinusbapp.views.compose.UsbDeviceDropdown
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 
@@ -525,6 +525,9 @@ fun HomeTabPortrait() {
                     homeViewModel.closeDevice()
                 }
             )
+        }
+        if (homeViewModel.showResetDeviceDialog) {
+            RestartDeviceDialog(homeViewModel)
         }
     }
     /**

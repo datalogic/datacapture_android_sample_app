@@ -75,4 +75,6 @@
     <string name="pid_is_not_valid">PID is not valid</string>
     <string name="bulk_transfer_is_not_valid">Bulk Transfer is not valid</string>
     <string name="swu_is_not_valid">SWU firmware is invalid.</string>
+    <string name="ok">OK</string>
+    <string name="msg_restart_device">Your device has been successfully upgraded with the new firmware. Please restart the device to complete the upgrade process.</string>
 </resources>
