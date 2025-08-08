@@ -37,6 +37,7 @@ import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.CustomB
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ConnectionTypeDropdown
 import com.datalogic.aladdin.aladdinusbapp.views.compose.DeviceDropdown
 import com.datalogic.aladdin.aladdinusbapp.views.compose.DeviceTypeDropdown
+import com.datalogic.aladdin.aladdinusbapp.views.compose.RestartDeviceDialog
 import com.datalogic.aladdin.aladdinusbapp.views.compose.UsbDeviceDropdown
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 
@@ -492,6 +493,9 @@ fun HomeTabLandscape() {
                     homeViewModel.closeDevice()
                 }
             )
+        }
+        if (homeViewModel.showResetDeviceDialog) {
+            RestartDeviceDialog(homeViewModel)
         }
     }
     /**
