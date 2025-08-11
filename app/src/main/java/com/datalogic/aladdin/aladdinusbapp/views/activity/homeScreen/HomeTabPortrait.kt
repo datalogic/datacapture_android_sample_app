@@ -37,6 +37,8 @@ import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.CustomB
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ConnectionTypeDropdown
 import com.datalogic.aladdin.aladdinusbapp.views.compose.DeviceDropdown
 import com.datalogic.aladdin.aladdinusbapp.views.compose.DeviceTypeDropdown
+import com.datalogic.aladdin.aladdinusbapp.views.compose.LabelCodeTypeDropdown
+import com.datalogic.aladdin.aladdinusbapp.views.compose.LabelIDControlDropdown
 import com.datalogic.aladdin.aladdinusbapp.views.compose.RestartDeviceDialog
 import com.datalogic.aladdin.aladdinusbapp.views.compose.UsbDeviceDropdown
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
@@ -98,7 +100,7 @@ fun HomeTabPortrait() {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             val isLoggingEnabled by homeViewModel.isLoggingEnabled.observeAsState(false)
-            
+
             Switch(
                 checked = isLoggingEnabled,
                 onCheckedChange = {
@@ -346,6 +348,36 @@ fun HomeTabPortrait() {
                         text = stringResource(id = R.string.clear_fields),
                         color = Color.White
                     )
+                }
+
+                Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen._15sdp)))
+
+                if(status == DeviceStatus.OPENED) {
+                    LabelIDControlDropdown(
+                        modifier = Modifier
+                            .semantics { contentDescription = "label_id_control_dropdown" }
+                            .fillMaxWidth()
+                            .height(dimensionResource(id = R.dimen._55sdp)),
+                        homeViewModel.selectedLabelIDControl.observeAsState().value,
+                        onLabelIDControlSelected = {
+                            homeViewModel.setSelectedLabelIDControl(it)
+                        }
+                    )
+
+                    Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen._15sdp)))
+
+                    LabelCodeTypeDropdown(
+                        modifier = Modifier
+                            .semantics { contentDescription = "label_code_type_dropdown" }
+                            .fillMaxWidth()
+                            .height(dimensionResource(id = R.dimen._55sdp)),
+                        homeViewModel.selectedLabelCodeType.observeAsState().value,
+                        onLabelCodeTypeSelected = {
+                            homeViewModel.setSelectedLabelCodeType(it)
+                        }
+                    )
+
+                    Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen._15sdp)))
                 }
             }
         }
