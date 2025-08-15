@@ -32,6 +32,8 @@ import com.datalogic.aladdin.aladdinusbscannersdk.feature.upgradefirmware.Firmwa
 import com.datalogic.aladdin.aladdinusbscannersdk.feature.upgradefirmware.dfw.UpgradeDFW
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDeviceManager
+import com.datalogic.aladdin.aladdinusbscannersdk.model.LabelCodeType
+import com.datalogic.aladdin.aladdinusbscannersdk.model.LabelIDControl
 import com.datalogic.aladdin.aladdinusbscannersdk.model.ScaleData
 import com.datalogic.aladdin.aladdinusbscannersdk.model.UsbScanData
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.BluetoothProfile
@@ -105,6 +107,13 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     // Log toggle state
     private val _isLoggingEnabled = MutableLiveData(false)
     val isLoggingEnabled: LiveData<Boolean> = _isLoggingEnabled
+
+    // Label parsing settings
+    private val _selectedLabelCodeType = MutableLiveData(LabelCodeType.NONE)
+    val selectedLabelCodeType: LiveData<LabelCodeType> = _selectedLabelCodeType
+
+    private val _selectedLabelIDControl = MutableLiveData(LabelIDControl.DISABLE)
+    val selectedLabelIDControl: LiveData<LabelIDControl> = _selectedLabelIDControl
 
     // LogcatHelper instance - direct usage without Application dependency
     private val logcatHelper: LogcatHelper by lazy {
@@ -319,7 +328,11 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     }
 
     @JvmOverloads
-    fun ByteArray.toHexString(separator: CharSequence = " ",  prefix: CharSequence = "[",  postfix: CharSequence = "]") =
+    fun ByteArray.toHexString(
+        separator: CharSequence = " ",
+        prefix: CharSequence = "[",
+        postfix: CharSequence = "]"
+    ) =
         this.joinToString(separator, prefix, postfix) {
             String.format("0x%02X", it)
         }
@@ -398,6 +411,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                         onOpenDeviceSuccessResultAction(deviceId)
                         //Setup listener
                         setupCustomListeners(device)
+                        // Initialize label settings from device
+                        initializeLabelSettingsFromDevice()
                     }
 
                     else -> {
@@ -421,7 +436,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         Log.d(TAG, "Device opened successfully: ${device.displayName}")
         _deviceStatus.postValue("Device opened")
         _status.postValue(DeviceStatus.OPENED)
-        if(device.isScaleAvailable()) {
+        if (device.isScaleAvailable()) {
             _isScaleAvailable.postValue(true)
         }
         // Remove from reattached list since we've handled it
@@ -494,7 +509,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                             if (device.deviceType == DeviceType.FRS) {
                                 try {
                                     device.unregisterUsbScaleListener(object : UsbScaleListener {
-                                       override fun onScale(scaleData: ScaleData) {}
+                                        override fun onScale(scaleData: ScaleData) {}
                                     })
                                 } catch (e: Exception) {
                                     Log.e(TAG, "Error unregistering scale listener", e)
@@ -820,7 +835,10 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                     Log.d("HomeViewModel", "Reading config data for device: ${device.displayName}")
                     val configData = device.getCustomConfiguration()
                     _customConfiguration.postValue(configData)
-                    Log.d(TAG, "Reading custom config data for device: ${device.displayName} value $configData")
+                    Log.d(
+                        TAG,
+                        "Reading custom config data for device: ${device.displayName} value $configData"
+                    )
                 } catch (e: Exception) {
                     Log.e("HomeViewModel", "Error reading config: ${e.message}", e)
                     withContext(Dispatchers.Main) {
@@ -850,13 +868,13 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                 try {
                     val configResult = device.writeCustomConfiguration(configurationData)
                     Log.d(TAG, "Writing custom config data for device: ${device.displayName}")
-                    
+
                     withContext(Dispatchers.Main) {
                         if (configResult.isSuccess) {
                             resultLiveData.postValue("Configuration applied successfully")
                             configurationCallback?.onConfigurationResult(
-                                true, 
-                                "SUCCESSFULLY", 
+                                true,
+                                "SUCCESSFULLY",
                                 "Configuration applied successfully"
                             )
                         } else {
@@ -874,7 +892,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                             }
                             resultLiveData.postValue(errorMessage)
                             configurationCallback?.onConfigurationResult(
-                                false, 
+                                false,
                                 "ERROR",
                                 errorMessage
                             )
@@ -1112,7 +1130,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                 return true
             }
 
-            3,4,5 -> { // Image capture tab, custom configuration, update firmware
+            3, 4, 5 -> { // Image capture tab, custom configuration, update firmware
                 if (selectedDevice.value?.connectionType == ConnectionType.USB_OEM) {
                     oemAlert = true
                     return false
@@ -1207,7 +1225,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     }
 
     fun stopScaleHandler() {
-        if(selectedDevice.value?.stopScale() ?: false) {
+        if (selectedDevice.value?.stopScale() ?: false) {
             _isEnableScale.postValue(false)
         } else {
             _scaleStatus.postValue("Failed to stop scale")
@@ -1253,8 +1271,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         _customConfiguration.value = newConfig
     }
 
-    fun clearConfig(){
-        if(selectedDevice.value?.status == DeviceStatus.CLOSED){
+    fun clearConfig() {
+        if (selectedDevice.value?.status == DeviceStatus.CLOSED) {
             _customConfiguration.value = ""
         }
     }
@@ -1277,7 +1295,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                     }
                 }
                 if (it.deviceType == DeviceType.HHS) {
-                    when(fileType) {
+                    when (fileType) {
                         FileConstants.DFW_FILE_TYPE -> {
                             firmwareDFWUpdater?.upgrade { progress ->
                                 run {
@@ -1285,6 +1303,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                                 }
                             }
                         }
+
                         else -> {
                             firmwareUpdater?.upgrade { progress ->
                                 run {
@@ -1314,7 +1333,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         }
     }
 
-    fun getPid(file: File?, fileType: String): String?{
+    fun getPid(file: File?, fileType: String): String? {
         selectedDevice.value?.let {
             return it.getPid(file, fileType)
         }
@@ -1372,7 +1391,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         _isLoggingEnabled.value = logcatHelper.isActive()
     }
 
-    fun isSWUValid(file: File): Boolean?{
+    fun isSWUValid(file: File): Boolean? {
         return selectedDevice.value?.isSWUFirmwareValid(file)
     }
 
@@ -1382,3 +1401,73 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         _qrBitmap.value = scaledBitmap
     }
 }
+    /**
+     * Set the selected label code type and sync with the device
+     * @param labelCodeType The label code type to set
+     */
+    fun setSelectedLabelCodeType(labelCodeType: LabelCodeType) {
+        _selectedLabelCodeType.value = labelCodeType
+
+        // Sync with the device if it's available and opened
+        selectedDevice.value?.let { device ->
+            if (device.status == DeviceStatus.OPENED) {
+                device.setCurrentLabelCodeType(labelCodeType)
+                Log.d(TAG, "Label code type synced with device: ${labelCodeType.code}")
+            }
+        }
+    }
+
+    /**
+     * Set the selected label ID control and sync with the device
+     * @param labelIDControl The label ID control to set
+     */
+    fun setSelectedLabelIDControl(labelIDControl: LabelIDControl) {
+        _selectedLabelIDControl.value = labelIDControl
+
+        // Sync with the device if it's available and opened
+        selectedDevice.value?.let { device ->
+            if (device.status == DeviceStatus.OPENED) {
+                device.setCurrentLabelIDControl(labelIDControl)
+                Log.d(TAG, "Label ID control synced with device: ${labelIDControl.code}")
+            }
+        }
+    }
+
+    /**
+     * Get the current label code type setting from the device
+     * @return Current LabelCodeType value
+     */
+    fun getCurrentLabelCodeType(): LabelCodeType {
+        return selectedDevice.value?.getCurrentLabelCodeType() ?: LabelCodeType.NONE
+    }
+
+    /**
+     * Get the current label ID control setting from the device
+     * @return Current LabelIDControl value
+     */
+    fun getCurrentLabelIDControl(): LabelIDControl {
+        return selectedDevice.value?.getCurrentLabelIDControl() ?: LabelIDControl.DISABLE
+    }
+
+    /**
+     * Initialize label settings from the device when it's opened
+     * This should be called when device is successfully opened
+     */
+    private fun initializeLabelSettingsFromDevice() {
+        selectedDevice.value?.let { device ->
+            if (device.status == DeviceStatus.OPENED) {
+                val deviceLabelCodeType = device.getCurrentLabelCodeType()
+                val deviceLabelIDControl = device.getCurrentLabelIDControl()
+
+                _selectedLabelCodeType.postValue(deviceLabelCodeType)
+                _selectedLabelIDControl.postValue(deviceLabelIDControl)
+
+                Log.d(
+                    TAG,
+                    "Label settings initialized from device - CodeType: ${deviceLabelCodeType.code}, IDControl: ${deviceLabelIDControl.code}"
+                )
+            }
+        }
+    }
+}
+
