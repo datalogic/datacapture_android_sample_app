@@ -1,5 +1,6 @@
 package com.datalogic.aladdin.aladdinusbapp.views.activity.homeScreen
 
+import android.app.Activity
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -24,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
@@ -58,6 +60,9 @@ fun HomeTabPortrait() {
     val selectedUsbDevice = homeViewModel.selectedUsbDevice.observeAsState(null).value
     val isEnableScale = homeViewModel.isEnableScale.observeAsState(false).value
     val isScaleAvailable = homeViewModel.isScaleAvailable.observeAsState(false).value
+
+    val context = LocalContext.current
+    val activity = context as? Activity
 
     val content = @Composable {
 

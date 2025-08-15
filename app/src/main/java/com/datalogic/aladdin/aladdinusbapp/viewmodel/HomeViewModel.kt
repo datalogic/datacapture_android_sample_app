@@ -1,5 +1,7 @@
 package com.datalogic.aladdin.aladdinusbapp.viewmodel
 
+import android.app.Activity
+import android.bluetooth.BluetoothDevice
 import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
@@ -32,12 +34,14 @@ import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDeviceManager
 import com.datalogic.aladdin.aladdinusbscannersdk.model.ScaleData
 import com.datalogic.aladdin.aladdinusbscannersdk.model.UsbScanData
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.BluetoothProfile
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ConfigurationFeature
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ConnectionType
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DIOCmdValue
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceType
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ScaleUnit
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.BluetoothListener
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbDioListener
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbScaleListener
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbScanListener
@@ -50,9 +54,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.dzungvu.packlog.LogcatHelper
 import java.io.File
+import androidx.core.graphics.scale
 
 class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) : ViewModel() {
-    private var usbDeviceManager: DatalogicDeviceManager
+    var usbDeviceManager: DatalogicDeviceManager
 
     private val _status = MutableLiveData<DeviceStatus>()
     val status: LiveData<DeviceStatus> = _status
@@ -146,6 +151,9 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     private lateinit var scanEvent: UsbScanListener
     private lateinit var usbErrorListener: UsbDioListener
 
+
+    private lateinit var bluetoothListener: BluetoothListener
+
     private lateinit var scaleListener: UsbScaleListener
 
     private var currentDeviceType: DeviceType = DeviceType.HHS
@@ -186,6 +194,11 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
 
     //Reset device notify pop-up
     var showResetDeviceDialog by mutableStateOf(false)
+
+
+    private val _qrBitmap = MutableLiveData<Bitmap>()
+    val qrBitmap: LiveData<Bitmap> get() = _qrBitmap
+
 
     init {
         this.usbDeviceManager = usbDeviceManager
@@ -1059,6 +1072,12 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             return true
         }
 
+        if (tabIndex == 6) {
+            setSelectedTabIndex(tabIndex)
+            createQrCode()
+            return true
+        }
+
         // For tabs other than Home, we need a device
         if (deviceList.value?.isEmpty() == true && usbDeviceList.value?.isEmpty() == true) {
             connectDeviceAlert = true
@@ -1355,5 +1374,11 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
 
     fun isSWUValid(file: File): Boolean?{
         return selectedDevice.value?.isSWUFirmwareValid(file)
+    }
+
+    fun createQrCode() {
+        val bitmap = usbDeviceManager.qrCodeGenerator(context, BluetoothProfile.SPP)
+        val scaledBitmap = bitmap.scale(210, 210, false)
+        _qrBitmap.value = scaledBitmap
     }
 }

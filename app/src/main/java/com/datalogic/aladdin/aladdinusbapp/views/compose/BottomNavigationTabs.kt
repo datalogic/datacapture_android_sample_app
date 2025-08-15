@@ -1,5 +1,6 @@
 package com.datalogic.aladdin.aladdinusbapp.views.compose
 
+import android.app.Activity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -26,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
@@ -49,7 +51,8 @@ fun BottomNavigationRow(modifier: Modifier, homeViewModel: HomeViewModel) {
         stringResource(id = R.string.direct_io),
         stringResource(id = R.string.image_capture),
         stringResource(id = R.string.custom_configuration),
-        stringResource(id = R.string.btn_upgrade_firmware)
+        stringResource(id = R.string.btn_upgrade_firmware),
+        stringResource(id = R.string.bluetooth)
     )
     val selectedTab by homeViewModel.selectedTabIndex.observeAsState(0)
     val status = homeViewModel.status.observeAsState(DeviceStatus.CLOSED).value
@@ -76,6 +79,8 @@ fun BottomNavigationRow(modifier: Modifier, homeViewModel: HomeViewModel) {
 
     // State for overflow menu
     val (overflowMenuExpanded, setOverflowMenuExpanded) = remember { mutableStateOf(false) }
+
+
 
     LaunchedEffect(status) {
         when (status) {
@@ -127,7 +132,10 @@ fun BottomNavigationRow(modifier: Modifier, homeViewModel: HomeViewModel) {
                 DropdownMenu(
                     expanded = overflowMenuExpanded,
                     onDismissRequest = { setOverflowMenuExpanded(false) },
-                    offset = DpOffset(x = 0.dp, y = 0.dp), // Increase negative y-offset to move it lower
+                    offset = DpOffset(
+                        x = 0.dp,
+                        y = 0.dp
+                    ), // Increase negative y-offset to move it lower
                     modifier = Modifier.width(IntrinsicSize.Min)
                 ) {
                     overflowItems.forEachIndexed { i, item ->

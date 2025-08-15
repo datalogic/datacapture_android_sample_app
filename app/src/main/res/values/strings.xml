@@ -4,6 +4,7 @@
     <string name="alert_dialog_text">This application requires permission to access USB devices. Please grant permission.</string>
     <string name="cancel">Cancel</string>
     <string name="home">Home</string>
+    <string name="bluetooth">Bluetooth</string>
     <string name="imageCapture">Image Capture</string>
     <string name="configuration">Configuration</string>
     <string name="direct_io">Direct I/O</string>
@@ -77,4 +78,5 @@
     <string name="swu_is_not_valid">SWU firmware is invalid.</string>
     <string name="ok">OK</string>
     <string name="msg_restart_device">Your device has been successfully upgraded with the new firmware. Please restart the device to complete the upgrade process.</string>
+    <string name="scan_to_pair">Scan below barcode to pair your device</string>
 </resources>
