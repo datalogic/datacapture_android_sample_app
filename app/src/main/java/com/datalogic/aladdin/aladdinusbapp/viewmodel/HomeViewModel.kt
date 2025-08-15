@@ -1400,7 +1400,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         val scaledBitmap = bitmap.scale(210, 210, false)
         _qrBitmap.value = scaledBitmap
     }
-}
+
     /**
      * Set the selected label code type and sync with the device
      * @param labelCodeType The label code type to set
