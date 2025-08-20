@@ -80,7 +80,8 @@ fun BottomNavigationRow(modifier: Modifier, homeViewModel: HomeViewModel) {
     // State for overflow menu
     val (overflowMenuExpanded, setOverflowMenuExpanded) = remember { mutableStateOf(false) }
 
-
+    val context = LocalContext.current
+    val activity = context as? Activity
 
     LaunchedEffect(status) {
         when (status) {

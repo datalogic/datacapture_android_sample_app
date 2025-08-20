@@ -33,7 +33,7 @@ import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 
 
 @Composable
-fun BluetoothTabPortrait() {
+fun BluetoothTabLandscape() {
     val homeViewModel = LocalHomeViewModel.current
 
     val qrBitmap by homeViewModel.qrBitmap.observeAsState()
@@ -46,6 +46,8 @@ fun BluetoothTabPortrait() {
      * Define a threshold for vertical scrolling
      * */
     val scrollableThreshold = 500
+
+
 
     activity?.let {
         homeViewModel.scanBluetoothDevice(it)

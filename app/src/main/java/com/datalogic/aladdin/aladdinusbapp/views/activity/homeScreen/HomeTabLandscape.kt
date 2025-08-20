@@ -1,5 +1,6 @@
 package com.datalogic.aladdin.aladdinusbapp.views.activity.homeScreen
 
+import android.app.Activity
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -24,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
@@ -32,6 +34,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
+import com.datalogic.aladdin.aladdinusbapp.views.compose.BluetoothDeviceDropdown
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.CustomButton
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ConnectionTypeDropdown
@@ -61,9 +64,28 @@ fun HomeTabLandscape() {
     val isEnableScale = homeViewModel.isEnableScale.observeAsState(false).value
     val isScaleAvailable = homeViewModel.isScaleAvailable.observeAsState(false).value
 
-    val content = @Composable {
+    val isBluetoothEnabled = homeViewModel.isBluetoothEnabled.observeAsState(false).value
+    val selectedBluetoothDevice = homeViewModel.selectedBluetoothDevice.observeAsState(null).value
+    val selectedScannerBluetoothDevice = homeViewModel.selectedScannerBluetoothDevice.observeAsState(null).value
+    val allBluetoothDevices = homeViewModel.allBluetoothDevices.observeAsState(ArrayList()).value
 
-        if (autoDetectChecked) {
+    val context = LocalContext.current
+    val activity = context as? Activity
+
+    val content = @Composable {
+        if (isBluetoothEnabled) {
+            BluetoothDeviceDropdown(
+                modifier = Modifier
+                    .semantics { contentDescription = "bluetooth_device_list_dropdown" }
+                    .fillMaxWidth()
+                    .height(dimensionResource(id = R.dimen._55sdp)),
+                selectedBluetoothDevice,
+                allBluetoothDevices,
+                onBluetoothDeviceSelected = {
+                    homeViewModel.setSelectedBluetoothDevice(it)
+                }
+            )
+        } else if (autoDetectChecked) {
             DeviceDropdown(
                 modifier = Modifier
                     .semantics { contentDescription = "device_list_dropdown" }
@@ -87,6 +109,37 @@ fun HomeTabLandscape() {
                 onUsbDeviceSelected = {
                     homeViewModel.setSelectedUsbDevice(it)
                 }
+            )
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    top = dimensionResource(id = R.dimen._15sdp),
+                    bottom = dimensionResource(id = R.dimen._5sdp)
+                ),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Switch(
+                checked = isBluetoothEnabled,
+                onCheckedChange = {
+                    homeViewModel.toggleConnectionType()
+                }
+            )
+
+            Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen._15sdp)))
+
+            Text(
+                modifier = Modifier
+                    .semantics { contentDescription = "lbl_connection_toggle" }
+                    .fillMaxWidth()
+                    .padding(
+                        top = dimensionResource(id = R.dimen._15sdp),
+                        bottom = dimensionResource(id = R.dimen._5sdp)
+                    ),
+                text = if (isBluetoothEnabled) "Bluetooth Enabled" else "Bluetooth Disabled",
+                style = MaterialTheme.typography.labelLarge
             )
         }
 
@@ -508,7 +561,7 @@ fun HomeTabLandscape() {
                     .weight(0.5f)
                     .semantics { contentDescription = "btn_open" },
                 buttonState = (status == DeviceStatus.CLOSED &&
-                        (deviceList.isNotEmpty() || usbDeviceList.isNotEmpty())),
+                        (deviceList.isNotEmpty() || usbDeviceList.isNotEmpty() || allBluetoothDevices.isNotEmpty())),
                 stringResource(id = R.string.open),
                 onClick = {
                     homeViewModel.openDevice()
