@@ -137,6 +137,7 @@ class HomeActivity : AppCompatActivity() {
 
         // Initialize logging state
         homeViewModel.initializeLoggingState()
+        homeViewModel.initializeConnectTypeState()
     }
 
     override fun onRequestPermissionsResult(

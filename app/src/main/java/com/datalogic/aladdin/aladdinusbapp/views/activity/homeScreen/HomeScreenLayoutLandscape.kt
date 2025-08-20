@@ -38,10 +38,10 @@ fun HomeScreenLayoutLandscape() {
     val selectedTab by homeViewModel.selectedTabIndex.observeAsState(0)
     var isLoading = homeViewModel.isLoading.observeAsState().value
 
-    ShowPopup(homeViewModel.openAlert, onDismiss = { homeViewModel.openAlert = false }, stringResource(id = R.string.alert_message_for_open_device))
-    ShowPopup(homeViewModel.oemAlert, onDismiss = { homeViewModel.oemAlert = false }, stringResource(id = R.string.oem_device_feature_restriction))
-    ShowPopup(homeViewModel.connectDeviceAlert, onDismiss = { homeViewModel.connectDeviceAlert = false }, stringResource(id = R.string.alert_message_for_connect_device))
-    ShowPopup(homeViewModel.magellanConfigAlert, onDismiss = { homeViewModel.magellanConfigAlert = false }, stringResource(id = R.string.alert_message_for_magellan_config))
+    ShowPopup((homeViewModel.openAlert && homeViewModel.selectedTabIndex.value != 6), onDismiss = { homeViewModel.openAlert = false }, stringResource(id = R.string.alert_message_for_open_device))
+    ShowPopup((homeViewModel.oemAlert && homeViewModel.selectedTabIndex.value != 6), onDismiss = { homeViewModel.oemAlert = false }, stringResource(id = R.string.oem_device_feature_restriction))
+    ShowPopup((homeViewModel.connectDeviceAlert && homeViewModel.selectedTabIndex.value != 6), onDismiss = { homeViewModel.connectDeviceAlert = false }, stringResource(id = R.string.alert_message_for_connect_device))
+    ShowPopup((homeViewModel.magellanConfigAlert  && homeViewModel.selectedTabIndex.value != 6), onDismiss = { homeViewModel.magellanConfigAlert = false }, stringResource(id = R.string.alert_message_for_magellan_config))
 
     if (isLoading!!) {
         ShowLoading(onDismiss = { isLoading = false })
@@ -73,6 +73,7 @@ fun HomeScreenLayoutLandscape() {
                 1 -> ConfigurationTabLandscape()
                 2 -> DirectIOTabLandscape()
                 3 -> ImageCaptureTabPortrait()
+                6 -> BluetoothTabLandscape()
             }
         }
 

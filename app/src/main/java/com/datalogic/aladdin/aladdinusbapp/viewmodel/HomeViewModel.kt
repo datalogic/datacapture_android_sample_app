@@ -1,12 +1,18 @@
 package com.datalogic.aladdin.aladdinusbapp.viewmodel
 
+import DatalogicBluetoothDevice
+import android.Manifest
+import android.app.Activity
+import android.bluetooth.BluetoothDevice
 import android.content.ContentValues
 import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
 import android.net.Uri
+import android.os.Build
 import android.os.Environment
 import android.os.Handler
 import android.os.Looper
@@ -17,6 +23,7 @@ import android.widget.Toast
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.core.app.ActivityCompat
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -27,19 +34,20 @@ import com.datalogic.aladdin.aladdinusbapp.utils.FileUtils
 import com.datalogic.aladdin.aladdinusbapp.utils.ResultContants
 import com.datalogic.aladdin.aladdinusbapp.utils.USBConstants
 import com.datalogic.aladdin.aladdinusbscannersdk.feature.upgradefirmware.FirmwareUpdater
-import com.datalogic.aladdin.aladdinusbscannersdk.feature.upgradefirmware.dfw.UpgradeDFW
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDeviceManager
 import com.datalogic.aladdin.aladdinusbscannersdk.model.LabelCodeType
 import com.datalogic.aladdin.aladdinusbscannersdk.model.LabelIDControl
 import com.datalogic.aladdin.aladdinusbscannersdk.model.ScaleData
 import com.datalogic.aladdin.aladdinusbscannersdk.model.UsbScanData
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.BluetoothProfile
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ConfigurationFeature
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ConnectionType
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DIOCmdValue
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceType
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ScaleUnit
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.BluetoothListener
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbDioListener
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbScaleListener
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbScanListener
@@ -52,9 +60,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.dzungvu.packlog.LogcatHelper
 import java.io.File
+import androidx.core.graphics.scale
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.HostType
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.BluetoothSerialListener
 
 class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) : ViewModel() {
-    private var usbDeviceManager: DatalogicDeviceManager
+    var usbDeviceManager: DatalogicDeviceManager
 
     private val _status = MutableLiveData<DeviceStatus>()
     val status: LiveData<DeviceStatus> = _status
@@ -68,6 +79,10 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
 
     private val _usbDeviceList = MutableLiveData<ArrayList<UsbDevice>>(ArrayList())
     val usbDeviceList: LiveData<ArrayList<UsbDevice>> = _usbDeviceList
+
+    private val _allBluetoothDevices = MutableLiveData<ArrayList<BluetoothDevice>>(ArrayList())
+    val allBluetoothDevices: LiveData<ArrayList<BluetoothDevice>> = _allBluetoothDevices
+    private val _bluetoothPermission = MutableLiveData<Boolean>()
 
     private val _scanLabel = MutableLiveData("")
     val scanLabel: LiveData<String> = _scanLabel
@@ -90,6 +105,10 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     val selectedDevice: MutableLiveData<DatalogicDevice?> = MutableLiveData(null)
     val selectedUsbDevice: MutableLiveData<UsbDevice?> = MutableLiveData(null)
 
+    val selectedBluetoothDevice: MutableLiveData<BluetoothDevice?> = MutableLiveData(null)
+    val selectedScannerBluetoothDevice: MutableLiveData<DatalogicBluetoothDevice?> =
+        MutableLiveData(null)
+
     private val _selectedTabIndex = MutableLiveData(0)
     val selectedTabIndex: LiveData<Int> = _selectedTabIndex
 
@@ -102,6 +121,10 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     // Log toggle state
     private val _isLoggingEnabled = MutableLiveData(false)
     val isLoggingEnabled: LiveData<Boolean> = _isLoggingEnabled
+
+    // Connect type toggle state
+    private val _isBluetoothEnabled = MutableLiveData(false)
+    val isBluetoothEnabled: LiveData<Boolean> = _isBluetoothEnabled
 
     // Label parsing settings
     private val _selectedLabelCodeType = MutableLiveData(LabelCodeType.NONE)
@@ -142,7 +165,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     val dioData: LiveData<String> = _dioData
 
     // Configuration related state
-    private val _readConfigData = MutableLiveData<HashMap<ConfigurationFeature, Boolean>>(hashMapOf())
+    private val _readConfigData =
+        MutableLiveData<HashMap<ConfigurationFeature, Boolean>>(hashMapOf())
     val readConfigData: LiveData<HashMap<ConfigurationFeature, Boolean>> = _readConfigData
 
     var writeConfigData: HashMap<ConfigurationFeature, String> = hashMapOf()
@@ -154,6 +178,9 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     //Listener
     private lateinit var scanEvent: UsbScanListener
     private lateinit var usbErrorListener: UsbDioListener
+
+    private lateinit var bluetoothListener: BluetoothListener
+    private lateinit var bluetoothSerialListener: BluetoothSerialListener
 
     private lateinit var scaleListener: UsbScaleListener
 
@@ -195,6 +222,13 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
 
     //Reset device notify pop-up
     var showResetDeviceDialog by mutableStateOf(false)
+
+
+    private val _qrBitmap = MutableLiveData<Bitmap>()
+    val qrBitmap: LiveData<Bitmap> get() = _qrBitmap
+
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private val bufferBluetoothData = ArrayDeque<ByteArray>()
 
     init {
         this.usbDeviceManager = usbDeviceManager
@@ -357,7 +391,20 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
      * Open device - perform full open, claim and enable operation
      */
     fun openDevice() {
-        if (autoDetectChecked.value == true) {
+        Log.d(TAG, "[openDevice] Begin")
+        if (isBluetoothEnabled.value == true) {
+            Log.d(TAG, "[openDevice] isBluetoothEnabled == true ")
+            selectedBluetoothDevice.value?.let { device ->
+                selectedScannerBluetoothDevice.value =
+                    DatalogicBluetoothDevice(device, BluetoothProfile.SPP, HostType.Unconfigured)
+                selectedScannerBluetoothDevice.value?.let { device ->
+                    Log.d(TAG, "[openDevice] open bluetooth device")
+                    coroutineOpenBluetoothDevice(device)
+                } ?: run {
+                    connectDeviceAlert = true
+                }
+            }
+        } else if (autoDetectChecked.value == true) {
             selectedDevice.value?.let { device ->
                 _isLoading.postValue(true)
 
@@ -539,6 +586,11 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                 closeDevice()
             }
         }
+        selectedScannerBluetoothDevice.value?.let {
+            if (it.status == DeviceStatus.OPENED) {
+                closeBluetoothDevice()
+            }
+        }
     }
 
     /**
@@ -559,7 +611,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                 closeDevice()
             }
         }
-
         setSelectedDevice(newDevice)
         return true
     }
@@ -911,6 +962,11 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                 closeDevice()
             }
         }
+        selectedScannerBluetoothDevice.value?.let {
+            if (it.status == DeviceStatus.OPENED) {
+                closeBluetoothDevice()
+            }
+        }
 
         // Unregister receivers
         usbDeviceManager.unregisterReceiver(context)
@@ -1074,6 +1130,12 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             ) {
                 checkScaleProtocol()
             }*/
+            return true
+        }
+
+        if (tabIndex == 6) {
+            setSelectedTabIndex(tabIndex)
+            createQrCode()
             return true
         }
 
@@ -1266,7 +1328,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             selectedDevice.value?.let {
                 when (fileType) {
                     FileConstants.DFW_FILE_TYPE -> {
-                        firmwareDFWUpdater = it.getDFWFirmwareUpdater(file, fileType, context){
+                        firmwareDFWUpdater = it.getDFWFirmwareUpdater(file, fileType, context) {
                             showResetDeviceDialog = true
                         }
                     }
@@ -1368,12 +1430,192 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     // REMOVED: saveLogsToFile() function - no longer needed since logs are only stored as SDK_log files
     // Output folder functionality has been removed
 
+    fun initializeConnectTypeState() {
+        _isBluetoothEnabled.value = false
+    }
+
+    fun toggleConnectionType() {
+        if (_isBluetoothEnabled.value == true) {
+            _isBluetoothEnabled.value = false
+            Log.d(TAG, "[toggleConnectType] Show list USB device")
+        } else {
+            _isBluetoothEnabled.value = true
+            Log.d(TAG, "[toggleConnectType] Show list Bluetooth device")
+            getAllBluetoothDevice()
+        }
+    }
+
+    // REMOVED: saveLogsToFile() function - no longer needed since logs are only stored as SDK_log files
+    // Output folder functionality has been removed
+
     fun initializeLoggingState() {
         _isLoggingEnabled.value = logcatHelper.isActive()
     }
 
+
     fun isSWUValid(file: File): Boolean? {
         return selectedDevice.value?.isSWUFirmwareValid(file)
+    }
+
+    fun getAllBluetoothDevice() {
+        usbDeviceManager.getAllBluetoothDevice(context) { devices ->
+            _allBluetoothDevices.postValue(ArrayList(devices))
+        }
+    }
+
+    fun createQrCode() {
+        val bitmap = usbDeviceManager.qrCodeGenerator(context, BluetoothProfile.SPP)
+        val scaledBitmap = bitmap.scale(210, 210, false)
+        _qrBitmap.value = scaledBitmap
+    }
+
+    fun scanBluetoothDevice(context: Activity) {
+        bluetoothListener = object : BluetoothListener {
+            override fun onConnect() {
+                Log.d(ContentValues.TAG, "[scanBluetoothDevice] bluetoothListener -> onConnect()")
+            }
+
+            override fun onDeviceAvailable(bleDevice: BluetoothDevice) {
+                Log.d(
+                    ContentValues.TAG,
+                    "[scanBluetoothDevice] bluetoothListener -> onDeviceAvailable()"
+                )
+                showToast(context, "Device Paired Successfully")
+                handleTabSelection(0)
+                getAllBluetoothDevice()
+            }
+
+            override fun onDisconnect() {
+                Log.d(
+                    ContentValues.TAG,
+                    "[scanBluetoothDevice] bluetoothListener -> onDisconnect()"
+                )
+            }
+
+            override fun onDiscoveryStopped() {
+                Log.d(
+                    ContentValues.TAG,
+                    "[scanBluetoothDevice] bluetoothListener -> onDiscoveryStopped()"
+                )
+                showToast(context, "Discovery process is stopped. Please try again.")
+                handleTabSelection(0)
+            }
+
+            override fun onErrorOccurred(errorMsg: String) {
+                Log.d(
+                    ContentValues.TAG,
+                    "[scanBluetoothDevice] bluetoothListener -> onErrorOccurred(): $errorMsg"
+                )
+            }
+
+            override fun onPermissionDenied(errorMsg: String) {
+                Log.d(
+                    ContentValues.TAG,
+                    "[scanBluetoothDevice] bluetoothListener -> onErrorOccurred(): $errorMsg"
+                )
+                handleTabSelection(0)
+            }
+        }
+
+        usbDeviceManager.scanBluetoothDevices(bluetoothListener, context)
+    }
+
+    fun coroutineOpenBluetoothDevice(device: DatalogicBluetoothDevice) {
+        bluetoothListener = object : BluetoothListener {
+            override fun onConnect() {
+                _status.postValue(DeviceStatus.OPENED)
+                _deviceStatus.postValue("Device opened")
+                Log.d(
+                    ContentValues.TAG,
+                    "[coroutineOpenBluetoothDevice] bluetoothListener -> onConnect()"
+                )
+                showToast(context, "Device successfully opened")
+            }
+
+            override fun onDeviceAvailable(bleDevice: BluetoothDevice) {
+                TODO("Not yet implemented")
+            }
+
+            override fun onDisconnect() {
+                _status.postValue(DeviceStatus.CLOSED)
+                _deviceStatus.postValue("No device selected")
+                Log.d(
+                    ContentValues.TAG,
+                    "[coroutineOpenBluetoothDevice] bluetoothListener -> onDisconnect()"
+                )
+                showToast(context, "Device closed")
+            }
+
+            override fun onDiscoveryStopped() {
+                TODO("Not yet implemented")
+            }
+
+            override fun onErrorOccurred(errorMsg: String) {
+                TODO("Not yet implemented")
+            }
+
+            override fun onPermissionDenied(errorMsg: String) {
+                TODO("Not yet implemented")
+            }
+        }
+
+        bluetoothSerialListener = object : BluetoothSerialListener {
+            override fun onScan(scanData: UsbScanData) {
+                Log.d(ContentValues.TAG, "[coroutineOpenBluetoothDevice] Raw data scan: ${scanData.rawData}")
+                Log.d(ContentValues.TAG, "[coroutineOpenBluetoothDevice] Data scan: ${scanData.barcodeData}")
+                Log.d(ContentValues.TAG, "[coroutineOpenBluetoothDevice] Type: ${scanData.barcodeType}")
+                setScannedData(scanData)
+            }
+
+            override fun onSerialIoError(e: Exception?) {
+                Log.d(ContentValues.TAG, "[coroutineOpenBluetoothDevice] onSerialIoError: $e")
+                _status.postValue(DeviceStatus.CLOSED)
+                _deviceStatus.postValue("No device selected")
+
+            }
+        }
+
+        CoroutineScope(Dispatchers.IO).launch {
+            Log.d(ContentValues.TAG, "[coroutineOpenBluetoothDevice] connectSPP")
+            device.connectSPP(bluetoothListener, bluetoothSerialListener, context)
+        }
+    }
+
+    fun setSelectedScannerBluetoothDevice(device: DatalogicBluetoothDevice?) {
+        selectedScannerBluetoothDevice.value = device
+        device?.let {
+            _status.postValue(device.status)
+            _deviceStatus.postValue("Selected: ${device.name}")
+        } ?: run {
+            _deviceStatus.postValue("No device selected")
+            _status.postValue(DeviceStatus.NONE)
+        }
+    }
+
+    fun closeBluetoothDevice() {
+        selectedScannerBluetoothDevice.value?.clearConnection(context)
+        selectedScannerBluetoothDevice.let {
+            _status.postValue(selectedScannerBluetoothDevice.value?.status)
+            _deviceStatus.postValue("No device selected")
+        }
+    }
+
+    fun setSelectedBluetoothDevice(device: BluetoothDevice?) {
+        device?.let {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && ActivityCompat.checkSelfPermission(
+                    context, Manifest.permission.BLUETOOTH_CONNECT
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                Log.d(TAG, "[setSelectedBluetoothDevice] do not have permission")
+                _status.postValue(DeviceStatus.NONE)
+            }
+            _status.postValue(DeviceStatus.CLOSED)
+            _deviceStatus.postValue("Selected: ${device.name}")
+        } ?: run {
+            _deviceStatus.postValue("No device selected")
+            _status.postValue(DeviceStatus.NONE)
+        }
+        selectedBluetoothDevice.value = device
     }
 
     /**
@@ -1445,3 +1687,4 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         }
     }
 }
+

@@ -43,10 +43,11 @@ fun HomeScreenLayoutPortrait() {
     var isLoadingPercent = homeViewModel.isLoadingPercent.observeAsState().value
     var progressUpgrade = homeViewModel.progressUpgrade.observeAsState().value
 
-    ShowPopup(homeViewModel.openAlert, onDismiss = { homeViewModel.openAlert = false }, stringResource(id = R.string.alert_message_for_open_device))
-    ShowPopup(homeViewModel.oemAlert, onDismiss = { homeViewModel.oemAlert = false }, stringResource(id = R.string.oem_device_feature_restriction))
-    ShowPopup(homeViewModel.connectDeviceAlert, onDismiss = { homeViewModel.connectDeviceAlert = false }, stringResource(id = R.string.alert_message_for_connect_device))
-    ShowPopup(homeViewModel.magellanConfigAlert, onDismiss = { homeViewModel.magellanConfigAlert = false }, stringResource(id = R.string.alert_message_for_magellan_config))
+//    ShowPopup((homeViewModel.bluetoothPermission.value == false && homeViewModel.selectedTabIndex.value == 6), onDismiss = { homeViewModel.openAlert = false }, stringResource(id = R.string.alert_message_for_open_device))
+    ShowPopup((homeViewModel.openAlert && homeViewModel.selectedTabIndex.value != 6), onDismiss = { homeViewModel.openAlert = false }, stringResource(id = R.string.alert_message_for_open_device))
+    ShowPopup((homeViewModel.oemAlert && homeViewModel.selectedTabIndex.value != 6), onDismiss = { homeViewModel.oemAlert = false }, stringResource(id = R.string.oem_device_feature_restriction))
+    ShowPopup((homeViewModel.connectDeviceAlert && homeViewModel.selectedTabIndex.value != 6), onDismiss = { homeViewModel.connectDeviceAlert = false }, stringResource(id = R.string.alert_message_for_connect_device))
+    ShowPopup((homeViewModel.magellanConfigAlert  && homeViewModel.selectedTabIndex.value != 6), onDismiss = { homeViewModel.magellanConfigAlert = false }, stringResource(id = R.string.alert_message_for_magellan_config))
 
     if (isLoading!!) {
         ShowLoading(onDismiss = { isLoading = false })
@@ -84,30 +85,33 @@ fun HomeScreenLayoutPortrait() {
                 3 -> ImageCaptureTabPortrait()
                 4 -> CustomConfigurationPortrait()
                 5 -> UpdateFirmwareScreen()
+                6 -> BluetoothTabPortrait()
             }
         }
 
-        Card(
-            shape = RoundedCornerShape(dimensionResource(id = R.dimen._10sdp)),
-            colors = CardDefaults.cardColors(colorResource(id = R.color.bottom_nav_selected_background)),
-            elevation = CardDefaults.cardElevation(defaultElevation = dimensionResource(id = R.dimen._10sdp)),
-            modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentHeight()
-                .padding(horizontal = dimensionResource(id = R.dimen._20sdp))
-        ) {
-            Text(
+        if (selectedTab != 6) {
+            Card(
+                shape = RoundedCornerShape(dimensionResource(id = R.dimen._10sdp)),
+                colors = CardDefaults.cardColors(colorResource(id = R.color.bottom_nav_selected_background)),
+                elevation = CardDefaults.cardElevation(defaultElevation = dimensionResource(id = R.dimen._10sdp)),
                 modifier = Modifier
-                    .semantics { contentDescription = "status_msg"}
                     .fillMaxWidth()
-                    .height(dimensionResource(id = R.dimen._35sdp))
-                    .padding(
-                        vertical = dimensionResource(id = R.dimen._5sdp),
-                        horizontal = dimensionResource(id = R.dimen._15sdp)
-                    ),
-                text = stringResource(id = R.string.status_label) + deviceStatus,
-                overflow = TextOverflow.Ellipsis
-            )
+                    .wrapContentHeight()
+                    .padding(horizontal = dimensionResource(id = R.dimen._20sdp))
+            ) {
+                Text(
+                    modifier = Modifier
+                        .semantics { contentDescription = "status_msg"}
+                        .fillMaxWidth()
+                        .height(dimensionResource(id = R.dimen._35sdp))
+                        .padding(
+                            vertical = dimensionResource(id = R.dimen._5sdp),
+                            horizontal = dimensionResource(id = R.dimen._15sdp)
+                        ),
+                    text = stringResource(id = R.string.status_label) + deviceStatus,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
 
         FooterImageView(
