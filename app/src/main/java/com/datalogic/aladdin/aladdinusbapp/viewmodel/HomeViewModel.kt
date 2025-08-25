@@ -1550,17 +1550,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         }
     }
 
-    fun setSelectedScannerBluetoothDevice(device: DatalogicBluetoothDevice?) {
-        selectedScannerBluetoothDevice.value = device
-        device?.let {
-            _status.postValue(device.status)
-            _deviceStatus.postValue("Selected: ${device.name}")
-        } ?: run {
-            _deviceStatus.postValue("No device selected")
-            _status.postValue(DeviceStatus.NONE)
-        }
-    }
-
     fun closeBluetoothDevice() {
         selectedScannerBluetoothDevice.value?.clearConnection(context)
         selectedScannerBluetoothDevice.let {
