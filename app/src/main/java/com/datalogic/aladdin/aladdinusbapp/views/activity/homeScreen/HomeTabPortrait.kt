@@ -602,7 +602,9 @@ fun HomeTabPortrait() {
                 stringResource(id = R.string.open),
                 onClick = {
                     Log.d(TAG, "btn_open on click")
-                    homeViewModel.openDevice()
+                    activity?.let {
+                        homeViewModel.openDevice(activity)
+                    }
                 }
             )
             Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen._10sdp)))
