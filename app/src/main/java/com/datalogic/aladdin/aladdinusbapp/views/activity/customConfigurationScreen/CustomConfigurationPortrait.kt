@@ -111,10 +111,12 @@ fun CustomConfigurationPortrait() {
             LineNumberedTextField(
                 text = configData,
                 onTextChange = { textState.value = it },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.weight(1f)) // Push buttons to bottom
+            Spacer(modifier = Modifier.height(16.dp)) // Push buttons to bottom
 
             Row(
                 modifier = Modifier
