@@ -29,11 +29,10 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.datalogic.aladdin.aladdinusbapp.R
-import com.datalogic.aladdin.aladdinusbapp.utils.FileConstants
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.FileConstants
 import com.datalogic.aladdin.aladdinusbapp.utils.FileUtils
 import com.datalogic.aladdin.aladdinusbapp.utils.ResultContants
 import com.datalogic.aladdin.aladdinusbapp.utils.USBConstants
-import com.datalogic.aladdin.aladdinusbscannersdk.feature.upgradefirmware.FirmwareUpdater
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDeviceManager
 import com.datalogic.aladdin.aladdinusbscannersdk.model.LabelCodeType
