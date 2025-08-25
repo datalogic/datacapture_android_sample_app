@@ -61,6 +61,8 @@ import kotlinx.coroutines.withContext
 import com.dzungvu.packlog.LogcatHelper
 import java.io.File
 import androidx.core.graphics.scale
+import com.datalogic.aladdin.aladdinusbapp.utils.PairingStatus
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.BluetoothPairingStatus
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.HostType
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.BluetoothSerialListener
 
@@ -108,6 +110,10 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     val selectedBluetoothDevice: MutableLiveData<BluetoothDevice?> = MutableLiveData(null)
     val selectedScannerBluetoothDevice: MutableLiveData<DatalogicBluetoothDevice?> =
         MutableLiveData(null)
+
+    val selectedBluetoothProfile: MutableLiveData<BluetoothProfile?> = MutableLiveData(null)
+    val currentPairingStatus: MutableLiveData<PairingStatus?> = MutableLiveData(null)
+    val currentBleDeviceName: MutableLiveData<String> = MutableLiveData(null)
 
     private val _selectedTabIndex = MutableLiveData(0)
     val selectedTabIndex: LiveData<Int> = _selectedTabIndex
@@ -223,7 +229,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     //Reset device notify pop-up
     var showResetDeviceDialog by mutableStateOf(false)
 
-
     private val _qrBitmap = MutableLiveData<Bitmap>()
     val qrBitmap: LiveData<Bitmap> get() = _qrBitmap
 
@@ -234,6 +239,9 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         this.usbDeviceManager = usbDeviceManager
         _status.postValue(DeviceStatus.CLOSED)
         this.context = context
+
+        currentPairingStatus.value = PairingStatus.Idle
+        selectedBluetoothProfile.value = BluetoothProfile.SPP
     }
 
     /**
@@ -390,7 +398,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     /**
      * Open device - perform full open, claim and enable operation
      */
-    fun openDevice() {
+    fun openDevice(activity: Activity) {
         Log.d(TAG, "[openDevice] Begin")
         if (isBluetoothEnabled.value == true) {
             Log.d(TAG, "[openDevice] isBluetoothEnabled == true ")
@@ -399,7 +407,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                     DatalogicBluetoothDevice(device, BluetoothProfile.SPP, HostType.Unconfigured)
                 selectedScannerBluetoothDevice.value?.let { device ->
                     Log.d(TAG, "[openDevice] open bluetooth device")
-                    coroutineOpenBluetoothDevice(device)
+                    coroutineOpenBluetoothDevice(device, activity)
                 } ?: run {
                     connectDeviceAlert = true
                 }
@@ -566,13 +574,13 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     /**
      * Lifecycle management - handle app going to foreground
      */
-    fun appInForeground() {
+    fun appInForeground(activity: Activity) {
         selectedDevice.value?.let { device ->
             val deviceId = device.usbDevice.productId.toString()
 
             // Re-open device if it was reattached while app was in background
             if (device.status == DeviceStatus.CLOSED && reattachedDevices.contains(deviceId)) {
-                openDevice()
+                openDevice(activity)
             }
         }
     }
@@ -1124,6 +1132,10 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         // Home tab is always accessible
         if (tabIndex == 0) {
             setSelectedTabIndex(tabIndex)
+
+            if (_selectedTabIndex.value == 6) {
+                usbDeviceManager.stopScanBluetoothDevices(context)
+            }
             // Check scale protocol if available and device is open
             /*if (selectedDevice.value?.deviceType == DeviceType.FRS &&
                 status.value == DeviceStatus.OPENED
@@ -1135,7 +1147,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
 
         if (tabIndex == 6) {
             setSelectedTabIndex(tabIndex)
-            createQrCode()
+            setPairingStatus(PairingStatus.Idle)
             return true
         }
 
@@ -1463,76 +1475,58 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         }
     }
 
-    fun createQrCode() {
-        val bitmap = usbDeviceManager.qrCodeGenerator(context, BluetoothProfile.SPP)
+    fun createQrCode(profile: BluetoothProfile) {
+        val bitmap = usbDeviceManager.qrCodeGenerator(context, profile)
         val scaledBitmap = bitmap.scale(210, 210, false)
         _qrBitmap.value = scaledBitmap
+        currentPairingStatus.value = PairingStatus.Scanning
     }
 
     fun scanBluetoothDevice(context: Activity) {
-        bluetoothListener = object : BluetoothListener {
-            override fun onConnect() {
-                Log.d(ContentValues.TAG, "[scanBluetoothDevice] bluetoothListener -> onConnect()")
+        Log.d("HomeViewModel", "[scanBluetoothDevice] stopScanBluetoothDevices")
+        usbDeviceManager.stopScanBluetoothDevices(context)
+        usbDeviceManager.scanBluetoothDevices(context) { pairingData ->
+            val status = pairingData.pairingStatus
+            val message = pairingData.message
+            val name = pairingData.deviceName
+            
+            when (status) {
+                BluetoothPairingStatus.Successful -> {
+                    if (message.contains("connected")) {
+                        setPairingStatus(PairingStatus.Connected)
+                    } else {
+                        setPairingStatus(PairingStatus.Paired)
+                    }
+                }
+                BluetoothPairingStatus.Unsuccessful -> {
+                    if (message == "Permission denied") {
+                        setPairingStatus(PairingStatus.PermissionDenied)
+                    } else {
+                        setPairingStatus(PairingStatus.Error)
+                    }
+                }
+                BluetoothPairingStatus.Timeout -> {
+                    setPairingStatus(PairingStatus.Timeout)
+                }
             }
-
-            override fun onDeviceAvailable(bleDevice: BluetoothDevice) {
-                Log.d(
-                    ContentValues.TAG,
-                    "[scanBluetoothDevice] bluetoothListener -> onDeviceAvailable()"
-                )
-                showToast(context, "Device Paired Successfully")
-                handleTabSelection(0)
-                getAllBluetoothDevice()
-            }
-
-            override fun onDisconnect() {
-                Log.d(
-                    ContentValues.TAG,
-                    "[scanBluetoothDevice] bluetoothListener -> onDisconnect()"
-                )
-            }
-
-            override fun onDiscoveryStopped() {
-                Log.d(
-                    ContentValues.TAG,
-                    "[scanBluetoothDevice] bluetoothListener -> onDiscoveryStopped()"
-                )
-                showToast(context, "Discovery process is stopped. Please try again.")
-                handleTabSelection(0)
-            }
-
-            override fun onErrorOccurred(errorMsg: String) {
-                Log.d(
-                    ContentValues.TAG,
-                    "[scanBluetoothDevice] bluetoothListener -> onErrorOccurred(): $errorMsg"
-                )
-            }
-
-            override fun onPermissionDenied(errorMsg: String) {
-                Log.d(
-                    ContentValues.TAG,
-                    "[scanBluetoothDevice] bluetoothListener -> onErrorOccurred(): $errorMsg"
-                )
-                handleTabSelection(0)
-            }
+            currentBleDeviceName.value = pairingData.deviceName
+            Log.d("HomeViewModel", "[scanBluetoothDevice] scan device ${pairingData.deviceName} ${pairingData.pairingStatus} : ${pairingData.message}")
         }
-
-        usbDeviceManager.scanBluetoothDevices(bluetoothListener, context)
     }
 
-    fun coroutineOpenBluetoothDevice(device: DatalogicBluetoothDevice) {
+    fun coroutineOpenBluetoothDevice(device: DatalogicBluetoothDevice, context: Activity) {
         bluetoothListener = object : BluetoothListener {
             override fun onConnect() {
                 _status.postValue(DeviceStatus.OPENED)
                 _deviceStatus.postValue("Device opened")
                 Log.d(
-                    ContentValues.TAG,
+                    "HomeViewModel",
                     "[coroutineOpenBluetoothDevice] bluetoothListener -> onConnect()"
                 )
                 showToast(context, "Device successfully opened")
             }
 
-            override fun onDeviceAvailable(bleDevice: BluetoothDevice) {
+            override fun onDeviceAvailable(bleDevice: BluetoothDevice, name: String) {
                 TODO("Not yet implemented")
             }
 
@@ -1540,7 +1534,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                 _status.postValue(DeviceStatus.CLOSED)
                 _deviceStatus.postValue("No device selected")
                 Log.d(
-                    ContentValues.TAG,
+                    "HomeViewModel",
                     "[coroutineOpenBluetoothDevice] bluetoothListener -> onDisconnect()"
                 )
                 showToast(context, "Device closed")
@@ -1554,6 +1548,10 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                 TODO("Not yet implemented")
             }
 
+            override fun onPairing() {
+                TODO("Not yet implemented")
+            }
+
             override fun onPermissionDenied(errorMsg: String) {
                 TODO("Not yet implemented")
             }
@@ -1561,14 +1559,14 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
 
         bluetoothSerialListener = object : BluetoothSerialListener {
             override fun onScan(scanData: UsbScanData) {
-                Log.d(ContentValues.TAG, "[coroutineOpenBluetoothDevice] Raw data scan: ${scanData.rawData}")
-                Log.d(ContentValues.TAG, "[coroutineOpenBluetoothDevice] Data scan: ${scanData.barcodeData}")
-                Log.d(ContentValues.TAG, "[coroutineOpenBluetoothDevice] Type: ${scanData.barcodeType}")
+                Log.d("HomeViewModel", "[coroutineOpenBluetoothDevice] Raw data scan: ${scanData.rawData}")
+                Log.d("HomeViewModel", "[coroutineOpenBluetoothDevice] Data scan: ${scanData.barcodeData}")
+                Log.d("HomeViewModel", "[coroutineOpenBluetoothDevice] Type: ${scanData.barcodeType}")
                 setScannedData(scanData)
             }
 
             override fun onSerialIoError(e: Exception?) {
-                Log.d(ContentValues.TAG, "[coroutineOpenBluetoothDevice] onSerialIoError: $e")
+                Log.d("HomeViewModel", "[coroutineOpenBluetoothDevice] onSerialIoError: $e")
                 _status.postValue(DeviceStatus.CLOSED)
                 _deviceStatus.postValue("No device selected")
 
@@ -1576,7 +1574,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         }
 
         CoroutineScope(Dispatchers.IO).launch {
-            Log.d(ContentValues.TAG, "[coroutineOpenBluetoothDevice] connectSPP")
+            Log.d("HomeViewModel", "[coroutineOpenBluetoothDevice] connectSPP")
             device.connectSPP(bluetoothListener, bluetoothSerialListener, context)
         }
     }
@@ -1616,6 +1614,14 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             _status.postValue(DeviceStatus.NONE)
         }
         selectedBluetoothDevice.value = device
+    }
+
+    fun setSelectedBluetoothDevice(profile: BluetoothProfile) {
+        selectedBluetoothProfile.value = profile
+    }
+
+    fun setPairingStatus(status: PairingStatus?) {
+        currentPairingStatus.value = status
     }
 
     /**

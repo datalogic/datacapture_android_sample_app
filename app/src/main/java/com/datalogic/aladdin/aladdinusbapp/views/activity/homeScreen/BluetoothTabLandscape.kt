@@ -1,6 +1,8 @@
 package com.datalogic.aladdin.aladdinusbapp.views.activity.homeScreen
 
 import android.app.Activity
+import android.content.ContentValues
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -47,11 +49,6 @@ fun BluetoothTabLandscape() {
      * */
     val scrollableThreshold = 500
 
-
-
-    activity?.let {
-        homeViewModel.scanBluetoothDevice(it)
-    }
     val content = @Composable {
         Column(
             modifier = Modifier
@@ -82,6 +79,10 @@ fun BluetoothTabLandscape() {
                     contentDescription = "QR Code",
                     modifier = Modifier.size(210.dp)
                 )
+                activity?.let {
+                    Log.d(ContentValues.TAG, "[BluetoothTabLandscape]  scanBluetoothDevice")
+                    homeViewModel.scanBluetoothDevice(it)
+                }
             } else {
                 Box(
                     modifier = Modifier

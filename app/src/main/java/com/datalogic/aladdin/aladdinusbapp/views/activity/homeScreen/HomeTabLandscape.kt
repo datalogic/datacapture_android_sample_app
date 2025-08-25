@@ -564,7 +564,9 @@ fun HomeTabLandscape() {
                         (deviceList.isNotEmpty() || usbDeviceList.isNotEmpty() || allBluetoothDevices.isNotEmpty())),
                 stringResource(id = R.string.open),
                 onClick = {
-                    homeViewModel.openDevice()
+                    activity?.let {
+                        homeViewModel.openDevice(activity)
+                    }
                 }
             )
             Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen._10sdp)))
