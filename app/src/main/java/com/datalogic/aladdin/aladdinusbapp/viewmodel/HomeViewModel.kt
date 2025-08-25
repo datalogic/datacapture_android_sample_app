@@ -1323,55 +1323,24 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     fun upgradeFirmware(file: File, fileType: String) {
         _isLoadingPercent.postValue(true)
         viewModelScope.launch(Dispatchers.IO) {
-            var firmwareDFWUpdater: FirmwareUpdater? = null
-            var firmwareUpdater: FirmwareUpdater? = null
             selectedDevice.value?.let {
                 when (fileType) {
                     FileConstants.DFW_FILE_TYPE -> {
-                        firmwareDFWUpdater = it.getDFWFirmwareUpdater(file, fileType, context) {
-                            showResetDeviceDialog = true
-                        }
-                    }
-
-                    else -> {
-                        firmwareUpdater = it.getFirmwareUpdater(file, fileType)
+                        showResetDeviceDialog = true
                     }
                 }
-                if (it.deviceType == DeviceType.HHS) {
-                    when (fileType) {
-                        FileConstants.DFW_FILE_TYPE -> {
-                            firmwareDFWUpdater?.upgrade { progress ->
-                                run {
-                                    _progressUpgrade.postValue(progress)
-                                }
-                            }
-                        }
 
-                        else -> {
-                            firmwareUpdater?.upgrade { progress ->
-                                run {
-                                    _progressUpgrade.postValue(progress)
-                                }
-                            }
+                it.upgradeFirmware(file, fileType, context,
+                    resetCallback = {
+                        showResetDeviceDialog = true
+                    },
+                    progressCallback = { progress ->
+                        run {
+                            _progressUpgrade.postValue(progress)
                         }
                     }
-                } else {
-                    if (isBulkTransferSupported.value == true) {
-                        firmwareUpdater?.upgradeByBulkTransfer { progress ->
-                            run {
-                                _progressUpgrade.postValue(progress)
-                            }
-                        }
-                    } else {
-                        firmwareUpdater?.upgrade { progress ->
-                            run {
-                                _progressUpgrade.postValue(progress)
-                            }
-                        }
-                    }
-                }
+                )
                 _isLoadingPercent.postValue(false)
-                resetDevice()
             }
         }
     }
