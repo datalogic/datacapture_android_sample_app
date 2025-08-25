@@ -30,12 +30,11 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.datalogic.aladdin.aladdinusbapp.R
-import com.datalogic.aladdin.aladdinusbapp.utils.FileConstants
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.FileConstants
 import com.datalogic.aladdin.aladdinusbapp.utils.FileUtils
 import com.datalogic.aladdin.aladdinusbapp.utils.PairingStatus
 import com.datalogic.aladdin.aladdinusbapp.utils.ResultContants
 import com.datalogic.aladdin.aladdinusbapp.utils.USBConstants
-import com.datalogic.aladdin.aladdinusbscannersdk.feature.upgradefirmware.FirmwareUpdater
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDeviceManager
 import com.datalogic.aladdin.aladdinusbscannersdk.model.LabelCodeType
@@ -1332,55 +1331,24 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     fun upgradeFirmware(file: File, fileType: String) {
         _isLoadingPercent.postValue(true)
         viewModelScope.launch(Dispatchers.IO) {
-            var firmwareDFWUpdater: FirmwareUpdater? = null
-            var firmwareUpdater: FirmwareUpdater? = null
             selectedDevice.value?.let {
                 when (fileType) {
                     FileConstants.DFW_FILE_TYPE -> {
-                        firmwareDFWUpdater = it.getDFWFirmwareUpdater(file, fileType, context) {
-                            showResetDeviceDialog = true
-                        }
-                    }
-
-                    else -> {
-                        firmwareUpdater = it.getFirmwareUpdater(file, fileType)
+                        showResetDeviceDialog = true
                     }
                 }
-                if (it.deviceType == DeviceType.HHS) {
-                    when (fileType) {
-                        FileConstants.DFW_FILE_TYPE -> {
-                            firmwareDFWUpdater?.upgrade { progress ->
-                                run {
-                                    _progressUpgrade.postValue(progress)
-                                }
-                            }
-                        }
 
-                        else -> {
-                            firmwareUpdater?.upgrade { progress ->
-                                run {
-                                    _progressUpgrade.postValue(progress)
-                                }
-                            }
+                it.upgradeFirmware(file, fileType, context,
+                    resetCallback = {
+                        showResetDeviceDialog = true
+                    },
+                    progressCallback = { progress ->
+                        run {
+                            _progressUpgrade.postValue(progress)
                         }
                     }
-                } else {
-                    if (isBulkTransferSupported.value == true) {
-                        firmwareUpdater?.upgradeByBulkTransfer { progress ->
-                            run {
-                                _progressUpgrade.postValue(progress)
-                            }
-                        }
-                    } else {
-                        firmwareUpdater?.upgrade { progress ->
-                            run {
-                                _progressUpgrade.postValue(progress)
-                            }
-                        }
-                    }
-                }
+                )
                 _isLoadingPercent.postValue(false)
-                resetDevice()
             }
         }
     }
@@ -1535,17 +1503,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                     _deviceStatus.postValue("No device selected")
                 }
             }
-        }
-    }
-
-    fun setSelectedScannerBluetoothDevice(device: DatalogicBluetoothDevice?) {
-        selectedScannerBluetoothDevice.value = device
-        device?.let {
-            _status.postValue(device.status)
-            _deviceStatus.postValue("Selected: ${device.name}")
-        } ?: run {
-            _deviceStatus.postValue("No device selected")
-            _status.postValue(DeviceStatus.NONE)
         }
     }
 

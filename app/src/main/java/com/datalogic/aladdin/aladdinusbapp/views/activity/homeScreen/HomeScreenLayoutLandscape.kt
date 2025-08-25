@@ -24,7 +24,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
+import com.datalogic.aladdin.aladdinusbapp.views.activity.customConfigurationScreen.CustomConfigurationLandscape
 import com.datalogic.aladdin.aladdinusbapp.views.activity.imageCapture.ImageCaptureTabPortrait
+import com.datalogic.aladdin.aladdinusbapp.views.activity.updateFirmware.UpdateFirmwareScreen
 import com.datalogic.aladdin.aladdinusbapp.views.compose.BottomNavigationRow
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.FooterImageView
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.HeaderImageView
@@ -73,6 +75,8 @@ fun HomeScreenLayoutLandscape() {
                 1 -> ConfigurationTabLandscape()
                 2 -> DirectIOTabLandscape()
                 3 -> ImageCaptureTabPortrait()
+                4 -> CustomConfigurationLandscape()
+                5 -> UpdateFirmwareScreen()
                 6 -> BluetoothTabLandscape()
             }
         }
