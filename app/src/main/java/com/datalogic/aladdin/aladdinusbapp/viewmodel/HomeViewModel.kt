@@ -24,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.app.ActivityCompat
+import androidx.core.graphics.scale
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -31,6 +32,7 @@ import androidx.lifecycle.viewModelScope
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.utils.FileConstants
 import com.datalogic.aladdin.aladdinusbapp.utils.FileUtils
+import com.datalogic.aladdin.aladdinusbapp.utils.PairingStatus
 import com.datalogic.aladdin.aladdinusbapp.utils.ResultContants
 import com.datalogic.aladdin.aladdinusbapp.utils.USBConstants
 import com.datalogic.aladdin.aladdinusbscannersdk.feature.upgradefirmware.FirmwareUpdater
@@ -40,17 +42,19 @@ import com.datalogic.aladdin.aladdinusbscannersdk.model.LabelCodeType
 import com.datalogic.aladdin.aladdinusbscannersdk.model.LabelIDControl
 import com.datalogic.aladdin.aladdinusbscannersdk.model.ScaleData
 import com.datalogic.aladdin.aladdinusbscannersdk.model.UsbScanData
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.BluetoothPairingStatus
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.BluetoothProfile
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ConfigurationFeature
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ConnectionType
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DIOCmdValue
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceType
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.HostType
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ScaleUnit
-import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.BluetoothListener
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbDioListener
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbScaleListener
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbScanListener
+import com.dzungvu.packlog.LogcatHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -58,13 +62,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import com.dzungvu.packlog.LogcatHelper
 import java.io.File
-import androidx.core.graphics.scale
-import com.datalogic.aladdin.aladdinusbapp.utils.PairingStatus
-import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.BluetoothPairingStatus
-import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.HostType
-import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.BluetoothSerialListener
 
 class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) : ViewModel() {
     var usbDeviceManager: DatalogicDeviceManager
@@ -185,8 +183,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     private lateinit var scanEvent: UsbScanListener
     private lateinit var usbErrorListener: UsbDioListener
 
-    private lateinit var bluetoothListener: BluetoothListener
-    private lateinit var bluetoothSerialListener: BluetoothSerialListener
+    private lateinit var bluetoothScanEvent: UsbScanListener
 
     private lateinit var scaleListener: UsbScaleListener
 
@@ -1515,67 +1512,29 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     }
 
     fun coroutineOpenBluetoothDevice(device: DatalogicBluetoothDevice, context: Activity) {
-        bluetoothListener = object : BluetoothListener {
-            override fun onConnect() {
-                _status.postValue(DeviceStatus.OPENED)
-                _deviceStatus.postValue("Device opened")
-                Log.d(
-                    "HomeViewModel",
-                    "[coroutineOpenBluetoothDevice] bluetoothListener -> onConnect()"
-                )
-                showToast(context, "Device successfully opened")
-            }
-
-            override fun onDeviceAvailable(bleDevice: BluetoothDevice, name: String) {
-                TODO("Not yet implemented")
-            }
-
-            override fun onDisconnect() {
-                _status.postValue(DeviceStatus.CLOSED)
-                _deviceStatus.postValue("No device selected")
-                Log.d(
-                    "HomeViewModel",
-                    "[coroutineOpenBluetoothDevice] bluetoothListener -> onDisconnect()"
-                )
-                showToast(context, "Device closed")
-            }
-
-            override fun onDiscoveryStopped() {
-                TODO("Not yet implemented")
-            }
-
-            override fun onErrorOccurred(errorMsg: String) {
-                TODO("Not yet implemented")
-            }
-
-            override fun onPairing() {
-                TODO("Not yet implemented")
-            }
-
-            override fun onPermissionDenied(errorMsg: String) {
-                TODO("Not yet implemented")
-            }
-        }
-
-        bluetoothSerialListener = object : BluetoothSerialListener {
+        bluetoothScanEvent = object : UsbScanListener {
             override fun onScan(scanData: UsbScanData) {
                 Log.d("HomeViewModel", "[coroutineOpenBluetoothDevice] Raw data scan: ${scanData.rawData}")
                 Log.d("HomeViewModel", "[coroutineOpenBluetoothDevice] Data scan: ${scanData.barcodeData}")
                 Log.d("HomeViewModel", "[coroutineOpenBluetoothDevice] Type: ${scanData.barcodeType}")
                 setScannedData(scanData)
             }
-
-            override fun onSerialIoError(e: Exception?) {
-                Log.d("HomeViewModel", "[coroutineOpenBluetoothDevice] onSerialIoError: $e")
-                _status.postValue(DeviceStatus.CLOSED)
-                _deviceStatus.postValue("No device selected")
-
-            }
         }
 
         CoroutineScope(Dispatchers.IO).launch {
-            Log.d("HomeViewModel", "[coroutineOpenBluetoothDevice] connectSPP")
-            device.connectSPP(bluetoothListener, bluetoothSerialListener, context)
+            Log.d("HomeViewModel", "[coroutineOpenBluetoothDevice] connectDevice")
+            device.connectDevice(bluetoothScanEvent, context) { status ->
+                if (status == BluetoothPairingStatus.Successful) {
+                    Log.d("HomeViewModel", "[coroutineOpenBluetoothDevice] connectDevice Successful")
+                    _status.postValue(DeviceStatus.OPENED)
+                    _deviceStatus.postValue("Device opened")
+                    showToast(context, "Device successfully opened")
+                } else {
+                    Log.d("HomeViewModel", "[coroutineOpenBluetoothDevice] connectDevice Failure")
+                    _status.postValue(DeviceStatus.CLOSED)
+                    _deviceStatus.postValue("No device selected")
+                }
+            }
         }
     }
 
