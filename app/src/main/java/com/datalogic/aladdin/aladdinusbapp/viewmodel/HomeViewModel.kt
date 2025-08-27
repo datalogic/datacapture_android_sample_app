@@ -1474,14 +1474,15 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         _isBluetoothEnabled.value = false
     }
 
-    fun toggleConnectionType() {
+    fun toggleConnectionType(activity: Activity) {
         if (_isBluetoothEnabled.value == true) {
             _isBluetoothEnabled.value = false
             Log.d(tag, "[toggleConnectType] Show list USB device")
-        } else {
+        } else if (getAllBluetoothDevice(activity)) {
             _isBluetoothEnabled.value = true
             Log.d(tag, "[toggleConnectType] Show list Bluetooth device")
-            getAllBluetoothDevice()
+        } else {
+            Log.e(tag, "[toggleConnectType] getAllBluetoothDevice FAIL - Permission denied")
         }
     }
 
@@ -1497,13 +1498,14 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         return selectedDevice.value?.isSWUFirmwareValid(file)
     }
 
-    fun getAllBluetoothDevice() {
-        usbDeviceManager.getAllBluetoothDevice(context) { devices ->
+    fun getAllBluetoothDevice(activity: Activity) : Boolean {
+        val result = usbDeviceManager.getAllBluetoothDevice(activity) { devices ->
             _allBluetoothDevices.postValue(ArrayList(devices))
         }
+        return result
     }
 
-    fun createQrCode(profile: PairingBarcodeType) {
+    fun createQrCode(profile: PairingBarcodeType, context: Activity) {
         val bluetoothProfile: BluetoothProfile = when (profile) {
             PairingBarcodeType.SPP -> BluetoothProfile.SPP
             PairingBarcodeType.HID -> BluetoothProfile.HID
@@ -1512,7 +1514,9 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         val bitmap = usbDeviceManager.qrCodeGenerator(context, bluetoothProfile)
         val scaledBitmap = bitmap.scale(210, 210, false)
         _qrBitmap.value = scaledBitmap
+        setPreviousBluetoothProfile(PairingBarcodeType.UNLINK)
         currentPairingStatus.value = PairingStatus.Scanning
+        scanBluetoothDevice(context)
     }
 
     fun scanBluetoothDevice(context: Activity) {
@@ -1530,6 +1534,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                     } else {
                         setPairingStatus(PairingStatus.Paired)
                     }
+                    getAllBluetoothDevice(context)
                 }
 
                 BluetoothPairingStatus.Unsuccessful -> {

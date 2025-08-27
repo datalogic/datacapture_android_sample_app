@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
 import android.widget.Toast
+import androidx.annotation.RequiresPermission
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -38,104 +39,197 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
 import androidx.core.app.ActivityCompat
 import com.datalogic.aladdin.aladdinusbapp.R
 
 var mCurrentBluetoothDevice by mutableStateOf< BluetoothDevice?>(null)
 
-@Composable
-fun BluetoothDeviceDropdown(modifier: Modifier, selectedBluetoothDevice: BluetoothDevice?, bluetoothDevices: ArrayList<BluetoothDevice>, onBluetoothDeviceSelected: (BluetoothDevice?) -> Unit){
-    var mExpanded by remember { mutableStateOf(false) }
-    var mTextFieldSize by remember { mutableStateOf(Size.Zero)}
-    val context = LocalContext.current
+//@Composable
+//fun BluetoothDeviceDropdown(modifier: Modifier, selectedBluetoothDevice: BluetoothDevice?, bluetoothDevices: ArrayList<BluetoothDevice>, onBluetoothDeviceSelected: (BluetoothDevice?) -> Unit){
+//    var mExpanded by remember { mutableStateOf(false) }
+//    var mTextFieldSize by remember { mutableStateOf(Size.Zero)}
+//    val context = LocalContext.current
+//
+//    LaunchedEffect(selectedBluetoothDevice, bluetoothDevices) {
+//        mCurrentBluetoothDevice = selectedBluetoothDevice
+//        if ((mCurrentBluetoothDevice == null && bluetoothDevices.isNotEmpty()) ||
+//            (mCurrentBluetoothDevice != null && bluetoothDevices.isNotEmpty() && !bluetoothDevices.contains(mCurrentBluetoothDevice))) {
+//            mCurrentBluetoothDevice = bluetoothDevices.first()
+//            onBluetoothDeviceSelected(mCurrentBluetoothDevice)
+//        } else if (mCurrentBluetoothDevice != null && bluetoothDevices.isEmpty()) {
+//            mCurrentBluetoothDevice = null
+//            onBluetoothDeviceSelected(mCurrentBluetoothDevice)
+//        }
+//    }
+//
+//    val deviceDisplayName = selectedBluetoothDevice?.name ?: stringResource(id = R.string.no_devices_connected)
+//
+//    val icon = if (mExpanded)
+//        Icons.Filled.KeyboardArrowUp
+//    else
+//        Icons.Filled.KeyboardArrowDown
+//
+//    Card(
+//        shape = RoundedCornerShape(dimensionResource(id = R.dimen._5sdp)),
+//        elevation = CardDefaults.cardElevation(defaultElevation = dimensionResource(id = R.dimen._10sdp)),
+//        colors = CardDefaults.cardColors(Color.White),
+//        modifier = modifier
+//    ) {
+//        var deviceDisplayName: String = stringResource(id = R.string.no_devices_connected)
+//        if (selectedBluetoothDevice != null) {
+//            Log.d(TAG, "[BluetoothDeviceDropdown] selected device")
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && ActivityCompat.checkSelfPermission(
+//                    context,
+//                    Manifest.permission.BLUETOOTH_CONNECT
+//                ) != PackageManager.PERMISSION_GRANTED
+//            ) {
+//                Log.d(TAG, "[BluetoothDeviceDropdown] permission denied")
+//            } else {
+//                deviceDisplayName = "${selectedBluetoothDevice.name}"
+//                Toast.makeText(context, "Selected device ${selectedBluetoothDevice.name}", Toast.LENGTH_SHORT).show()
+//            }
+//        }
+//        TextField(
+//            value = deviceDisplayName,
+//            textStyle = MaterialTheme.typography.labelLarge,
+//            onValueChange = {},
+//            modifier = modifier
+//                .fillMaxWidth()
+//                .onGloballyPositioned { coordinates ->
+//                    mTextFieldSize = coordinates.size.toSize()
+//                }
+//                .clickable { mExpanded = !mExpanded },
+//            trailingIcon = {
+//                Icon(icon, stringResource(id = R.string.arrow_dropdown), tint = Color.Black)
+//            },
+//            enabled = false,
+//            singleLine = true,
+//            colors = TextFieldDefaults.colors(
+//                focusedContainerColor = Color.White,
+//                unfocusedContainerColor = Color.White,
+//                disabledContainerColor = Color.White,
+//                focusedIndicatorColor = Color.Transparent,
+//                unfocusedIndicatorColor = Color.Transparent,
+//                disabledIndicatorColor = Color.Transparent
+//            )
+//        )
+//
+//        if (bluetoothDevices.isNotEmpty()) {
+//            DropdownMenu(
+//                expanded = mExpanded,
+//                onDismissRequest = { mExpanded = false },
+//                modifier = Modifier
+//                    .background(color = Color.White)
+//                    .width(with(LocalDensity.current) { mTextFieldSize.width.toDp() })
+//            ) {
+//                bluetoothDevices.forEach { bluetoothDeviceElem ->
+//                    DropdownMenuItem(
+//                        text = {
+//                            Text(
+//
+//                                text = "${bluetoothDeviceElem.name}",
+//                                style = MaterialTheme.typography.labelLarge
+//                            )
+//                        },
+//                        onClick = {
+//                            onBluetoothDeviceSelected(bluetoothDeviceElem)
+//                            mCurrentBluetoothDevice = bluetoothDeviceElem
+//                            mExpanded = false
+//                        }
+//                    )
+//                }
+//            }
+//        }
+//    }
+//}
 
-    LaunchedEffect(selectedBluetoothDevice, bluetoothDevices) {
-        mCurrentBluetoothDevice = selectedBluetoothDevice
-        if ((mCurrentBluetoothDevice == null && bluetoothDevices.isNotEmpty()) ||
-            (mCurrentBluetoothDevice != null && bluetoothDevices.isNotEmpty() && !bluetoothDevices.contains(mCurrentBluetoothDevice))) {
-            mCurrentBluetoothDevice = bluetoothDevices.first()
-            onBluetoothDeviceSelected(mCurrentBluetoothDevice)
-        } else if (mCurrentBluetoothDevice != null && bluetoothDevices.isEmpty()) {
-            mCurrentBluetoothDevice = null
-            onBluetoothDeviceSelected(mCurrentBluetoothDevice)
+@Composable
+fun BluetoothDeviceDropdown(
+    modifier: Modifier,
+    selectedBluetoothDevice: BluetoothDevice?,
+    bluetoothDevices: List<BluetoothDevice>,
+    onBluetoothDeviceSelected: (BluetoothDevice?) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    var textFieldSize by remember { mutableStateOf(Size.Zero) }
+    val context = LocalContext.current
+    var deviceDisplayName = ""
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && ActivityCompat.checkSelfPermission(
+            context,
+            Manifest.permission.BLUETOOTH_CONNECT
+        ) != PackageManager.PERMISSION_GRANTED
+    ) {
+        Log.d(TAG, "[BluetoothDeviceDropdown] permission denied")
+    } else if (selectedBluetoothDevice != null){
+        deviceDisplayName = "${selectedBluetoothDevice.name}"
+        Toast.makeText(
+            context,
+            "Selected device ${selectedBluetoothDevice.name}",
+            Toast.LENGTH_SHORT
+        ).show()
+    } else {
+        deviceDisplayName = "No device selected"
+        Toast.makeText(
+            context,
+            deviceDisplayName,
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+
+    LaunchedEffect(bluetoothDevices) {
+        if (selectedBluetoothDevice != null && !bluetoothDevices.contains(selectedBluetoothDevice)) {
+            onBluetoothDeviceSelected(null)
         }
     }
 
-    val icon = if (mExpanded)
-        Icons.Filled.KeyboardArrowUp
-    else
-        Icons.Filled.KeyboardArrowDown
-
     Card(
-        shape = RoundedCornerShape(dimensionResource(id = R.dimen._5sdp)),
-        elevation = CardDefaults.cardElevation(defaultElevation = dimensionResource(id = R.dimen._10sdp)),
-        colors = CardDefaults.cardColors(Color.White),
+        shape = RoundedCornerShape(8.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         modifier = modifier
     ) {
-        var deviceDisplayName: String = stringResource(id = R.string.no_devices_connected)
-        if (selectedBluetoothDevice != null) {
-            Log.d(TAG, "[BluetoothDeviceDropdown] selected device")
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && ActivityCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.BLUETOOTH_CONNECT
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                Log.d(TAG, "[BluetoothDeviceDropdown] permission denied")
-            } else {
-                deviceDisplayName = "${selectedBluetoothDevice.name}"
-                Toast.makeText(context, "Selected device ${selectedBluetoothDevice.name}", Toast.LENGTH_SHORT).show()
-            }
-        }
         TextField(
             value = deviceDisplayName,
-            textStyle = MaterialTheme.typography.labelLarge,
             onValueChange = {},
+            textStyle = MaterialTheme.typography.labelLarge,
+            enabled = false,
+            singleLine = true,
+            trailingIcon = {
+                Icon(
+                    imageVector = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                    contentDescription = stringResource(R.string.arrow_dropdown),
+                    tint = Color.Black
+                )
+            },
             modifier = modifier
                 .fillMaxWidth()
                 .onGloballyPositioned { coordinates ->
-                    mTextFieldSize = coordinates.size.toSize()
+                    textFieldSize = coordinates.size.toSize()
                 }
-                .clickable { mExpanded = !mExpanded },
-            trailingIcon = {
-                Icon(icon, stringResource(id = R.string.arrow_dropdown), tint = Color.Black)
-            },
-            enabled = false,
-            singleLine = true,
+                .clickable { expanded = !expanded },
             colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color.White,
-                unfocusedContainerColor = Color.White,
                 disabledContainerColor = Color.White,
                 focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                disabledIndicatorColor = Color.Transparent
+                unfocusedIndicatorColor = Color.Transparent
             )
         )
 
-        if (bluetoothDevices.isNotEmpty()) {
-            DropdownMenu(
-                expanded = mExpanded,
-                onDismissRequest = { mExpanded = false },
-                modifier = Modifier
-                    .background(color = Color.White)
-                    .width(with(LocalDensity.current) { mTextFieldSize.width.toDp() })
-            ) {
-                bluetoothDevices.forEach { bluetoothDeviceElem ->
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-
-                                text = "${bluetoothDeviceElem.name}",
-                                style = MaterialTheme.typography.labelLarge
-                            )
-                        },
-                        onClick = {
-                            onBluetoothDeviceSelected(bluetoothDeviceElem)
-                            mCurrentBluetoothDevice = bluetoothDeviceElem
-                            mExpanded = false
-                        }
-                    )
-                }
+        DropdownMenu(
+            expanded = expanded && bluetoothDevices.isNotEmpty(),
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.width(with(LocalDensity.current) { textFieldSize.width.toDp() })
+        ) {
+            bluetoothDevices.forEach { device ->
+                DropdownMenuItem(
+                    text = { Text(text = device.name ?: "Unknown", style = MaterialTheme.typography.labelLarge) },
+                    onClick = {
+                        onBluetoothDeviceSelected(device)
+                        expanded = false
+                    }
+                )
             }
         }
     }

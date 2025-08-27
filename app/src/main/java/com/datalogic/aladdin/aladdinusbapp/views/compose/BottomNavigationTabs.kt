@@ -187,24 +187,6 @@ private fun NavigationTabItem(
         overflow = TextOverflow.Visible
     )
 }
-
-@Composable
-fun DebugVisibleItemCount(visibleItem: Int) {
-    val configuration = LocalConfiguration.current
-    val screenWidth = configuration.screenWidthDp
-    val itemsSize = 7
-    val paddingDp = 32 // R.dimen._16sdp * 2 (giả sử 16dp)
-    val availableWidth = screenWidth - paddingDp
-    val useFixedVisibleTabs = availableWidth < visibleItem
-    val visibleItemCount = if (useFixedVisibleTabs) 3 else itemsSize
-
-    LaunchedEffect(Unit) {
-        android.util.Log.d(
-            "BottomNavDebug",
-            "screenWidth=$screenWidth dp → availableWidth=$availableWidth dp → visibleItemCount=$visibleItemCount"
-        )
-    }
-}
 @Composable
 fun calculateVisibleItemCount(
     items: List<String>,
@@ -228,6 +210,9 @@ fun calculateVisibleItemCount(
             totalWidth += itemWidthDp
             count++
         } else {
+            if (count > 3) {
+                count--
+            }
             return count
         }
     }

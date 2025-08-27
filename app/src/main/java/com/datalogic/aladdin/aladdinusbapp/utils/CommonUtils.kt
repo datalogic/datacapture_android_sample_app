@@ -1,11 +1,26 @@
 package com.datalogic.aladdin.aladdinusbapp.utils
 
+import android.Manifest
+import android.app.Activity
+import android.bluetooth.BluetoothAdapter
 import android.content.Context
+import android.content.Intent
 import android.content.pm.ActivityInfo
+import android.content.pm.PackageManager
 import android.content.res.Configuration
+import android.location.LocationManager
+import android.os.Build
+import android.provider.Settings
 import android.util.DisplayMetrics
+import android.util.Log
 import android.view.Display
 import android.view.WindowManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.Composable
+import androidx.core.app.ActivityCompat
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.USBConstants.REQUEST_CODE_BT
 
 object CommonUtils {
     /**
@@ -32,7 +47,4 @@ object CommonUtils {
         orientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED // Allow rotation
     }
 
-    fun isLandscape(context: Context): Boolean {
-        return context.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-    }
 }

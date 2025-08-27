@@ -1,7 +1,7 @@
 package com.datalogic.aladdin.aladdinusbapp.views.activity.homeScreen
 
+import android.annotation.SuppressLint
 import android.app.Activity
-import android.content.ContentValues
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -20,7 +20,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
@@ -43,8 +42,13 @@ import com.datalogic.aladdin.aladdinusbapp.utils.PairingBarcodeType
 import com.datalogic.aladdin.aladdinusbapp.utils.PairingStatus
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.compose.BluetoothProfileDropdown
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 
+@SuppressLint("CoroutineCreationDuringComposition")
 @Composable
 fun BluetoothTabPortrait() {
     val homeViewModel = LocalHomeViewModel.current
@@ -76,8 +80,10 @@ fun BluetoothTabPortrait() {
                 }
             },
             onButtonStartClicked = {
-                if (it != null)
-                    homeViewModel.createQrCode(it)
+                activity?.let { activity ->
+                    if (it != null)
+                        homeViewModel.createQrCode(it, activity)
+                }
             }
         )
         Column(
@@ -118,7 +124,9 @@ fun BluetoothTabPortrait() {
                                 onClick = {
                                     homeViewModel.setSelectedBluetoothProfile(previousProfile)
                                     homeViewModel.setPairingStatus(PairingStatus.Idle)
-                                    homeViewModel.createQrCode(previousProfile)
+                                    activity?.let { activity ->
+                                        homeViewModel.createQrCode(previousProfile, activity)
+                                    }
                                 },
                                 colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary))
                             ) {
@@ -128,7 +136,6 @@ fun BluetoothTabPortrait() {
                                 )
                             }
                         }
-                        homeViewModel.setPreviousBluetoothProfile(PairingBarcodeType.UNLINK)
                     }
                 }
 
@@ -145,12 +152,6 @@ fun BluetoothTabPortrait() {
                             contentDescription = "QR Code",
                             modifier = Modifier.size(180.dp)
                         )
-                        LaunchedEffect(currentConnectionStatus) {
-                            activity?.let {
-                                Log.d(ContentValues.TAG, "[BluetoothTabPortrait] scanBluetoothDevice")
-                                homeViewModel.scanBluetoothDevice(it)
-                            }
-                        }
                     } else {
                         Text(
                             text = "Created barcode unsuccessfully. Tap \"Start\" to try again.",
@@ -271,10 +272,47 @@ fun BluetoothTabPortrait() {
                 }
 
                 PairingStatus.PermissionDenied -> {
-                    homeViewModel.setPairingStatus(PairingStatus.Idle)
-                    if (selectedBluetoothProfile != null) {
-                        homeViewModel.createQrCode(selectedBluetoothProfile)
+                    CoroutineScope(Dispatchers.Main).launch {
+                        delay(3000)
+                        activity?.let { activity ->
+                            homeViewModel.scanBluetoothDevice( activity)
+                            homeViewModel.setPairingStatus(PairingStatus.Scanning)
+                        }
                     }
+                    Text(
+                        text = "Permission required!",
+                        fontSize = 16.sp,
+                        color = Color.Black,
+                        textAlign = TextAlign.Center
+                    )
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_pairing_illustration_error_icon),
+                        contentDescription = "Connect failed",
+                        modifier = Modifier.size(280.dp, 100.dp)
+                    )
+                    Text(
+                        text = "Please enable Bluetooth & Location, grant permissions, then try again.",
+                        fontSize = 16.sp,
+                        color = Color.Black,
+                        textAlign = TextAlign.Center
+                    )
+//                    Button(
+//                        modifier = Modifier
+//                            .semantics { contentDescription = "btn_retry" }
+//                            .padding(start = dimensionResource(id = R.dimen._8sdp)),
+//                        onClick = {
+//                            activity?.let { activity ->
+//                                if (selectedBluetoothProfile != null)
+//                                    homeViewModel.createQrCode(selectedBluetoothProfile, activity)
+//                            }
+//                        },
+//                        colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary))
+//                    ) {
+//                        Text(
+//                            text = "Retry",
+//                            color = Color.White
+//                        )
+//                    }
                 }
 
                 null -> {}
