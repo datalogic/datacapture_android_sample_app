@@ -32,6 +32,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpOffset
@@ -73,15 +76,16 @@ fun BottomNavigationRow(modifier: Modifier, homeViewModel: HomeViewModel) {
     val useFixedVisibleTabs = availableWidth < 450 // Adjust threshold as needed
 
     // Always show 3 tabs (Home, Configuration, More) in the main layout if in fixed mode
-    val visibleItemCount = if (useFixedVisibleTabs) 3 else items.size
+//    val visibleItemCount = if (useFixedVisibleTabs) 3 else items.size
+    val visibleItemCount = calculateVisibleItemCount(items)
     val showOverflow = items.size > visibleItemCount
     val visibleTabCount = if (showOverflow) visibleItemCount - 1 else items.size
 
     // State for overflow menu
     val (overflowMenuExpanded, setOverflowMenuExpanded) = remember { mutableStateOf(false) }
 
-    val context = LocalContext.current
-    val activity = context as? Activity
+//    val context = LocalContext.current
+//    val activity = context as? Activity
 
     LaunchedEffect(status) {
         when (status) {
@@ -182,4 +186,50 @@ private fun NavigationTabItem(
         maxLines = 1,
         overflow = TextOverflow.Visible
     )
+}
+
+@Composable
+fun DebugVisibleItemCount(visibleItem: Int) {
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp
+    val itemsSize = 7
+    val paddingDp = 32 // R.dimen._16sdp * 2 (giả sử 16dp)
+    val availableWidth = screenWidth - paddingDp
+    val useFixedVisibleTabs = availableWidth < visibleItem
+    val visibleItemCount = if (useFixedVisibleTabs) 3 else itemsSize
+
+    LaunchedEffect(Unit) {
+        android.util.Log.d(
+            "BottomNavDebug",
+            "screenWidth=$screenWidth dp → availableWidth=$availableWidth dp → visibleItemCount=$visibleItemCount"
+        )
+    }
+}
+@Composable
+fun calculateVisibleItemCount(
+    items: List<String>,
+    paddingDp: Int = 32,
+    fontSize: TextUnit = 16.sp
+): Int {
+    val configuration = LocalConfiguration.current
+    val density = LocalDensity.current
+    val screenWidth = configuration.screenWidthDp
+    val availableWidth = screenWidth - paddingDp
+    val textMeasurer = rememberTextMeasurer()
+    var totalWidth = 0f
+    var count = 0
+    items.forEach { item ->
+        val result = textMeasurer.measure(
+            text = AnnotatedString(item),
+            style = TextStyle(fontSize = fontSize)
+        )
+        val itemWidthDp = result.size.width / density.density
+        if (totalWidth + itemWidthDp <= availableWidth) {
+            totalWidth += itemWidthDp
+            count++
+        } else {
+            return count
+        }
+    }
+    return count
 }

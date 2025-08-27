@@ -66,7 +66,6 @@ fun HomeTabLandscape() {
 
     val isBluetoothEnabled = homeViewModel.isBluetoothEnabled.observeAsState(false).value
     val selectedBluetoothDevice = homeViewModel.selectedBluetoothDevice.observeAsState(null).value
-    val selectedScannerBluetoothDevice = homeViewModel.selectedScannerBluetoothDevice.observeAsState(null).value
     val allBluetoothDevices = homeViewModel.allBluetoothDevices.observeAsState(ArrayList()).value
 
     val context = LocalContext.current

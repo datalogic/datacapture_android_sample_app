@@ -49,23 +49,30 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.toSize
 import androidx.core.app.ActivityCompat
 import com.datalogic.aladdin.aladdinusbapp.R
+import com.datalogic.aladdin.aladdinusbapp.utils.PairingBarcodeType
+import com.datalogic.aladdin.aladdinusbapp.utils.PairingStatus
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.BluetoothProfile
 import kotlin.collections.contains
 import kotlin.collections.forEach
 
 
-var mCurrentBluetoothProfile by mutableStateOf<BluetoothProfile?>(null)
+var mCurrentBluetoothProfile by mutableStateOf<PairingBarcodeType?>(null)
 val bluetoothProfiles = arrayListOf(
-    BluetoothProfile.SPP,
-    BluetoothProfile.HID
+    PairingBarcodeType.SPP,
+    PairingBarcodeType.HID,
+    PairingBarcodeType.UNLINK
 )
 @Composable
-fun BluetoothProfileDropdown(modifier: Modifier, selectedBluetoothProfile: BluetoothProfile?,
-                             onBluetoothProfileSelected: (BluetoothProfile?) -> Unit, onButtonStartClicked: (BluetoothProfile?) -> Unit ){
+fun BluetoothProfileDropdown(modifier: Modifier, selectedBluetoothProfile: PairingBarcodeType?,
+                             onBluetoothProfileSelected: (PairingBarcodeType?) -> Unit, onButtonStartClicked: (PairingBarcodeType?) -> Unit ){
     var mExpanded by remember { mutableStateOf(false) }
     var mTextFieldSize by remember { mutableStateOf(Size.Zero)}
     var profile = ""
+
+    val homeViewModel = LocalHomeViewModel.current
+    val currentConnectionStatus = homeViewModel.currentPairingStatus.observeAsState(null).value
+
 
     LaunchedEffect(selectedBluetoothProfile, bluetoothProfiles) {
         mCurrentBluetoothProfile = selectedBluetoothProfile
@@ -94,8 +101,9 @@ fun BluetoothProfileDropdown(modifier: Modifier, selectedBluetoothProfile: Bluet
         ) {
             if (selectedBluetoothProfile != null) {
                 profile = when (selectedBluetoothProfile) {
-                    BluetoothProfile.SPP -> "SPP"
-                    BluetoothProfile.HID -> "HID"
+                    PairingBarcodeType.SPP -> "SPP"
+                    PairingBarcodeType.HID -> "HID"
+                    PairingBarcodeType.UNLINK -> "Unlink"
                 }
             }
             TextField(
@@ -133,8 +141,9 @@ fun BluetoothProfileDropdown(modifier: Modifier, selectedBluetoothProfile: Bluet
                 ) {
                     bluetoothProfiles.forEach { bluetoothProfileElem ->
                         profile = when (bluetoothProfileElem) {
-                            BluetoothProfile.SPP -> "SPP"
-                            BluetoothProfile.HID -> "HID"
+                            PairingBarcodeType.SPP -> "SPP"
+                            PairingBarcodeType.HID -> "HID"
+                            PairingBarcodeType.UNLINK -> "Unlink"
                         }
                         DropdownMenuItem(
                             text = {
@@ -161,7 +170,8 @@ fun BluetoothProfileDropdown(modifier: Modifier, selectedBluetoothProfile: Bluet
             onClick = {
                 onButtonStartClicked(mCurrentBluetoothProfile)
             },
-            colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary))
+            colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary)),
+            enabled = (selectedBluetoothProfile != PairingBarcodeType.UNLINK && currentConnectionStatus != PairingStatus.Scanning)
         ) {
             Text(
                 text = "Start",

@@ -32,6 +32,7 @@ import androidx.lifecycle.viewModelScope
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.FileConstants
 import com.datalogic.aladdin.aladdinusbapp.utils.FileUtils
+import com.datalogic.aladdin.aladdinusbapp.utils.PairingBarcodeType
 import com.datalogic.aladdin.aladdinusbapp.utils.PairingStatus
 import com.datalogic.aladdin.aladdinusbapp.utils.ResultContants
 import com.datalogic.aladdin.aladdinusbapp.utils.USBConstants
@@ -108,7 +109,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     val selectedScannerBluetoothDevice: MutableLiveData<DatalogicBluetoothDevice?> =
         MutableLiveData(null)
 
-    val selectedBluetoothProfile: MutableLiveData<BluetoothProfile?> = MutableLiveData(null)
+    val selectedBluetoothProfile: MutableLiveData<PairingBarcodeType?> = MutableLiveData(null)
+    val previousBluetoothProfile: MutableLiveData<PairingBarcodeType?> = MutableLiveData(null)
     val currentPairingStatus: MutableLiveData<PairingStatus?> = MutableLiveData(null)
     val currentBleDeviceName: MutableLiveData<String> = MutableLiveData(null)
 
@@ -237,7 +239,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         this.context = context
 
         currentPairingStatus.value = PairingStatus.Idle
-        selectedBluetoothProfile.value = BluetoothProfile.SPP
+        selectedBluetoothProfile.value = PairingBarcodeType.SPP
+        previousBluetoothProfile.value = PairingBarcodeType.UNLINK
     }
 
     /**
@@ -1397,7 +1400,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                     }
                 }
 
-                it.upgradeFirmware(file, fileType, context,
+                it.upgradeFirmware(
+                    file, fileType, context,
                     resetCallback = {
                         showResetDeviceDialog = true
                     },
@@ -1499,8 +1503,13 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         }
     }
 
-    fun createQrCode(profile: BluetoothProfile) {
-        val bitmap = usbDeviceManager.qrCodeGenerator(context, profile)
+    fun createQrCode(profile: PairingBarcodeType) {
+        val bluetoothProfile: BluetoothProfile = when (profile) {
+            PairingBarcodeType.SPP -> BluetoothProfile.SPP
+            PairingBarcodeType.HID -> BluetoothProfile.HID
+            PairingBarcodeType.UNLINK -> return
+        }
+        val bitmap = usbDeviceManager.qrCodeGenerator(context, bluetoothProfile)
         val scaledBitmap = bitmap.scale(210, 210, false)
         _qrBitmap.value = scaledBitmap
         currentPairingStatus.value = PairingStatus.Scanning
@@ -1513,7 +1522,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             val status = pairingData.pairingStatus
             val message = pairingData.message
             val name = pairingData.deviceName
-            
+
             when (status) {
                 BluetoothPairingStatus.Successful -> {
                     if (message.contains("connected")) {
@@ -1522,6 +1531,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                         setPairingStatus(PairingStatus.Paired)
                     }
                 }
+
                 BluetoothPairingStatus.Unsuccessful -> {
                     if (message == "Permission denied") {
                         setPairingStatus(PairingStatus.PermissionDenied)
@@ -1529,12 +1539,16 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                         setPairingStatus(PairingStatus.Error)
                     }
                 }
+
                 BluetoothPairingStatus.Timeout -> {
                     setPairingStatus(PairingStatus.Timeout)
                 }
             }
             currentBleDeviceName.value = pairingData.deviceName
-            Log.d(tag, "[scanBluetoothDevice] scan device ${pairingData.deviceName} ${pairingData.pairingStatus} : ${pairingData.message}")
+            Log.d(
+                tag,
+                "[scanBluetoothDevice] scan device ${pairingData.deviceName} ${pairingData.pairingStatus} : ${pairingData.message}"
+            )
         }
     }
 
@@ -1560,7 +1574,9 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                             showToast(context, message + errorCode)
                         }
                     }
-                    selectedScannerBluetoothDevice.value?.registerBluetoothDioListener(bluetoothErrorListener)
+                    selectedScannerBluetoothDevice.value?.registerBluetoothDioListener(
+                        bluetoothErrorListener
+                    )
                     Log.d(tag, "[coroutineOpenBluetoothDevice] connectDevice Successful")
                     _status.postValue(DeviceStatus.OPENED)
                     _deviceStatus.postValue("Device opened")
@@ -1601,8 +1617,12 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         selectedBluetoothDevice.value = device
     }
 
-    fun setSelectedBluetoothDevice(profile: BluetoothProfile) {
+    fun setSelectedBluetoothProfile(profile: PairingBarcodeType) {
         selectedBluetoothProfile.value = profile
+    }
+
+    fun setPreviousBluetoothProfile(profile: PairingBarcodeType?) {
+        previousBluetoothProfile.value = profile
     }
 
     fun setPairingStatus(status: PairingStatus?) {
