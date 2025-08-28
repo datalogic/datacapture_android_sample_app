@@ -57,9 +57,12 @@ import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbScanListene
 import com.dzungvu.packlog.LogcatHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -82,7 +85,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
 
     private val _allBluetoothDevices = MutableLiveData<ArrayList<BluetoothDevice>>(ArrayList())
     val allBluetoothDevices: LiveData<ArrayList<BluetoothDevice>> = _allBluetoothDevices
-    private val _bluetoothPermission = MutableLiveData<Boolean>()
+    private var bluetoothPollingJob: Job? = null
 
     private val _scanLabel = MutableLiveData("")
     val scanLabel: LiveData<String> = _scanLabel
@@ -1478,12 +1481,37 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         if (_isBluetoothEnabled.value == true) {
             _isBluetoothEnabled.value = false
             Log.d(tag, "[toggleConnectType] Show list USB device")
+            if (status.value == DeviceStatus.OPENED) {
+                closeBluetoothDevice()
+            }
+            stopBluetoothPolling()
         } else if (getAllBluetoothDevice(activity)) {
             _isBluetoothEnabled.value = true
             Log.d(tag, "[toggleConnectType] Show list Bluetooth device")
+            if (selectedBluetoothDevice.value != null && allBluetoothDevices.value?.contains(selectedBluetoothDevice.value) == true) {
+                _status.postValue(DeviceStatus.CLOSED)
+            }
+            startBluetoothPolling(activity)
         } else {
             Log.e(tag, "[toggleConnectType] getAllBluetoothDevice FAIL - Permission denied")
         }
+    }
+
+    private fun startBluetoothPolling(activity: Activity) {
+        if (bluetoothPollingJob?.isActive == true) return
+        bluetoothPollingJob = viewModelScope.launch {
+            while (isActive) {
+                Log.d(tag, "[startBluetoothPolling] Get all Bluetooth devices each 30s")
+                delay(30_000)
+                getAllBluetoothDevice(activity)
+            }
+        }
+    }
+
+    private fun stopBluetoothPolling() {
+        Log.d(tag, "[stopBluetoothPolling] Stop getting all Bluetooth devices")
+        bluetoothPollingJob?.cancel()
+        bluetoothPollingJob = null
     }
 
     // REMOVED: saveLogsToFile() function - no longer needed since logs are only stored as SDK_log files
@@ -1492,7 +1520,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     fun initializeLoggingState() {
         _isLoggingEnabled.value = logcatHelper.isActive()
     }
-
 
     fun isSWUValid(file: File): Boolean? {
         return selectedDevice.value?.isSWUFirmwareValid(file)
