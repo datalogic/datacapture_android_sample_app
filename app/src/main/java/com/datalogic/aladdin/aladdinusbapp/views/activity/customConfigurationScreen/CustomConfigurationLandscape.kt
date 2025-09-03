@@ -1,5 +1,6 @@
 package com.datalogic.aladdin.aladdinusbapp.views.activity.customConfigurationScreen
 
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -36,6 +37,8 @@ import androidx.compose.ui.unit.dp
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.viewmodel.HomeViewModel
+import com.datalogic.aladdin.aladdinusbapp.views.compose.ResetDeviceAlertDialog
+import java.util.Locale
 
 @Preview
 @Composable
@@ -54,7 +57,8 @@ fun CustomConfigurationLandscape() {
 
     // Set up callback for configuration results
     LaunchedEffect(Unit) {
-        homeViewModel.setConfigurationResultCallback(object : HomeViewModel.ConfigurationResultCallback {
+        homeViewModel.setConfigurationResultCallback(object :
+            HomeViewModel.ConfigurationResultCallback {
             override fun onConfigurationResult(isSuccess: Boolean, title: String, message: String) {
                 configResultTitle.value = title
                 configResultMessage.value = message
@@ -215,17 +219,31 @@ fun CustomConfigurationLandscape() {
     
     // Configuration result dialog
     if (showConfigResultDialog.value) {
-        AlertDialog(
-            onDismissRequest = { showConfigResultDialog.value = false },
-            title = { Text(configResultTitle.value) },
-            text = { Text(configResultMessage.value) },
-            confirmButton = {
-                Button(
-                    onClick = { showConfigResultDialog.value = false }
-                ) {
-                    Text("OK")
+        Log.d("Custom config","[showConfigResultDialog] configResultTitle: ${configResultTitle.value}")
+
+        if (configResultTitle.value.toUpperCase(Locale.ROOT) == "SUCCESSFULLY") {
+            homeViewModel.showResetDeviceDialog = true
+            Log.d("Custom config", "[showConfigResultDialog] showResetDeviceDialog == true")
+        } else {
+            AlertDialog(
+                onDismissRequest = { showConfigResultDialog.value = false },
+                title = { Text(configResultTitle.value) },
+                text = { Text(configResultMessage.value) },
+                confirmButton = {
+                    Button(
+                        onClick = { showConfigResultDialog.value = false }
+                    ) {
+                        Text("OK")
+                    }
                 }
-            }
-        )
+            )
+        }
+    }
+
+    if (homeViewModel.showResetDeviceDialog) {
+        Log.d("Custom config", "[showConfigResultDialog] showResetDeviceDialog == true")
+        ResetDeviceAlertDialog(homeViewModel, readConfig = false)
+        showConfigResultDialog.value = false
+        Log.d("Custom config", "[showConfigResultDialog] showConfigResultDialog.value = false")
     }
 }

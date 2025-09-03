@@ -1,5 +1,6 @@
 package com.datalogic.aladdin.aladdinusbapp.views.activity.customConfigurationScreen
 
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -42,6 +43,8 @@ import androidx.compose.ui.unit.dp
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.viewmodel.HomeViewModel
+import com.datalogic.aladdin.aladdinusbapp.views.compose.ResetDeviceAlertDialog
+import java.util.Locale
 
 @Preview
 @Composable
@@ -52,7 +55,7 @@ fun CustomConfigurationPortrait() {
     val context = LocalContext.current
     val showDialog = remember { mutableStateOf(false) }
     val fileName = remember { mutableStateOf("") }
-    
+
     // Configuration result dialog state
     val showConfigResultDialog = remember { mutableStateOf(false) }
     val configResultTitle = remember { mutableStateOf("") }
@@ -60,7 +63,8 @@ fun CustomConfigurationPortrait() {
 
     // Set up callback for configuration results
     LaunchedEffect(Unit) {
-        homeViewModel.setConfigurationResultCallback(object : HomeViewModel.ConfigurationResultCallback {
+        homeViewModel.setConfigurationResultCallback(object :
+            HomeViewModel.ConfigurationResultCallback {
             override fun onConfigurationResult(isSuccess: Boolean, title: String, message: String) {
                 configResultTitle.value = title
                 configResultMessage.value = message
@@ -69,7 +73,7 @@ fun CustomConfigurationPortrait() {
         })
     }
 
-        // If the ViewModel's data changes (e.g., after a "Read" operation), update the local textState
+    // If the ViewModel's data changes (e.g., after a "Read" operation), update the local textState
     LaunchedEffect(configData) {
         if (textState.value != configData) { // Avoid unnecessary updates
             textState.value = configData
@@ -160,7 +164,7 @@ fun CustomConfigurationPortrait() {
                 modifier = Modifier
                     .fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
-            ){
+            ) {
                 Button(
                     modifier = Modifier
                         .semantics { contentDescription = "btn_load" }
@@ -184,7 +188,7 @@ fun CustomConfigurationPortrait() {
                         .weight(0.5f)
                         .padding(horizontal = dimensionResource(id = R.dimen._16sdp))
                         .wrapContentSize(),
-                    onClick = { showDialog.value = true},
+                    onClick = { showDialog.value = true },
                     colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary)),
                 ) {
                     Text(
@@ -225,20 +229,34 @@ fun CustomConfigurationPortrait() {
             }
         )
     }
-    
+
     // Configuration result dialog
     if (showConfigResultDialog.value) {
-        AlertDialog(
-            onDismissRequest = { showConfigResultDialog.value = false },
-            title = { Text(configResultTitle.value) },
-            text = { Text(configResultMessage.value) },
-            confirmButton = {
-                Button(
-                    onClick = { showConfigResultDialog.value = false }
-                ) {
-                    Text("OK")
+        Log.d("Custom config","[showConfigResultDialog] configResultTitle: ${configResultTitle.value}")
+
+        if (configResultTitle.value.toUpperCase(Locale.ROOT) == "SUCCESSFULLY") {
+            homeViewModel.showResetDeviceDialog = true
+            Log.d("Custom config", "[showConfigResultDialog] showResetDeviceDialog == true")
+        } else {
+            AlertDialog(
+                onDismissRequest = { showConfigResultDialog.value = false },
+                title = { Text(configResultTitle.value) },
+                text = { Text(configResultMessage.value) },
+                confirmButton = {
+                    Button(
+                        onClick = { showConfigResultDialog.value = false }
+                    ) {
+                        Text("OK")
+                    }
                 }
-            }
-        )
+            )
+        }
+    }
+
+    if (homeViewModel.showResetDeviceDialog) {
+        Log.d("Custom config", "[showConfigResultDialog] showResetDeviceDialog == true")
+        ResetDeviceAlertDialog(homeViewModel, readConfig = false)
+        showConfigResultDialog.value = false
+        Log.d("Custom config", "[showConfigResultDialog] showConfigResultDialog.value = false")
     }
 }

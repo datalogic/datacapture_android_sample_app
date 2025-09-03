@@ -15,7 +15,7 @@ import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.viewmodel.HomeViewModel
 
 @Composable
-fun ResetDeviceAlertDialog(homeViewModel: HomeViewModel) {
+fun ResetDeviceAlertDialog(homeViewModel: HomeViewModel, readConfig: Boolean = true) {
     androidx.compose.material3.AlertDialog(
         onDismissRequest = {
             homeViewModel.dismissResetDialog()
@@ -33,7 +33,8 @@ fun ResetDeviceAlertDialog(homeViewModel: HomeViewModel) {
             TextButton(
                 onClick = {
                     homeViewModel.dismissResetDialog()
-                    homeViewModel.readConfigData()
+                    if (readConfig)
+                        homeViewModel.readConfigData()
                 }) {
                 Text(stringResource(id = R.string.dismiss))
             }
