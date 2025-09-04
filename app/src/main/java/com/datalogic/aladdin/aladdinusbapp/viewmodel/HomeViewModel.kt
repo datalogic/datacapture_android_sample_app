@@ -752,6 +752,26 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             _deviceStatus.postValue("No device selected")
         }
     }
+    fun resetDeviceExitedServiceMode() {
+        selectedDevice.value?.let { device ->
+            _isLoading.postValue(true)
+            CoroutineScope(Dispatchers.IO).launch {
+                var result = device.enterServiceMode()
+                result = device.resetDevice()
+                withContext(Dispatchers.Main) {
+                    if (result.equals(USBConstants.SUCCESS)) {
+                        _deviceStatus.postValue(ResultContants.DEVICE_RESET_SUCCESS)
+                    } else {
+                        _deviceStatus.postValue(ResultContants.DEVICE_RESET_FAILED)
+                    }
+                    _isLoading.postValue(false)
+                }
+            }
+        } ?: run {
+            _deviceStatus.postValue("No device selected")
+        }
+    }
+
 
     // Modify the applyConfiguration method to set the dialog state
     fun applyConfiguration() {

@@ -13,9 +13,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.window.DialogProperties
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.viewmodel.HomeViewModel
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DIOCmdValue
 
 @Composable
-fun ResetDeviceAlertDialog(homeViewModel: HomeViewModel, readConfig: Boolean = true) {
+fun ResetDeviceAlertDialog(homeViewModel: HomeViewModel, customConfig: Boolean = false) {
     androidx.compose.material3.AlertDialog(
         onDismissRequest = {
             homeViewModel.dismissResetDialog()
@@ -23,7 +24,11 @@ fun ResetDeviceAlertDialog(homeViewModel: HomeViewModel, readConfig: Boolean = t
         confirmButton = {
             TextButton(
                 onClick = {
-                    homeViewModel.resetDevice()
+                    if (customConfig) {
+                        homeViewModel.resetDeviceExitedServiceMode()
+                    } else {
+                        homeViewModel.resetDevice()
+                    }
                     homeViewModel.dismissResetDialog() // Close dialog after confirming
                 }) {
                 Text(stringResource(id = R.string.confirm))
@@ -33,7 +38,7 @@ fun ResetDeviceAlertDialog(homeViewModel: HomeViewModel, readConfig: Boolean = t
             TextButton(
                 onClick = {
                     homeViewModel.dismissResetDialog()
-                    if (readConfig)
+                    if (!customConfig)
                         homeViewModel.readConfigData()
                 }) {
                 Text(stringResource(id = R.string.dismiss))

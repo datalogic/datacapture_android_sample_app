@@ -8,15 +8,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -37,12 +34,11 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.datalogic.aladdin.aladdinusbapp.R
-import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.viewmodel.HomeViewModel
+import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ResetDeviceAlertDialog
 import java.util.Locale
 
@@ -108,10 +104,13 @@ fun CustomConfigurationPortrait() {
             .fillMaxSize()
             .padding(16.dp)
     ) {
+        val scroll = rememberScrollState()
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(scroll)
         ) {
+
             LineNumberedTextField(
                 text = configData,
                 onTextChange = { textState.value = it },
@@ -246,7 +245,7 @@ fun CustomConfigurationPortrait() {
                     Button(
                         onClick = { showConfigResultDialog.value = false }
                     ) {
-                        Text("OK")
+                        Text( stringResource(id = R.string.confirm))
                     }
                 }
             )
@@ -255,7 +254,7 @@ fun CustomConfigurationPortrait() {
 
     if (homeViewModel.showResetDeviceDialog) {
         Log.d("Custom config", "[showConfigResultDialog] showResetDeviceDialog == true")
-        ResetDeviceAlertDialog(homeViewModel, readConfig = false)
+        ResetDeviceAlertDialog(homeViewModel, customConfig = true)
         showConfigResultDialog.value = false
         Log.d("Custom config", "[showConfigResultDialog] showConfigResultDialog.value = false")
     }

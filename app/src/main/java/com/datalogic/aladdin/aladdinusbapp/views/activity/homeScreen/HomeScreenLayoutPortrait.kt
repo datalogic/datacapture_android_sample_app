@@ -62,18 +62,21 @@ fun HomeScreenLayoutPortrait() {
             .fillMaxSize(),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        HeaderImageView(
-            modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentHeight()
-        )
+
+        if (selectedTab != 6) {
+            HeaderImageView(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight()
+            )
+        }
         Column(
             modifier = Modifier
                 .semantics { contentDescription = "home_tab_content_layout" }
                 .fillMaxSize()
                 .padding(
                     horizontal = dimensionResource(id = R.dimen._20sdp),
-                    vertical = dimensionResource(id = R.dimen._20sdp)
+                    vertical = dimensionResource(id = R.dimen._5sdp)
                 )
                 .weight(1f),
             verticalArrangement = Arrangement.SpaceBetween

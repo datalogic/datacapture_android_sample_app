@@ -32,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
@@ -49,34 +50,40 @@ object ComposableUtils {
 
     @Composable
     fun HeaderImageView(modifier: Modifier) {
-        Row (
-            modifier
-                .semantics { contentDescription = "app_logo" }
-                .fillMaxWidth()
-                .padding(top = dimensionResource(id = R.dimen._5sdp)),
-            Arrangement.Center,
-        ){
-            Image(
-                modifier = Modifier.size(dimensionResource(id = R.dimen._81sdp), dimensionResource(id = R.dimen._46sdp)),
-                painter = painterResource(id = R.drawable.ic_logo_version_screen),
-                contentDescription = "app_logo"
-            )
+        val configuration = LocalConfiguration.current
+        if (configuration.screenHeightDp > 350) {
+            Row (
+                modifier
+                    .semantics { contentDescription = "app_logo" }
+                    .fillMaxWidth()
+                    .padding(top = dimensionResource(id = R.dimen._5sdp)),
+                Arrangement.Center,
+            ){
+                Image(
+                    modifier = Modifier.size(dimensionResource(id = R.dimen._81sdp), dimensionResource(id = R.dimen._46sdp)),
+                    painter = painterResource(id = R.drawable.ic_logo_version_screen),
+                    contentDescription = "app_logo"
+                )
+            }
         }
     }
 
     @Composable
     fun FooterImageView(modifier: Modifier) {
-        Row (
-            modifier
-                .semantics { contentDescription = "datalogic_logo" }
-                .fillMaxWidth()
-                .padding(vertical = dimensionResource(id = R.dimen._15sdp)),
-            Arrangement.Center
-        ){
-            Image(
-                painter = painterResource(id = R.drawable.ic_datalogic_logo),
-                contentDescription = "datalogic_logo"
-            )
+        val configuration = LocalConfiguration.current
+        if (configuration.screenHeightDp > 350) {
+            Row(
+                modifier
+                    .semantics { contentDescription = "datalogic_logo" }
+                    .fillMaxWidth()
+                    .padding(vertical = dimensionResource(id = R.dimen._15sdp)),
+                Arrangement.Center
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_datalogic_logo),
+                    contentDescription = "datalogic_logo"
+                )
+            }
         }
     }
 
