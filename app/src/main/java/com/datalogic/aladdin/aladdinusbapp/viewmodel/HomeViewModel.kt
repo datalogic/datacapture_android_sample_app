@@ -351,9 +351,13 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
      */
     fun setStatus(productId: String, status: DeviceStatus) {
         // Only update UI if this status change is for our selected device
-        selectedDevice.value?.let {
-            if (it.usbDevice.productId.toString() == productId) {
-                _status.postValue(status)
+        if (isBluetoothEnabled.value == true) {
+            _status.postValue(status)
+        } else {
+            selectedDevice.value?.let {
+                if (it.usbDevice.productId.toString() == productId) {
+                    _status.postValue(status)
+                }
             }
         }
     }
