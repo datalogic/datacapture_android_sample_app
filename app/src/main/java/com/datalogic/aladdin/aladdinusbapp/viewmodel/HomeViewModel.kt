@@ -1316,11 +1316,13 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         if (!TextUtils.isEmpty(customConfiguration.value.toString()))
         // Save to file if fileName is provided
             if (fileName.isNotEmpty()) {
-                FileUtils.saveTextToDownloads(
-                    context,
-                    fileName,
-                    customConfiguration.value.toString()
-                )
+                selectedDevice.value?.let {
+                    FileUtils.saveTextToDownloads(
+                        context,
+                        fileName,
+                        customConfiguration.value.toString(), it.deviceType
+                    )
+                }
             } else {
                 Toast.makeText(
                     context,

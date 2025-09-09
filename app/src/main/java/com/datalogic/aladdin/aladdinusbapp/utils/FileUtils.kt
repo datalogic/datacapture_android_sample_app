@@ -9,16 +9,21 @@ import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.widget.Toast
 import com.datalogic.aladdin.aladdinusbapp.R
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceType
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 
 object FileUtils {
-    fun saveTextToDownloads(context: Context, fileName: String, text: String) {
+    fun saveTextToDownloads(context: Context, fileName: String, text: String, deviceType: DeviceType?) {
         val resolver = context.contentResolver
         val contentValues = ContentValues().apply {
-            put(MediaStore.Downloads.DISPLAY_NAME, fileName)
-            put(MediaStore.Downloads.MIME_TYPE, "text/plain")
+            if (deviceType == DeviceType.FRS) {
+                put(MediaStore.Downloads.DISPLAY_NAME, "$fileName.tex")
+            } else {
+                put(MediaStore.Downloads.DISPLAY_NAME, fileName)
+                put(MediaStore.Downloads.MIME_TYPE, "text/plain")
+            }
             put(MediaStore.Downloads.IS_PENDING, 1)
         }
 
