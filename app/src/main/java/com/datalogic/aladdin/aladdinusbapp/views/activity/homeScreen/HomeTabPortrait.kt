@@ -594,10 +594,6 @@ fun HomeTabPortrait() {
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Log.d(
-                TAG,
-                "status = $status && allBluetoothDevices not empty == ${allBluetoothDevices.isNotEmpty()}"
-            )
             CustomButton(
                 modifier = Modifier
                     .weight(0.5f)

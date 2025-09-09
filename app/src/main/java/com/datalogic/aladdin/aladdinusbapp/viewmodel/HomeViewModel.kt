@@ -151,6 +151,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     // UI alert states
     var openAlert by mutableStateOf(false)
     var oemAlert by mutableStateOf(false)
+    var bluetoothAlert by mutableStateOf(false)
     var connectDeviceAlert by mutableStateOf(false)
     var magellanConfigAlert by mutableStateOf(false)
 
@@ -1236,6 +1237,11 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                     return false
                 }
 
+                if (isBluetoothEnabled.value == true) {
+                    bluetoothAlert = true
+                    return false
+                }
+
                 setSelectedTabIndex(tabIndex)
                 if (selectedDevice.value?.usbDevice?.productId.toString() == "16386") {
                     magellanConfigAlert = true
@@ -1253,6 +1259,10 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             3, 4, 5 -> { // Image capture tab, custom configuration, update firmware
                 if (selectedDevice.value?.connectionType == ConnectionType.USB_OEM) {
                     oemAlert = true
+                    return false
+                }
+                if (isBluetoothEnabled.value == true) {
+                    bluetoothAlert = true
                     return false
                 }
                 setSelectedTabIndex(tabIndex)
@@ -1490,6 +1500,9 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             }
             stopBluetoothPolling()
         } else if (getAllBluetoothDevice(activity)) {
+            if (status.value == DeviceStatus.OPENED) {
+                closeDevice()
+            }
             _isBluetoothEnabled.value = true
             Log.d(tag, "[toggleConnectType] Show list Bluetooth device")
             if (selectedBluetoothDevice.value != null && allBluetoothDevices.value?.contains(selectedBluetoothDevice.value) == true) {

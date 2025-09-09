@@ -42,6 +42,7 @@ fun HomeScreenLayoutLandscape() {
 
     ShowPopup((homeViewModel.openAlert && homeViewModel.selectedTabIndex.value != 6), onDismiss = { homeViewModel.openAlert = false }, stringResource(id = R.string.alert_message_for_open_device))
     ShowPopup((homeViewModel.oemAlert && homeViewModel.selectedTabIndex.value != 6), onDismiss = { homeViewModel.oemAlert = false }, stringResource(id = R.string.oem_device_feature_restriction))
+    ShowPopup((homeViewModel.bluetoothAlert && homeViewModel.selectedTabIndex.value != 6), onDismiss = { homeViewModel.bluetoothAlert = false }, stringResource(R.string.not_support_ble_device))
     ShowPopup((homeViewModel.connectDeviceAlert && homeViewModel.selectedTabIndex.value != 6), onDismiss = { homeViewModel.connectDeviceAlert = false }, stringResource(id = R.string.alert_message_for_connect_device))
     ShowPopup((homeViewModel.magellanConfigAlert  && homeViewModel.selectedTabIndex.value != 6), onDismiss = { homeViewModel.magellanConfigAlert = false }, stringResource(id = R.string.alert_message_for_magellan_config))
 
