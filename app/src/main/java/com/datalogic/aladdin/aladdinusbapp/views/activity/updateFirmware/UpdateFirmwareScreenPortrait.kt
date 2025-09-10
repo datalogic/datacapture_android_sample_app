@@ -71,8 +71,10 @@ fun UpdateFirmwareScreen() {
                     ?.let { it1 -> FileUtils.getFileExtension(it1) }.toString().uppercase()
                 file = FileUtils.getFileFromUri(context, it)
                 isLoadFile.value = true
-                if(fileType != FileConstants.DFW_FILE_TYPE) {
+                if (fileType != FileConstants.DFW_FILE_TYPE) {
                     pid = homeViewModel.getPid(file, fileType).toString()
+                } else {
+                    pid = homeViewModel.getPidDWF(file, fileType)
                 }
                 filePath = file?.absolutePath ?: ""
                 val realPath = FileUtils.getRealPathFromUri(context, it)
@@ -95,13 +97,14 @@ fun UpdateFirmwareScreen() {
     ) {
         val scroll = rememberScrollState()
         Column(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
                 .verticalScroll(scroll),
             verticalArrangement = Arrangement.SpaceBetween,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // FW information
-            if(isLoadFile.value) {
+            if (isLoadFile.value) {
                 ReleaseInformationCard(swName, pid, filePath)
                 Spacer(modifier = Modifier.height(4.dp))
                 UpgradeConfigurationCard(
@@ -120,9 +123,9 @@ fun UpdateFirmwareScreen() {
                 )
             }
             // Progress Section
-            
+
             Spacer(modifier = Modifier.weight(1f))
-            
+
             // Buttons at bottom
             Row(
                 modifier = Modifier
@@ -135,7 +138,8 @@ fun UpdateFirmwareScreen() {
                         .weight(1f)
                         .fillMaxHeight(),
                     onClick = {
-                        filePickerLauncher.launch("application/octet-stream") },
+                        filePickerLauncher.launch("application/octet-stream")
+                    },
                     enabled = true,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = colorResource(id = R.color.colorPrimary),
@@ -162,14 +166,49 @@ fun UpdateFirmwareScreen() {
                             if (isCheckPidToggle && fileType == FileConstants.S37_FILE_TYPE) {
                                 homeViewModel.setPid(it, fileType) { isValid ->
                                     if (isCheckPidToggle != isValid) {
-                                        Toast.makeText(context, context.getString(R.string.pid_is_not_valid), Toast.LENGTH_LONG).show()
+                                        Toast.makeText(
+                                            context,
+                                            context.getString(R.string.pid_is_not_valid),
+                                            Toast.LENGTH_LONG
+                                        ).show()
                                         return@setPid
                                     }
-                                    handleBulkTransferAndUpgrade(it, isBulkTransferToggle, homeViewModel, context, fileType)
+                                    handleBulkTransferAndUpgrade(
+                                        it,
+                                        isBulkTransferToggle,
+                                        homeViewModel,
+                                        context,
+                                        fileType
+                                    )
+                                }
+                                return@let
+                            } else if (isCheckPidToggle && fileType == FileConstants.DFW_FILE_TYPE) {
+                                homeViewModel.setPidDWF(it, fileType) { isValid ->
+                                    if (isCheckPidToggle != isValid) {
+                                        Toast.makeText(
+                                            context,
+                                            context.getString(R.string.pid_is_not_valid),
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                        return@setPidDWF
+                                    }
+                                    handleBulkTransferAndUpgrade(
+                                        it,
+                                        isBulkTransferToggle,
+                                        homeViewModel,
+                                        context,
+                                        fileType
+                                    )
                                 }
                                 return@let
                             }
-                            handleBulkTransferAndUpgrade(it, isBulkTransferToggle, homeViewModel, context, fileType)
+                            handleBulkTransferAndUpgrade(
+                                it,
+                                isBulkTransferToggle,
+                                homeViewModel,
+                                context,
+                                fileType
+                            )
                         }
                     },
                     enabled = isLoadFile.value,
