@@ -92,6 +92,12 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     private val _scanRawData = MutableLiveData("")
     val scanRawData: LiveData<String> = _scanRawData
 
+    private val _customerName = MutableLiveData("")
+    val customerName: LiveData<String> = _customerName
+
+    private val _configName = MutableLiveData("")
+    val configName: LiveData<String> = _configName
+
     val _isLoading = MutableLiveData(false)
     val isLoading: LiveData<Boolean> = _isLoading
 
@@ -238,6 +244,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
 
         currentPairingStatus.value = PairingStatus.Idle
         selectedBluetoothProfile.value = BluetoothProfile.SPP
+        _customerName.value = "Datalogic"
+        _configName.value = ""
     }
 
     /**
@@ -626,6 +634,14 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         _dioData.postValue(newData)
     }
 
+    fun updateCustomerName(name: String) {
+        _customerName.postValue(name)
+    }
+
+    fun updateCurrentConfigName(name: String) {
+        _configName.postValue(name)
+    }
+
     /**
      * Function updates the DIO dropdown field and Data field with the command selected from the dropdown.
      */
@@ -884,6 +900,13 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     /**
      * Function to read custom Configuration of the scanner.
      */
+    fun getDeviceConfigName() {
+        selectedDevice.value?.let { device ->
+            val name = device.getConfigName(context)
+            updateCurrentConfigName(name)
+        }
+    }
+
     fun readCustomConfig() {
         selectedDevice.value?.let { device ->
             if (device.status != DeviceStatus.OPENED) {
@@ -895,12 +918,14 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     Log.d("HomeViewModel", "Reading config data for device: ${device.displayName}")
-                    val configData = device.getCustomConfiguration()
-                    _customConfiguration.postValue(configData)
-                    Log.d(
-                        TAG,
-                        "Reading custom config data for device: ${device.displayName} value $configData"
-                    )
+                    if (customerName.value != null && configName.value != null) {
+                        val configData = device.getCustomConfiguration(customerName.value!!, configName.value!!)
+                        _customConfiguration.postValue(configData)
+                        Log.d(
+                            TAG,
+                            "Reading custom config data for device: ${device.displayName} value $configData"
+                        )
+                    }
                 } catch (e: Exception) {
                     Log.e("HomeViewModel", "Error reading config: ${e.message}", e)
                     withContext(Dispatchers.Main) {
@@ -1207,6 +1232,10 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                     return false
                 }
                 setSelectedTabIndex(tabIndex)
+
+                if (tabIndex == 4) {
+                    getDeviceConfigName()
+                }
                 return true
             }
 
