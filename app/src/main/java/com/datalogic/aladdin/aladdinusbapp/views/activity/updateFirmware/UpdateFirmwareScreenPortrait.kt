@@ -208,7 +208,7 @@ fun handleBulkTransferAndUpgrade(
                 ).show()
                 return@getBulkTransferSupported
             } else {
-                homeViewModel.upgradeFirmware(file, fileType)
+                homeViewModel.upgradeFirmware(file, fileType, true)
                 return@getBulkTransferSupported
             }
         }
