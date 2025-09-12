@@ -1362,7 +1362,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
 
     fun getPidDWF(file: File?, fileType: String) : String {
         selectedDevice.value?.let {
-            val result = it.getPidDWF(file, fileType, context)
+            val result = it.getPidDFW(file, fileType, context)
             if (result != null) {
                 Log.d("HomeViewModel", "[getPidDWF] PID: $result")
                 return result
@@ -1400,7 +1400,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
 
     fun setPidDWF(file: File?, fileType: String, onResult: (Boolean) -> Unit) {
         selectedDevice.value?.let {
-            val result = it.isCheckPidDWF(file, fileType, context)
+            val result = it.isCheckPidDFW(file, fileType, context)
             if (result != null) {
                 Log.d("HomeViewModel", "[setPidDWF] result: $result")
                 setCheckPid(result)
