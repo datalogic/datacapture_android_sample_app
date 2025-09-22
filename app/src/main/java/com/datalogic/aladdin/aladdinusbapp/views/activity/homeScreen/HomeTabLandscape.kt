@@ -21,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
@@ -33,6 +34,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.datalogic.aladdin.aladdinusbapp.R
+//import com.datalogic.aladdin.aladdinusbapp.utils.CommonUtils.rememberEnsureBluetoothEnabled
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.compose.BluetoothDeviceDropdown
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils
@@ -66,11 +68,12 @@ fun HomeTabLandscape() {
 
     val isBluetoothEnabled = homeViewModel.isBluetoothEnabled.observeAsState(false).value
     val selectedBluetoothDevice = homeViewModel.selectedBluetoothDevice.observeAsState(null).value
-    val selectedScannerBluetoothDevice = homeViewModel.selectedScannerBluetoothDevice.observeAsState(null).value
     val allBluetoothDevices = homeViewModel.allBluetoothDevices.observeAsState(ArrayList()).value
 
     val context = LocalContext.current
     val activity = context as? Activity
+//    val ensureBluetoothEnabled = rememberEnsureBluetoothEnabled(context)
+
 
     val content = @Composable {
         if (isBluetoothEnabled) {
@@ -124,7 +127,7 @@ fun HomeTabLandscape() {
             Switch(
                 checked = isBluetoothEnabled,
                 onCheckedChange = {
-                    homeViewModel.toggleConnectionType()
+                    activity?.let {homeViewModel.toggleConnectionType(activity)}
                 }
             )
 
@@ -372,7 +375,7 @@ fun HomeTabLandscape() {
 
                 Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen._15sdp)))
 
-                if(status == DeviceStatus.OPENED) {
+                if (status == DeviceStatus.OPENED) {
                     LabelIDControlDropdown(
                         modifier = Modifier
                             .semantics { contentDescription = "label_id_control_dropdown" }

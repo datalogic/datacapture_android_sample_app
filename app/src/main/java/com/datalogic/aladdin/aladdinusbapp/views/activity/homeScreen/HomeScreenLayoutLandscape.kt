@@ -42,6 +42,7 @@ fun HomeScreenLayoutLandscape() {
 
     ShowPopup((homeViewModel.openAlert && homeViewModel.selectedTabIndex.value != 6), onDismiss = { homeViewModel.openAlert = false }, stringResource(id = R.string.alert_message_for_open_device))
     ShowPopup((homeViewModel.oemAlert && homeViewModel.selectedTabIndex.value != 6), onDismiss = { homeViewModel.oemAlert = false }, stringResource(id = R.string.oem_device_feature_restriction))
+    ShowPopup((homeViewModel.bluetoothAlert && homeViewModel.selectedTabIndex.value != 6), onDismiss = { homeViewModel.bluetoothAlert = false }, stringResource(R.string.not_support_ble_device))
     ShowPopup((homeViewModel.connectDeviceAlert && homeViewModel.selectedTabIndex.value != 6), onDismiss = { homeViewModel.connectDeviceAlert = false }, stringResource(id = R.string.alert_message_for_connect_device))
     ShowPopup((homeViewModel.magellanConfigAlert  && homeViewModel.selectedTabIndex.value != 6), onDismiss = { homeViewModel.magellanConfigAlert = false }, stringResource(id = R.string.alert_message_for_magellan_config))
 
@@ -54,11 +55,13 @@ fun HomeScreenLayoutLandscape() {
             .fillMaxSize(),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        HeaderImageView(
-            modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentHeight()
-        )
+        if (selectedTab != 6) {
+            HeaderImageView(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight()
+            )
+        }
         Column(
             modifier = Modifier
                 .semantics { contentDescription = "home_tab_content_layout" }
@@ -80,35 +83,38 @@ fun HomeScreenLayoutLandscape() {
                 6 -> BluetoothTabLandscape()
             }
         }
-
-        Card(
-            shape = RoundedCornerShape(dimensionResource(id = R.dimen._10sdp)),
-            colors = CardDefaults.cardColors(colorResource(id = R.color.bottom_nav_selected_background)),
-            elevation = CardDefaults.cardElevation(defaultElevation = dimensionResource(id = R.dimen._10sdp)),
-            modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentHeight()
-                .padding(horizontal = dimensionResource(id = R.dimen._20sdp))
-        ) {
-            Text(
+        if (selectedTab != 6) {
+            Card(
+                shape = RoundedCornerShape(dimensionResource(id = R.dimen._10sdp)),
+                colors = CardDefaults.cardColors(colorResource(id = R.color.bottom_nav_selected_background)),
+                elevation = CardDefaults.cardElevation(defaultElevation = dimensionResource(id = R.dimen._10sdp)),
                 modifier = Modifier
-                    .semantics { contentDescription = "status_msg"}
                     .fillMaxWidth()
-                    .height(dimensionResource(id = R.dimen._35sdp))
-                    .padding(
-                        vertical = dimensionResource(id = R.dimen._5sdp),
-                        horizontal = dimensionResource(id = R.dimen._15sdp)
-                    ),
-                text = stringResource(id = R.string.status_label) + deviceStatus,
-                overflow = TextOverflow.Ellipsis
-            )
+                    .wrapContentHeight()
+                    .padding(horizontal = dimensionResource(id = R.dimen._20sdp))
+            ) {
+                Text(
+                    modifier = Modifier
+                        .semantics { contentDescription = "status_msg" }
+                        .fillMaxWidth()
+                        .height(dimensionResource(id = R.dimen._35sdp))
+                        .padding(
+                            vertical = dimensionResource(id = R.dimen._5sdp),
+                            horizontal = dimensionResource(id = R.dimen._15sdp)
+                        ),
+                    text = stringResource(id = R.string.status_label) + deviceStatus,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
 
-        FooterImageView(
-            modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentHeight()
-        )
+        if (selectedTab != 6) {
+            FooterImageView(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight()
+            )
+        }
 
         BottomNavigationRow(
             modifier = Modifier

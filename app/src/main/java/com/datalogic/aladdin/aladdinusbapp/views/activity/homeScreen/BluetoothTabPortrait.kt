@@ -1,7 +1,7 @@
 package com.datalogic.aladdin.aladdinusbapp.views.activity.homeScreen
 
+import android.annotation.SuppressLint
 import android.app.Activity
-import android.content.ContentValues
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -16,7 +16,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -27,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -36,21 +38,27 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.datalogic.aladdin.aladdinusbapp.R
+import com.datalogic.aladdin.aladdinusbapp.utils.PairingBarcodeType
 import com.datalogic.aladdin.aladdinusbapp.utils.PairingStatus
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.compose.BluetoothProfileDropdown
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 
+@SuppressLint("CoroutineCreationDuringComposition")
 @Composable
 fun BluetoothTabPortrait() {
     val homeViewModel = LocalHomeViewModel.current
-
     val qrBitmap by homeViewModel.qrBitmap.observeAsState()
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp
     val context = LocalContext.current
     val activity = context as? Activity
     val selectedBluetoothProfile = homeViewModel.selectedBluetoothProfile.observeAsState(null).value
+    val previousProfile = homeViewModel.previousBluetoothProfile.observeAsState(null).value
     val currentConnectionStatus = homeViewModel.currentPairingStatus.observeAsState(null).value
     val currentBleName = homeViewModel.currentBleDeviceName.observeAsState(null).value
 
@@ -67,13 +75,15 @@ fun BluetoothTabPortrait() {
             selectedBluetoothProfile,
             onBluetoothProfileSelected = {
                 if (it != null) {
-                    homeViewModel.setSelectedBluetoothDevice(it)
+                    homeViewModel.setSelectedBluetoothProfile(it)
                     homeViewModel.setPairingStatus(PairingStatus.Idle)
                 }
             },
             onButtonStartClicked = {
-                if (it != null)
-                    homeViewModel.createQrCode(it)
+                activity?.let { activity ->
+                    if (it != null)
+                        homeViewModel.createQrCode(it, activity)
+                }
             }
         )
         Column(
@@ -86,38 +96,77 @@ fun BluetoothTabPortrait() {
             Spacer(modifier = Modifier.height(16.dp))
             when (currentConnectionStatus) {
                 PairingStatus.Idle -> {
-                    Text(
-                        text = "Choose Bluetooth profile and tap \"Start\" to continue.",
-                        fontSize = 16.sp,
-                        color = Color.Black,
-                        textAlign = TextAlign.Center
-                    )
+                    if (selectedBluetoothProfile != PairingBarcodeType.UNLINK) {
+                        Text(
+                            text = "Choose Bluetooth profile and tap \"Start\" to continue.",
+                            fontSize = 16.sp,
+                            color = Color.Black,
+                            textAlign = TextAlign.Center
+                        )
+                    } else {
+                        Text(
+                            text = stringResource(R.string.scan_unlink_barcode),
+                            fontSize = 16.sp,
+                            color = Color.Black,
+                            textAlign = TextAlign.Center
+                        )
+                        Image(
+                            painter = painterResource(id = R.drawable.unlink),
+                            contentDescription = "Unlink code",
+                            modifier = Modifier.size(280.dp, 100.dp)
+                        )
+                        Log.e("BluetoothTabPortrait", "previousProfile: $previousProfile")
+                        if (previousProfile != null && previousProfile != PairingBarcodeType.UNLINK) {
+                            Button(
+                                modifier = Modifier
+                                    .semantics { contentDescription = "btn_got_back" }
+                                    .padding(start = dimensionResource(id = R.dimen._8sdp)),
+                                onClick = {
+                                    homeViewModel.setSelectedBluetoothProfile(previousProfile)
+                                    homeViewModel.setPairingStatus(PairingStatus.Idle)
+                                    activity?.let { activity ->
+                                        homeViewModel.createQrCode(previousProfile, activity)
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary))
+                            ) {
+                                Text(
+                                    text = "Pair",
+                                    color = Color.White
+                                )
+                            }
+                        }
+                    }
                 }
+
                 PairingStatus.Scanning -> {
-                    Text(
-                        text = stringResource(R.string.scan_to_pair),
-                        fontSize = 16.sp,
-                        color = Color.Black,
-                        textAlign = TextAlign.Center
-                    )
                     if (qrBitmap != null) {
+                        Text(
+                            text = stringResource(R.string.scan_to_pair),
+                            fontSize = 16.sp,
+                            color = Color.Black,
+                            textAlign = TextAlign.Center
+                        )
                         Image(
                             bitmap = qrBitmap!!.asImageBitmap(),
                             contentDescription = "QR Code",
                             modifier = Modifier.size(180.dp)
                         )
-                        activity?.let {
-                            Log.d(ContentValues.TAG, "[BluetoothTabPortrait]  scanBluetoothDevice")
-                            homeViewModel.scanBluetoothDevice(it)
-                        }
                     } else {
+                        Text(
+                            text = "Created barcode unsuccessfully. Tap \"Start\" to try again.",
+                            fontSize = 16.sp,
+                            color = Color.Black,
+                            textAlign = TextAlign.Center
+                        )
                         Box(
                             modifier = Modifier
-                                .size(210.dp)
+                                .size(180.dp)
                                 .background(Color.LightGray)
                         )
                     }
                 }
+
                 PairingStatus.Connected -> {
                     Image(
                         painter = painterResource(id = R.drawable.ic_pairing_illustration_success_icon),
@@ -136,6 +185,7 @@ fun BluetoothTabPortrait() {
                         textAlign = TextAlign.Center
                     )
                 }
+
                 PairingStatus.Paired -> {
                     Image(
                         painter = painterResource(id = R.drawable.ic_pairing_illustration_success_icon),
@@ -154,6 +204,7 @@ fun BluetoothTabPortrait() {
                         textAlign = TextAlign.Center
                     )
                 }
+
                 PairingStatus.Error -> {
                     Image(
                         painter = painterResource(id = R.drawable.ic_pairing_illustration_error_icon),
@@ -166,26 +217,104 @@ fun BluetoothTabPortrait() {
                         color = Color.Black,
                         textAlign = TextAlign.Center
                     )
+                    Button(
+                        modifier = Modifier
+                            .semantics { contentDescription = "btn_goto_unlink" }
+                            .padding(start = dimensionResource(id = R.dimen._8sdp)),
+                        onClick = {
+                            homeViewModel.setPreviousBluetoothProfile(selectedBluetoothProfile)
+                            homeViewModel.setSelectedBluetoothProfile(PairingBarcodeType.UNLINK)
+                            homeViewModel.setPairingStatus(PairingStatus.Idle)
+                        },
+                        colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary))
+                    ) {
+                        Text(
+                            text = "Unlink",
+                            color = Color.White
+                        )
+                    }
                 }
+
                 PairingStatus.Timeout -> {
                     Image(
                         painter = painterResource(id = R.drawable.ic_pairing_illustration_error_icon),
                         contentDescription = "Connect failed",
                         modifier = Modifier.size(280.dp, 100.dp)
                     )
+//                    Text(
+//                        text = "Discovery process is stopped. Please try again.",
+//                        fontSize = 16.sp,
+//                        color = Color.Black,
+//                        textAlign = TextAlign.Center
+//                    )
                     Text(
-                        text = "Discovery process is stopped. Please try again.",
+                        text = stringResource(R.string.device_pairing_fail),
                         fontSize = 16.sp,
                         color = Color.Black,
                         textAlign = TextAlign.Center
                     )
-                }
-                PairingStatus.PermissionDenied -> {
-                    homeViewModel.setPairingStatus(PairingStatus.Idle)
-                    if (selectedBluetoothProfile != null) {
-                        homeViewModel.createQrCode(selectedBluetoothProfile)
+                    Button(
+                        modifier = Modifier
+                            .semantics { contentDescription = "btn_goto_unlink" }
+                            .padding(start = dimensionResource(id = R.dimen._8sdp)),
+                        onClick = {
+                            homeViewModel.setPreviousBluetoothProfile(selectedBluetoothProfile)
+                            homeViewModel.setSelectedBluetoothProfile(PairingBarcodeType.UNLINK)
+                            homeViewModel.setPairingStatus(PairingStatus.Idle)
+                        },
+                        colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary))
+                    ) {
+                        Text(
+                            text = "Unlink",
+                            color = Color.White
+                        )
                     }
                 }
+
+                PairingStatus.PermissionDenied -> {
+                    CoroutineScope(Dispatchers.Main).launch {
+                        delay(3000)
+                        activity?.let { activity ->
+                            homeViewModel.scanBluetoothDevice( activity)
+                            homeViewModel.setPairingStatus(PairingStatus.Scanning)
+                        }
+                    }
+                    Text(
+                        text = "Permission required!",
+                        fontSize = 16.sp,
+                        color = Color.Black,
+                        textAlign = TextAlign.Center
+                    )
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_pairing_illustration_error_icon),
+                        contentDescription = "Connect failed",
+                        modifier = Modifier.size(280.dp, 100.dp)
+                    )
+                    Text(
+                        text = "Please enable Bluetooth & Location, grant permissions, then try again.",
+                        fontSize = 16.sp,
+                        color = Color.Black,
+                        textAlign = TextAlign.Center
+                    )
+//                    Button(
+//                        modifier = Modifier
+//                            .semantics { contentDescription = "btn_retry" }
+//                            .padding(start = dimensionResource(id = R.dimen._8sdp)),
+//                        onClick = {
+//                            activity?.let { activity ->
+//                                if (selectedBluetoothProfile != null)
+//                                    homeViewModel.createQrCode(selectedBluetoothProfile, activity)
+//                            }
+//                        },
+//                        colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary))
+//                    ) {
+//                        Text(
+//                            text = "Retry",
+//                            color = Color.White
+//                        )
+//                    }
+                }
+
                 null -> {}
             }
         }
@@ -195,9 +324,11 @@ fun BluetoothTabPortrait() {
      * Vertical scroll only if the screen height is less than the threshold
      */
     if (screenHeight < scrollableThreshold) {
-        Column(modifier = Modifier
-            .padding(vertical = dimensionResource(id = R.dimen._3sdp))
-            .verticalScroll(rememberScrollState())) {
+        Column(
+            modifier = Modifier
+                .padding(vertical = dimensionResource(id = R.dimen._3sdp))
+                .verticalScroll(rememberScrollState())
+        ) {
             content()
         }
     } else {

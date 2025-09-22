@@ -78,7 +78,9 @@
     <string name="swu_is_not_valid">SWU firmware is invalid.</string>
     <string name="ok">OK</string>
     <string name="msg_restart_device">Your device has been successfully upgraded with the new firmware. Please restart the device to complete the upgrade process.</string>
-    <string name="scan_to_pair">Scan below barcode to pair your device</string>
+    <string name="scan_to_pair">Scan below barcode to pair your device.</string>
     <string name="device_paired_successfully">Device paired successfully.</string>
-    <string name="device_pairing_fail">Problem occurred while pairing. Please try again.</string>
+    <string name="device_pairing_fail">Problem occurred while pairing. Please unlink your device and try again.</string>
+    <string name="scan_unlink_barcode">Please scan the barcode below to deactivate the Bluetooth connection from your devices.</string>
+    <string name="not_support_ble_device">This feature is not supported on Bluetooth devices</string>
 </resources>
