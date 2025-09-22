@@ -74,12 +74,7 @@ fun UpdateFirmwareScreen() {
                 if(fileType != FileConstants.DFW_FILE_TYPE) {
                     pid = homeViewModel.getPid(file, fileType).toString()
                 }
-                filePath = file?.absolutePath ?: ""
-                val realPath = FileUtils.getRealPathFromUri(context, it)
-                if (realPath != null) {
-                    val file1 = File(realPath)
-                    filePath = file1.parent?.toString() ?: ""
-                }
+                filePath = FileUtils.getDisplayPath(context, uri) ?: ""
             }
         }
     )

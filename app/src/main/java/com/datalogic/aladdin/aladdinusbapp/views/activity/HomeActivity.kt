@@ -25,6 +25,8 @@ import com.datalogic.aladdin.aladdinusbapp.utils.CommonUtils
 import com.datalogic.aladdin.aladdinusbapp.viewmodel.HomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.theme.AladdinUSBAppTheme
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDeviceManager
+import com.datalogic.aladdin.aladdinusbscannersdk.model.LabelCodeType
+import com.datalogic.aladdin.aladdinusbscannersdk.model.LabelIDControl
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.AladdinConstants.CLAIM_FAILURE
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.AladdinConstants.ENABLE_FAILURE
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.AladdinConstants.OPEN_FAILURE
@@ -97,6 +99,8 @@ class HomeActivity : AppCompatActivity() {
                         DeviceStatus.CLOSED -> {
                             showToast(applicationContext, "Device closed")
                             homeViewModel.clearConfig()
+                            homeViewModel.setSelectedLabelIDControl(LabelIDControl.DISABLE)
+                            homeViewModel.setSelectedLabelCodeType(LabelCodeType.NONE)
                         }
                         else -> {}
                     }
