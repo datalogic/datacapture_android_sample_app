@@ -25,6 +25,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.activity.customConfigurationScreen.CustomConfigurationPortrait
+import com.datalogic.aladdin.aladdinusbapp.views.activity.devicesScreen.DevicesScreenPreview_Populated
 import com.datalogic.aladdin.aladdinusbapp.views.activity.imageCapture.ImageCaptureTabPortrait
 import com.datalogic.aladdin.aladdinusbapp.views.activity.updateFirmware.UpdateFirmwareScreen
 import com.datalogic.aladdin.aladdinusbapp.views.compose.BottomNavigationRow
@@ -91,6 +92,7 @@ fun HomeScreenLayoutPortrait() {
                 5 -> UpdateFirmwareScreen()
                 6 -> BluetoothTabPortrait()
                 7 -> SettingsTabPortrait()
+                7 -> DevicesScreenPreview_Populated()
             }
         }
 

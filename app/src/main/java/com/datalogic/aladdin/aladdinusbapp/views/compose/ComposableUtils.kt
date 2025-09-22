@@ -113,6 +113,31 @@ object ComposableUtils {
     }
 
     @Composable
+    fun CustomButtonRow(modifier: Modifier, buttonState: Boolean, name: String, onClick: () -> Unit) {
+
+        Button(
+            modifier = modifier
+                .height(dimensionResource(id = R.dimen._50sdp)),
+            onClick = onClick,
+            enabled = buttonState,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = colorResource(id = R.color.colorPrimary),
+                disabledContainerColor = Color.White
+            ),
+            elevation = ButtonDefaults.buttonElevation(disabledElevation = dimensionResource(id = R.dimen._4sdp),
+                pressedElevation = dimensionResource(id = R.dimen._4sdp)),
+            interactionSource = remember { MutableInteractionSource() }
+        ) {
+            Text(
+                text = name,
+                style = MaterialTheme.typography.labelMedium,
+                color = if (buttonState) colorResource(id = R.color.white)
+                else colorResource(id = R.color.colorPrimary)
+            )
+        }
+    }
+
+    @Composable
     fun ShowPopup(alert: Boolean, onDismiss: () -> Unit, msg: String) {
         if (alert) {
             Dialog(onDismissRequest = onDismiss) {

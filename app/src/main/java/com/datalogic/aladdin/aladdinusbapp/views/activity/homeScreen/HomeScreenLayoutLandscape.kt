@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.activity.customConfigurationScreen.CustomConfigurationLandscape
+import com.datalogic.aladdin.aladdinusbapp.views.activity.devicesScreen.DevicesScreenPreview_Populated
 import com.datalogic.aladdin.aladdinusbapp.views.activity.imageCapture.ImageCaptureTabPortrait
 import com.datalogic.aladdin.aladdinusbapp.views.activity.updateFirmware.UpdateFirmwareScreen
 import com.datalogic.aladdin.aladdinusbapp.views.compose.BottomNavigationRow
@@ -84,6 +85,8 @@ fun HomeScreenLayoutLandscape() {
                 4 -> CustomConfigurationLandscape()
                 5 -> UpdateFirmwareScreen()
                 6 -> BluetoothTabLandscape()
+                7 -> DevicesScreenPreview_Populated()
+
             }
         }
         if (selectedTab != 6) {

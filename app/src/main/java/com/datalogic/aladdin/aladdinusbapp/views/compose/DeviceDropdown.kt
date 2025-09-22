@@ -132,9 +132,9 @@ fun DeviceDropdown(
                                 }
                             }
                         )
-                        if (popup){
+                        /*if (popup){
                             AlertDialogComponent(onDeviceSelected, mCurrentDevice)
-                        }
+                        }*/
                     }
                 }
 
