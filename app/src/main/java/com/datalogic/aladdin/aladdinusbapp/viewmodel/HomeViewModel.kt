@@ -251,7 +251,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         currentPairingStatus.value = PairingStatus.Idle
         selectedBluetoothProfile.value = PairingBarcodeType.SPP
         previousBluetoothProfile.value = PairingBarcodeType.UNLINK
-        selectedBluetoothProfile.value = BluetoothProfile.SPP
         _customerName.value = "Datalogic"
         _configName.value = ""
     }
@@ -987,21 +986,13 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             _isLoading.postValue(true)
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    Log.d(tag, "Reading config data for device: ${device.displayName}")
                     val configData = device.getCustomConfiguration()
                     _customConfiguration.postValue(configData)
-                    Log.d(
-                        tag,
-                        "Reading custom config data for device: ${device.displayName} value $configData"
-                    )
-                    Log.d("HomeViewModel", "Reading config data for device: ${device.displayName}")
+                    Log.d(tag,"Reading custom config data for device: ${device.displayName} value $configData")
                     if (customerName.value != null && configName.value != null) {
                         val configData = device.getCustomConfiguration(customerName.value!!, configName.value!!)
                         _customConfiguration.postValue(configData)
-                        Log.d(
-                            TAG,
-                            "Reading custom config data for device: ${device.displayName} value $configData"
-                        )
+                        Log.d(tag,"Reading custom config data for device: ${device.displayName} value $configData")
                     }
                 } catch (e: Exception) {
                     Log.e(tag, "Error reading config: ${e.message}", e)
