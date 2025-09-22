@@ -986,9 +986,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             _isLoading.postValue(true)
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    val configData = device.getCustomConfiguration()
-                    _customConfiguration.postValue(configData)
-                    Log.d(tag,"Reading custom config data for device: ${device.displayName} value $configData")
                     if (customerName.value != null && configName.value != null) {
                         val configData = device.getCustomConfiguration(customerName.value!!, configName.value!!)
                         _customConfiguration.postValue(configData)
