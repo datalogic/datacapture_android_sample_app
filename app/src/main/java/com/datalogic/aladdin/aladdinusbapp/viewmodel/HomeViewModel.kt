@@ -1440,6 +1440,17 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         return ""
     }
 
+    fun getPidDWF(file: File?, fileType: String) : String {
+        selectedDevice.value?.let {
+            val result = it.getPidDFW(file, fileType, context)
+            if (result != null) {
+                Log.d("HomeViewModel", "[getPidDWF] PID: $result")
+                return result
+            }
+        }
+        return ""
+    }
+
     fun getBulkTransferSupported(file: File?, fileType: String, onResult: (Boolean) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             selectedDevice.value?.let {
@@ -1465,6 +1476,17 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         val result = selectedDevice.value?.isCheckPid(file, fileType) ?: false
         setCheckPid(result)
         onResult(result)
+    }
+
+    fun setPidDWF(file: File?, fileType: String, onResult: (Boolean) -> Unit) {
+        selectedDevice.value?.let {
+            val result = it.isCheckPidDFW(file, fileType, context)
+            if (result != null) {
+                Log.d("HomeViewModel", "[setPidDWF] result: $result")
+                setCheckPid(result)
+                onResult(result)
+            }
+        }
     }
 
     private fun setCheckPid(value: Boolean) {
