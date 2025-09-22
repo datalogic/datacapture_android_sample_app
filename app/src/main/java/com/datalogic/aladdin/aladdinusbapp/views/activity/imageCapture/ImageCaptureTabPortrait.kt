@@ -117,16 +117,13 @@ fun ImageCaptureTabPortrait() {
         CaptureButtons(imageCaptureModel)
 
         Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
+            modifier = Modifier.fillMaxWidth(),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         )
         {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f)
                     .background(Color.LightGray)
                     .padding(16.dp),
                 contentAlignment = Alignment.Center
