@@ -1,6 +1,5 @@
 package com.datalogic.aladdin.aladdinusbapp.views.compose
 
-import android.app.Activity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -12,7 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
@@ -22,16 +21,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpOffset
@@ -40,7 +40,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.viewmodel.HomeViewModel
-import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ConnectionType
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 
 @Composable
@@ -68,20 +67,12 @@ fun BottomNavigationRow(modifier: Modifier, homeViewModel: HomeViewModel) {
     // Determine layout strategy based on screen width
     val availableWidth = screenWidth - paddingDp
 
-    // Fixed approach: For small screens, we'll use a static 3-tab layout with "More" option
-    // This ensures we always show complete text for visible tabs
-    val useFixedVisibleTabs = availableWidth < 450 // Adjust threshold as needed
-
-    // Always show 3 tabs (Home, Configuration, More) in the main layout if in fixed mode
-    val visibleItemCount = if (useFixedVisibleTabs) 3 else items.size
+    val visibleItemCount = calculateVisibleItemCount(items)
     val showOverflow = items.size > visibleItemCount
     val visibleTabCount = if (showOverflow) visibleItemCount - 1 else items.size
 
     // State for overflow menu
     val (overflowMenuExpanded, setOverflowMenuExpanded) = remember { mutableStateOf(false) }
-
-    val context = LocalContext.current
-    val activity = context as? Activity
 
     LaunchedEffect(status) {
         when (status) {
@@ -97,7 +88,7 @@ fun BottomNavigationRow(modifier: Modifier, homeViewModel: HomeViewModel) {
             .background(color = colorResource(id = R.color.colorPrimary))
             .padding(horizontal = dimensionResource(id = R.dimen._8sdp)),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween // Changed from SpaceEvenly to SpaceBetween for better alignment
+        horizontalArrangement = Arrangement.SpaceEvenly // Changed from SpaceEvenly to SpaceBetween for better alignments
     ) {
         // Display main visible tabs with proper spacing
         items.take(visibleTabCount).forEachIndexed { index, item ->
@@ -107,7 +98,10 @@ fun BottomNavigationRow(modifier: Modifier, homeViewModel: HomeViewModel) {
                 onTabSelected = {
                     homeViewModel.handleTabSelection(index)
                 },
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .wrapContentWidth()
+                    .padding(horizontal = 8.dp),
+//                    .border(1.dp, Color.Red),
                 fontSize = 16.sp // Increased font size from 14sp to 16sp
             )
         }
@@ -119,7 +113,9 @@ fun BottomNavigationRow(modifier: Modifier, homeViewModel: HomeViewModel) {
 
             Box(
                 modifier = Modifier
-                    .weight(1f)
+                    .wrapContentWidth()
+                    .padding(horizontal = 8.dp)
+//                    .border(1.dp, Color.Yellow)
                     .wrapContentSize(align = Alignment.Center) // Center align instead of right align
             ) {
                 NavigationTabItem(
@@ -182,4 +178,48 @@ private fun NavigationTabItem(
         maxLines = 1,
         overflow = TextOverflow.Visible
     )
+}
+
+@Composable
+fun calculateVisibleItemCount(
+    items: List<String>,
+    paddingDp: Int = 32,
+    fontSize: TextUnit = 16.sp
+): Int {
+    val configuration = LocalConfiguration.current
+    val density = LocalDensity.current
+    val screenWidth = configuration.screenWidthDp
+    val availableWidth = screenWidth - paddingDp
+    val textMeasurer = rememberTextMeasurer()
+    var totalWidth = 0f
+    var count = 0
+
+    val resultMore = textMeasurer.measure(
+        text = AnnotatedString("More"),
+        style = TextStyle(fontSize = fontSize)
+    )
+    val moreWidthDp = resultMore.size.width / density.density
+
+
+    items.forEach { item ->
+        val result = textMeasurer.measure(
+            text = AnnotatedString(item),
+            style = TextStyle(fontSize = fontSize)
+        )
+
+        val itemWidthDp = result.size.width / density.density
+        if (totalWidth + itemWidthDp <= availableWidth) {
+            totalWidth += itemWidthDp
+            count++
+        } else {
+            if (count < items.size) {
+                if (totalWidth + moreWidthDp > availableWidth) {
+                    count--
+                }
+            }
+//            Log.d("BottomNavigationRow","[calculateVisibleItemCount] count[$count]")
+            return count
+        }
+    }
+    return count
 }
