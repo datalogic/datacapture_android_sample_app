@@ -27,6 +27,7 @@ import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.activity.customConfigurationScreen.CustomConfigurationPortrait
 import com.datalogic.aladdin.aladdinusbapp.views.activity.devicesScreen.DevicesScreenPreview_Populated
 import com.datalogic.aladdin.aladdinusbapp.views.activity.imageCapture.ImageCaptureTabPortrait
+import com.datalogic.aladdin.aladdinusbapp.views.activity.scannerScreen.ScannerScreenPortrait
 import com.datalogic.aladdin.aladdinusbapp.views.activity.updateFirmware.UpdateFirmwareScreen
 import com.datalogic.aladdin.aladdinusbapp.views.compose.BottomNavigationRow
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.FooterImageView
@@ -93,6 +94,7 @@ fun HomeScreenLayoutPortrait() {
                 6 -> BluetoothTabPortrait()
                 7 -> SettingsTabPortrait()
                 7 -> DevicesScreenPreview_Populated()
+                7 -> ScannerScreenPortrait()
             }
         }
 

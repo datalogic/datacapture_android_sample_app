@@ -1327,7 +1327,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                 return true
             }
 
-            3, 4, 5, 7 -> { // Image capture tab, custom configuration, update firmware
+            3, 4, 5 -> { // Image capture tab, custom configuration, update firmware
                 if (selectedDevice.value?.connectionType == ConnectionType.USB_OEM) {
                     oemAlert = true
                     return false
@@ -1343,6 +1343,13 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                 }
                 return true
             }
+
+            7 -> {
+                openAlert = false
+                setSelectedTabIndex(tabIndex)
+                return true
+            }
+
             else -> return false
         }
     }

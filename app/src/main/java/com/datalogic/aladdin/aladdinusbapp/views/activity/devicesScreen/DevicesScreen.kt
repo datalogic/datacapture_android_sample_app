@@ -19,7 +19,11 @@ package com.datalogic.aladdin.aladdinusbapp.views.activity.devicesScreen
 // per-item selection checkboxes, and quick actions in the TopAppBar.
 
 
+import DatalogicBluetoothDevice
+import android.app.Activity
+import android.bluetooth.BluetoothDevice
 import android.content.ContentValues.TAG
+import android.hardware.usb.UsbDevice
 import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -33,6 +37,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,8 +51,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.datalogic.aladdin.aladdinusbapp.R
-import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.CustomButton
+import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.CustomButtonRow
+import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -67,36 +73,13 @@ enum class DeviceFilter { All, Active, Inactive }
 
 @Immutable
 data class DevicesUiState(
-    val devices: List<Device> = emptyList(),
+    val devices: List<DatalogicDevice> = emptyList(),
     val query: String = "",
     val filter: DeviceFilter = DeviceFilter.All,
     val isLoading: Boolean = false,
     val error: String? = null,
     val selectedIds: Set<String> = emptySet(),
-) {
-    val counts: Triple<Int, Int, Int>
-        get() {
-            val active = devices.count { it.isActive }
-            val inactive = devices.size - active
-            return Triple(devices.size, active, inactive)
-        }
-
-    val filtered: List<Device>
-        get() = devices
-            .filter { d ->
-                when (filter) {
-                    DeviceFilter.All -> true
-                    DeviceFilter.Active -> d.isActive
-                    DeviceFilter.Inactive -> !d.isActive
-                }
-            }
-            .filter { d ->
-                val q = query.trim().lowercase()
-                q.isEmpty() || d.name.lowercase().contains(q) || d.model.lowercase().contains(q)
-            }
-
-    val selectionMode: Boolean get() = selectedIds.isNotEmpty()
-}
+)
 
 // Simulated repository for demo purposes.
 object DevicesRepositoryMock {
@@ -120,57 +103,31 @@ object DevicesRepositoryMock {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DevicesScreen(
-    state: DevicesUiState,
-    onQueryChange: (String) -> Unit,
-    onFilterChange: (DeviceFilter) -> Unit,
-    onToggleActive: (Device) -> Unit,
+    usbDeviceList: ArrayList<DatalogicDevice>,
+    bluetoothDeviceList: ArrayList<BluetoothDevice>,
     onRefresh: () -> Unit,
     // NEW callbacks for selection + bulk actions
-    onToggleSelect: (Device) -> Unit,
-    onEnterSelectionWith: (Device) -> Unit,
-    onClearSelection: () -> Unit,
-    onBulkActivate: () -> Unit,
-    onBulkDeactivate: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
 
     Scaffold(
         topBar = {
-            if (state.selectionMode) {
-                SelectionTopBar(
-                    selectedCount = state.selectedIds.size,
-                    onClose = onClearSelection,
-                    onBulkActivate = onBulkActivate,
-                    onBulkDeactivate = onBulkDeactivate
-                )
-            } else {
-                MainTopBar(onRefresh = onRefresh)
-            }
+            MainTopBar(onRefresh = onRefresh)
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { inner ->
-        Column(
-            modifier
-                .padding(inner)
-                .fillMaxSize()
-        ) {
-            // Content
-            Box(Modifier.fillMaxSize()) {
-                when {
-                    state.isLoading -> LoadingState()
-                    state.error != null -> ErrorState(state.error, onRetry = onRefresh)
-                    state.filtered.isEmpty() -> EmptyState()
-                    else -> DevicesList(
-                        items = state.filtered,
-                        selectionMode = state.selectionMode,
-                        selectedIds = state.selectedIds,
-                        onToggle = onToggleActive,
-                        onToggleSelect = onToggleSelect,
-                        onEnterSelectionWith = onEnterSelectionWith
-                    )
-                }
-            }
+        Column(modifier.padding(inner).fillMaxSize()) {
+            UsbDevicesList(
+                items = usbDeviceList,
+                onToggle = {    },
+                onToggleSelect = {   }
+            )
+            BluetoothDevicesList(
+                items = bluetoothDeviceList,
+                onToggle = { /* ... */ },
+                onToggleSelect = { /* ... */ }
+            )
         }
     }
 }
@@ -215,91 +172,53 @@ private fun SelectionTopBar(
     )
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun SearchBarRow(
-    query: String,
-    onQueryChange: (String) -> Unit,
-    counts: Triple<Int, Int, Int>,
+fun UsbDevicesList(
+    items: List<DatalogicDevice>,
+    onToggle: (DatalogicDevice) -> Unit,
+    onToggleSelect: (DatalogicDevice) -> Unit,
 ) {
-    val (all, active, inactive) = counts
-    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-        OutlinedTextField(
-            value = query,
-            onValueChange = onQueryChange,
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-            placeholder = { Text("Search by name or model…") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(Modifier.height(8.dp))
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            CountPill(label = "All", count = all)
-            CountPill(label = "Active", count = active)
-            CountPill(label = "Inactive", count = inactive)
-        }
-    }
-}
-
-@Composable
-private fun CountPill(label: String, count: Int) {
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        shape = RoundedCornerShape(50),
+    LazyColumn(
+        modifier = Modifier.wrapContentHeight(),
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Row(
-            Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(label, style = MaterialTheme.typography.labelMedium)
-            Spacer(Modifier.width(6.dp))
-            Box(
-                modifier = Modifier
-                    .size(22.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.08f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    count.toString(),
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.SemiBold
+        items(items, key = { it.displayName }) { device ->
+            UsbDeviceRow(
+                device = device,
+                onToggle = onToggle,
+                onToggleSelect = { onToggleSelect(device) },
+                modifier = Modifier.combinedClickable(
+                    onClick = {
+
+                    }
                 )
-            }
+            )
         }
     }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun DevicesList(
-    items: List<Device>,
-    selectionMode: Boolean,
-    selectedIds: Set<String>,
-    onToggle: (Device) -> Unit,
-    onToggleSelect: (Device) -> Unit,
-    onEnterSelectionWith: (Device) -> Unit,
+fun BluetoothDevicesList(
+    items: List<BluetoothDevice>,
+    onToggle: (BluetoothDevice) -> Unit,
+    onToggleSelect: (BluetoothDevice) -> Unit,
 ) {
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.wrapContentHeight(),
         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(items, key = { it.id }) { device ->
-            val selected = selectedIds.contains(device.id)
-            DeviceRow(
+        items(items, key = { it.address }) { device ->
+            BluetoothDeviceRow(
                 device = device,
-                selectionMode = selectionMode,
-                selected = selected,
                 onToggle = onToggle,
                 onToggleSelect = { onToggleSelect(device) },
                 modifier = Modifier.combinedClickable(
                     onClick = {
-                        if (selectionMode) onToggleSelect(device) else onToggle(device)
                     },
-                    onLongClick = { onEnterSelectionWith(device) }
                 )
             )
         }
@@ -307,14 +226,15 @@ fun DevicesList(
 }
 
 @Composable
-private fun DeviceRow(
-    device: Device,
-    selectionMode: Boolean,
-    selected: Boolean,
-    onToggle: (Device) -> Unit,
+private fun UsbDeviceRow(
+    device: DatalogicDevice,
+    onToggle: (DatalogicDevice) -> Unit,
     onToggleSelect: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
+    val activity = context as? Activity
+    val homeViewModel = LocalHomeViewModel.current
     Surface(
         tonalElevation = 1.dp,
         shape = RoundedCornerShape(16.dp),
@@ -326,35 +246,29 @@ private fun DeviceRow(
                 .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (selectionMode) {
-                Checkbox(checked = selected, onCheckedChange = { onToggleSelect() })
-                Spacer(Modifier.width(6.dp))
-            } else {
-                // Status dot
-                Box(
-                    modifier = Modifier
-                        .size(10.dp)
-                        .clip(CircleShape)
-                        .background(if (device.isActive) Color(0xFF34C759) else Color(0xFF999999))
-                )
-                Spacer(Modifier.width(12.dp))
-            }
+            // Status dot
+            Box(
+                modifier = Modifier
+                    .size(10.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (device.status == DeviceStatus.OPENED) Color(0xFF34C759) else Color(
+                            0xFF999999
+                        )
+                    )
+            )
+            Spacer(Modifier.width(12.dp))
 
             Column(Modifier.weight(1f)) {
                 Text(
-                    text = device.name,
+                    text = device.displayName,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = buildString {
-                        append(device.model)
-                        device.owner?.let { append(" • ").append(it) }
-                        append(" • ")
-                        append(if (device.isActive) "Active" else "Inactive")
-                    },
+                    text = stringResource(R.string.usb_device),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -363,21 +277,89 @@ private fun DeviceRow(
             }
 
             Spacer(Modifier.width(12.dp))
-            if (!selectionMode) {
-                CustomButtonRow(
-                    modifier = Modifier
-                        .weight(0.5f)
-                        .semantics { contentDescription = "btn_open" },
-                    buttonState = true,
-                    stringResource(id = R.string.open),
-                    onClick = {
-                        Log.d(TAG, "btn_open on click")
-                        /*activity?.let {
-                            homeViewModel.openDevice(activity)
-                        }*/
+            CustomButtonRow(
+                modifier = Modifier
+                    .weight(0.5f)
+                    .semantics { contentDescription = "btn_open" },
+                buttonState = true,
+                stringResource(id = R.string.open),
+                onClick = {
+                    Log.d(TAG, "btn_open on click")
+                    activity?.let {
+                        homeViewModel.openDevice(activity)
                     }
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun BluetoothDeviceRow(
+    device: BluetoothDevice,
+    onToggle: (BluetoothDevice) -> Unit,
+    onToggleSelect: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    val activity = context as? Activity
+    val homeViewModel = LocalHomeViewModel.current
+    Surface(
+        tonalElevation = 1.dp,
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Status dot
+            Box(
+                modifier = Modifier
+                    .size(10.dp)
+                    .clip(CircleShape)
+                    .background(
+                        //if (device. == DeviceStatus.OPENED) Color(0xFF34C759) else
+                            Color(
+                            0xFF999999
+                        )
+                    )
+            )
+            Spacer(Modifier.width(12.dp))
+
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = device.address,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = stringResource(R.string.bluetooth_device),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
+
+            Spacer(Modifier.width(12.dp))
+            CustomButtonRow(
+                modifier = Modifier
+                    .weight(0.5f)
+                    .semantics { contentDescription = "btn_open" },
+                buttonState = true,
+                stringResource(id = R.string.open),
+                onClick = {
+                    Log.d(TAG, "btn_open on click")
+                    activity?.let {
+                        homeViewModel.openDevice(activity)
+                    }
+                }
+            )
         }
     }
 }
@@ -423,78 +405,6 @@ private fun EmptyState() {
 
 // --------- Simple screen state holder (demo) ---------
 
-@Composable
-fun rememberDevicesController(): StateAndActions {
-    val scope = rememberCoroutineScope()
-    var state by remember { mutableStateOf(DevicesUiState(isLoading = true)) }
-
-    // Load data once
-    LaunchedEffect(Unit) {
-        state = state.copy(isLoading = true, error = null)
-        runCatching { DevicesRepositoryMock.load() }
-            .onSuccess { devices -> state = state.copy(devices = devices, isLoading = false) }
-            .onFailure { state = state.copy(isLoading = false, error = it.message ?: "Failed to load") }
-    }
-
-    fun toggle(d: Device) {
-        // Optimistic update for demo
-        state = state.copy(devices = state.devices.map { if (it.id == d.id) it.copy(isActive = !it.isActive) else it })
-    }
-
-    fun toggleSelect(d: Device) {
-        state = state.copy(selectedIds = state.selectedIds.toMutableSet().apply {
-            if (contains(d.id)) remove(d.id) else add(d.id)
-        })
-    }
-
-    fun enterSelectionWith(d: Device) {
-        if (!state.selectedIds.contains(d.id)) {
-            state = state.copy(selectedIds = state.selectedIds + d.id)
-        }
-    }
-
-    fun clearSelection() {
-        state = state.copy(selectedIds = emptySet())
-    }
-
-    fun bulkActivate() {
-        val ids = state.selectedIds
-        state = state.copy(
-            devices = state.devices.map { if (ids.contains(it.id)) it.copy(isActive = true) else it },
-            selectedIds = emptySet()
-        )
-    }
-
-    fun bulkDeactivate() {
-        val ids = state.selectedIds
-        state = state.copy(
-            devices = state.devices.map { if (ids.contains(it.id)) it.copy(isActive = false) else it },
-            selectedIds = emptySet()
-        )
-    }
-
-    return StateAndActions(
-        state = state,
-        onQueryChange = { q -> state = state.copy(query = q) },
-        onFilterChange = { f -> state = state.copy(filter = f) },
-        onToggleActive = { toggle(it) },
-        onRefresh = {
-            scope.launch {
-                state = state.copy(isLoading = true, error = null)
-                delay(350)
-                runCatching { DevicesRepositoryMock.load() }
-                    .onSuccess { devices -> state = state.copy(devices = devices, isLoading = false) }
-                    .onFailure { state = state.copy(isLoading = false, error = it.message ?: "Failed to refresh") }
-            }
-        },
-        onToggleSelect = { toggleSelect(it) },
-        onEnterSelectionWith = { enterSelectionWith(it) },
-        onClearSelection = { clearSelection() },
-        onBulkActivate = { bulkActivate() },
-        onBulkDeactivate = { bulkDeactivate() },
-    )
-}
-
 @Stable
 data class StateAndActions(
     val state: DevicesUiState,
@@ -522,49 +432,15 @@ private fun previewDevices() = listOf(
 @Preview(showBackground = true)
 @Composable
 fun DevicesScreenPreview_Populated() {
-    val state = DevicesUiState(
-        devices = previewDevices(),
-        isLoading = false,
-        query = "",
-        filter = DeviceFilter.All,
-        selectedIds = emptySet(),
-    )
-    MaterialTheme(colorScheme = lightColorScheme()) {
-        DevicesScreen(
-            state = state,
-            onQueryChange = {},
-            onFilterChange = {},
-            onToggleActive = {},
-            onRefresh = {},
-            onToggleSelect = {},
-            onEnterSelectionWith = {},
-            onClearSelection = {},
-            onBulkActivate = {},
-            onBulkDeactivate = {},
-        )
-    }
-}
+    val homeViewModel = LocalHomeViewModel.current
+    val allBluetoothDevices = homeViewModel.allBluetoothDevices.observeAsState(ArrayList()).value
+    val usbDeviceList = homeViewModel.deviceList.observeAsState(ArrayList()).value
 
-@Preview(showBackground = true)
-@Composable
-fun DevicesScreenPreview_SelectionMode() {
-    val state = DevicesUiState(
-        devices = previewDevices(),
-        isLoading = false,
-        selectedIds = setOf("2", "4"),
-    )
     MaterialTheme(colorScheme = lightColorScheme()) {
         DevicesScreen(
-            state = state,
-            onQueryChange = {},
-            onFilterChange = {},
-            onToggleActive = {},
-            onRefresh = {},
-            onToggleSelect = {},
-            onEnterSelectionWith = {},
-            onClearSelection = {},
-            onBulkActivate = {},
-            onBulkDeactivate = {},
+            usbDeviceList = usbDeviceList,
+            bluetoothDeviceList = allBluetoothDevices,
+            onRefresh = {}
         )
     }
 }
