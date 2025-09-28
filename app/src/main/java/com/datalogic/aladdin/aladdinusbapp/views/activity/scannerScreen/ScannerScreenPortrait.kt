@@ -603,7 +603,7 @@ fun ScannerScreenPortrait() {
                 onClick = {
                     Log.d(TAG, "btn_open on click")
                     activity?.let {
-                        homeViewModel.openDevice(activity)
+                        //homeViewModel.openDevice(activity, )
                     }
                 }
             )
@@ -618,7 +618,7 @@ fun ScannerScreenPortrait() {
                     if (isBluetoothEnabled) {
                         homeViewModel.closeBluetoothDevice()
                     } else {
-                        homeViewModel.closeDevice()
+                        //homeViewModel.closeUsbDevice()
                     }
                 }
             )

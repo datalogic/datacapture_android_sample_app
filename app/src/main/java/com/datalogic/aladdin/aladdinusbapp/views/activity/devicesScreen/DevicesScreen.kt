@@ -104,9 +104,8 @@ object DevicesRepositoryMock {
 @Composable
 fun DevicesScreen(
     usbDeviceList: ArrayList<DatalogicDevice>,
-    bluetoothDeviceList: ArrayList<BluetoothDevice>,
+    bluetoothDeviceList: ArrayList<DatalogicBluetoothDevice>,
     onRefresh: () -> Unit,
-    // NEW callbacks for selection + bulk actions
     modifier: Modifier = Modifier,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -120,13 +119,9 @@ fun DevicesScreen(
         Column(modifier.padding(inner).fillMaxSize()) {
             UsbDevicesList(
                 items = usbDeviceList,
-                onToggle = {    },
-                onToggleSelect = {   }
             )
             BluetoothDevicesList(
-                items = bluetoothDeviceList,
-                onToggle = { /* ... */ },
-                onToggleSelect = { /* ... */ }
+                items = bluetoothDeviceList
             )
         }
     }
@@ -175,25 +170,16 @@ private fun SelectionTopBar(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun UsbDevicesList(
-    items: List<DatalogicDevice>,
-    onToggle: (DatalogicDevice) -> Unit,
-    onToggleSelect: (DatalogicDevice) -> Unit,
+    items: List<DatalogicDevice>
 ) {
     LazyColumn(
         modifier = Modifier.wrapContentHeight(),
-        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(items, key = { it.displayName }) { device ->
+        items(items, key = { it.id }) { device ->
             UsbDeviceRow(
-                device = device,
-                onToggle = onToggle,
-                onToggleSelect = { onToggleSelect(device) },
-                modifier = Modifier.combinedClickable(
-                    onClick = {
-
-                    }
-                )
+                device = device
             )
         }
     }
@@ -202,20 +188,16 @@ fun UsbDevicesList(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun BluetoothDevicesList(
-    items: List<BluetoothDevice>,
-    onToggle: (BluetoothDevice) -> Unit,
-    onToggleSelect: (BluetoothDevice) -> Unit,
+    items: List<DatalogicBluetoothDevice>
 ) {
     LazyColumn(
         modifier = Modifier.wrapContentHeight(),
         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(items, key = { it.address }) { device ->
+        items(items, key = { it.id }) { device ->
             BluetoothDeviceRow(
                 device = device,
-                onToggle = onToggle,
-                onToggleSelect = { onToggleSelect(device) },
                 modifier = Modifier.combinedClickable(
                     onClick = {
                     },
@@ -228,13 +210,17 @@ fun BluetoothDevicesList(
 @Composable
 private fun UsbDeviceRow(
     device: DatalogicDevice,
-    onToggle: (DatalogicDevice) -> Unit,
-    onToggleSelect: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val activity = context as? Activity
     val homeViewModel = LocalHomeViewModel.current
+    val isOpen = device.status.value == DeviceStatus.OPENED
+    val buttonText = if (isOpen) {
+        stringResource(id = R.string.close)
+    } else {
+        stringResource(id = R.string.open)
+    }
     Surface(
         tonalElevation = 1.dp,
         shape = RoundedCornerShape(16.dp),
@@ -252,7 +238,7 @@ private fun UsbDeviceRow(
                     .size(10.dp)
                     .clip(CircleShape)
                     .background(
-                        if (device.status == DeviceStatus.OPENED) Color(0xFF34C759) else Color(
+                        if (device.status.value == DeviceStatus.OPENED) Color(0xFF34C759) else Color(
                             0xFF999999
                         )
                     )
@@ -281,12 +267,17 @@ private fun UsbDeviceRow(
                 modifier = Modifier
                     .weight(0.5f)
                     .semantics { contentDescription = "btn_open" },
-                buttonState = true,
-                stringResource(id = R.string.open),
+                openState = isOpen,
+                name = buttonText,
                 onClick = {
-                    Log.d(TAG, "btn_open on click")
                     activity?.let {
-                        homeViewModel.openDevice(activity)
+                        if(isOpen) {
+                            Log.d(TAG, "btn_close on click")
+                            homeViewModel.closeUsbDevice(device)
+                        } else {
+                            Log.d(TAG, "btn_open on click")
+                            homeViewModel.openUsbDevice(activity, device)
+                        }
                     }
                 }
             )
@@ -296,9 +287,7 @@ private fun UsbDeviceRow(
 
 @Composable
 private fun BluetoothDeviceRow(
-    device: BluetoothDevice,
-    onToggle: (BluetoothDevice) -> Unit,
-    onToggleSelect: () -> Unit,
+    device: DatalogicBluetoothDevice,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -331,7 +320,7 @@ private fun BluetoothDeviceRow(
 
             Column(Modifier.weight(1f)) {
                 Text(
-                    text = device.address,
+                    text = device.id,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
@@ -351,12 +340,12 @@ private fun BluetoothDeviceRow(
                 modifier = Modifier
                     .weight(0.5f)
                     .semantics { contentDescription = "btn_open" },
-                buttonState = true,
+                openState = true,
                 stringResource(id = R.string.open),
                 onClick = {
                     Log.d(TAG, "btn_open on click")
                     activity?.let {
-                        homeViewModel.openDevice(activity)
+                        homeViewModel.openBluetoothDevice(activity, device)
                     }
                 }
             )
@@ -440,35 +429,9 @@ fun DevicesScreenPreview_Populated() {
         DevicesScreen(
             usbDeviceList = usbDeviceList,
             bluetoothDeviceList = allBluetoothDevices,
-            onRefresh = {}
+            onRefresh = {},
         )
     }
 }
-
-// --------- How to use in your Activity ---------
-/*
-class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            val controller = rememberDevicesController()
-            MaterialTheme(colorScheme = dynamicLightColorScheme(this)) {
-                DevicesScreen(
-                    state = controller.state,
-                    onQueryChange = controller.onQueryChange,
-                    onFilterChange = controller.onFilterChange,
-                    onToggleActive = controller.onToggleActive,
-                    onRefresh = controller.onRefresh,
-                    onToggleSelect = controller.onToggleSelect,
-                    onEnterSelectionWith = controller.onEnterSelectionWith,
-                    onClearSelection = controller.onClearSelection,
-                    onBulkActivate = controller.onBulkActivate,
-                    onBulkDeactivate = controller.onBulkDeactivate,
-                )
-            }
-        }
-    }
-}
-*/
 
 

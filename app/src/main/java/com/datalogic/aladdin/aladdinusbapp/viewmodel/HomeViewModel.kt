@@ -273,7 +273,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         // Update UI with selected device info
         device?.let {
             _deviceStatus.postValue("Selected: ${it.displayName}")
-            _status.postValue(it.status)
+            _status.postValue(it.status.value)
         } ?: run {
             _deviceStatus.postValue("No device selected")
             _status.postValue(DeviceStatus.NONE)
@@ -434,25 +434,12 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     /**
      * Open device - perform full open, claim and enable operation
      */
-    fun openDevice(activity: Activity) {
+    fun openUsbDevice(activity: Activity, datalogicDevice: DatalogicDevice?) {
         Log.d(tag, "[openDevice] Begin")
-        if (isBluetoothEnabled.value == true) {
-            Log.d(tag, "[openDevice] isBluetoothEnabled == true ")
-            selectedBluetoothDevice.value?.let { device ->
-                selectedScannerBluetoothDevice.value =
-                    DatalogicBluetoothDevice(device, BluetoothProfile.SPP, HostType.Unconfigured)
-                selectedScannerBluetoothDevice.value?.let { device ->
-                    Log.d(tag, "[openDevice] open bluetooth device")
-                    coroutineOpenBluetoothDevice(device, activity)
-                } ?: run {
-                    connectDeviceAlert = true
-                }
-            }
-        } else if (autoDetectChecked.value == true) {
-            selectedDevice.value?.let { device ->
+        if (autoDetectChecked.value == true) {
+            datalogicDevice?.let { device ->
                 _isLoading.postValue(true)
-
-                coroutineOpenDevice(device)
+                coroutineOpenDevice(datalogicDevice)
             } ?: run {
                 // No device selected
                 connectDeviceAlert = true
@@ -477,6 +464,24 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         }
     }
 
+    fun openBluetoothDevice(activity: Activity, bluetoothDevice: DatalogicBluetoothDevice?){
+        Log.d(tag, "Open bluetooth device")
+        Log.d(tag, "[openDevice] Begin")
+        if (isBluetoothEnabled.value == true) {
+            Log.d(tag, "[openDevice] isBluetoothEnabled == true ")
+            selectedBluetoothDevice.value?.let { device ->
+                selectedScannerBluetoothDevice.value =
+                    DatalogicBluetoothDevice(device, BluetoothProfile.SPP, HostType.Unconfigured)
+                selectedScannerBluetoothDevice.value?.let { device ->
+                    Log.d(tag, "[openDevice] open bluetooth device")
+                    coroutineOpenBluetoothDevice(device, activity)
+                } ?: run {
+                    connectDeviceAlert = true
+                }
+            }
+        }
+    }
+
     fun coroutineOpenDevice(device: DatalogicDevice) {
         CoroutineScope(Dispatchers.IO).launch {
             val deviceId = device.usbDevice.productId.toString()
@@ -491,6 +496,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                         setupCustomListeners(device)
                         // Initialize label settings from device
                         initializeLabelSettingsFromDevice()
+                        device.status.value = DeviceStatus.OPENED
                     }
 
                     else -> {
@@ -563,8 +569,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     /**
      * Close device - perform full disable, release, close operation
      */
-    fun closeDevice() {
-        selectedDevice.value?.let { device ->
+    fun closeUsbDevice(device: DatalogicDevice?) {
+        device?.let { device ->
             _isLoading.postValue(true)
 
             CoroutineScope(Dispatchers.IO).launch {
@@ -577,6 +583,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                             Log.d(tag, "Device closed successfully: ${device.displayName}")
                             _deviceStatus.postValue("Device closed")
                             _status.postValue(DeviceStatus.CLOSED)
+                            device.status.value = DeviceStatus.CLOSED
                             clearScanData()
                             clearConfig()
 
@@ -619,8 +626,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             val deviceId = device.usbDevice.productId.toString()
 
             // Re-open device if it was reattached while app was in background
-            if (device.status == DeviceStatus.CLOSED && reattachedDevices.contains(deviceId)) {
-                openDevice(activity)
+            if (device.status.value == DeviceStatus.CLOSED && reattachedDevices.contains(deviceId)) {
+                //openDevice(activity)
             }
         }
     }
@@ -630,8 +637,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
      */
     fun appInBackground() {
         selectedDevice.value?.let {
-            if (it.status == DeviceStatus.OPENED) {
-                closeDevice()
+            if (it.status.value == DeviceStatus.OPENED) {
+                //closeUsbDevice()
             }
         }
         selectedScannerBluetoothDevice.value?.let {
@@ -655,8 +662,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
      */
     fun setDropdownSelectedDevice(newDevice: DatalogicDevice?): Boolean {
         selectedDevice.value?.let {
-            if (it.status == DeviceStatus.OPENED) {
-                closeDevice()
+            if (it.status.value == DeviceStatus.OPENED) {
+                closeUsbDevice(newDevice)
             }
         }
         setSelectedDevice(newDevice)
@@ -729,7 +736,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
 
         if (isBluetoothEnabled.value == false) {
             selectedDevice.value?.let { device ->
-                if (device.status != DeviceStatus.OPENED) {
+                if (device.status.value != DeviceStatus.OPENED) {
                     _dioStatus.postValue("Device must be opened first")
                     return
                 }
@@ -886,7 +893,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     // Modify the applyConfiguration method to set the dialog state
     fun applyConfiguration() {
         selectedDevice.value?.let { device ->
-            if (device.status != DeviceStatus.OPENED) {
+            if (device.status.value != DeviceStatus.OPENED) {
                 resultLiveData.postValue(ResultContants.OPEN_DEVICE_FIRST)
                 return
             }
@@ -953,7 +960,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
      */
     fun readConfigData() {
         selectedDevice.value?.let { device ->
-            if (device.status != DeviceStatus.OPENED) {
+            if (device.status.value != DeviceStatus.OPENED) {
                 resultLiveData.postValue("Device must be opened first")
                 return
             }
@@ -1003,7 +1010,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
 
     fun readCustomConfig() {
         selectedDevice.value?.let { device ->
-            if (device.status != DeviceStatus.OPENED) {
+            if (device.status.value != DeviceStatus.OPENED) {
                 resultLiveData.postValue("Device must be opened first")
                 return
             }
@@ -1035,7 +1042,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
      */
     fun writeCustomConfig(configurationData: String) {
         selectedDevice.value?.let { device ->
-            if (device.status != DeviceStatus.OPENED) {
+            if (device.status.value != DeviceStatus.OPENED) {
                 resultLiveData.postValue("Device must be opened first")
                 return
             }
@@ -1097,8 +1104,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
 
         // Close any open devices
         selectedDevice.value?.let {
-            if (it.status == DeviceStatus.OPENED) {
-                closeDevice()
+            if (it.status.value == DeviceStatus.OPENED) {
+                closeUsbDevice(it)
             }
         }
         selectedScannerBluetoothDevice.value?.let {
@@ -1485,7 +1492,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     }
 
     fun clearConfig() {
-        if (selectedDevice.value?.status == DeviceStatus.CLOSED) {
+        if (selectedDevice.value?.status?.value == DeviceStatus.CLOSED) {
             _customConfiguration.value = ""
         }
     }
@@ -1643,7 +1650,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             stopBluetoothPolling()
         } else if (getAllBluetoothDevice(activity)) {
             if (status.value == DeviceStatus.OPENED) {
-                closeDevice()
+                closeUsbDevice(selectedDevice.value)
             }
             _isBluetoothEnabled.value = true
             Log.d(tag, "[toggleConnectType] Show list Bluetooth device")
@@ -1826,7 +1833,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
 
         // Sync with the device if it's available and opened
         selectedDevice.value?.let { device ->
-            if (device.status == DeviceStatus.OPENED) {
+            if (device.status.value == DeviceStatus.OPENED) {
                 device.setCurrentLabelCodeType(labelCodeType)
                 Log.d(tag, "Label code type synced with device: ${labelCodeType.code}")
             }
@@ -1842,7 +1849,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
 
         // Sync with the device if it's available and opened
         selectedDevice.value?.let { device ->
-            if (device.status == DeviceStatus.OPENED) {
+            if (device.status.value == DeviceStatus.OPENED) {
                 device.setCurrentLabelIDControl(labelIDControl)
                 Log.d(tag, "Label ID control synced with device: ${labelIDControl.code}")
             }
@@ -1871,7 +1878,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
      */
     private fun initializeLabelSettingsFromDevice() {
         selectedDevice.value?.let { device ->
-            if (device.status == DeviceStatus.OPENED) {
+            if (device.status.value == DeviceStatus.OPENED) {
                 val deviceLabelCodeType = device.getCurrentLabelCodeType()
                 val deviceLabelIDControl = device.getCurrentLabelIDControl()
 

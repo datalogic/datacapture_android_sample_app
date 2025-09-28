@@ -21,7 +21,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
@@ -568,7 +567,7 @@ fun HomeTabLandscape() {
                 stringResource(id = R.string.open),
                 onClick = {
                     activity?.let {
-                        homeViewModel.openDevice(activity)
+                        //homeViewModel.openDevice(activity)
                     }
                 }
             )
@@ -580,7 +579,7 @@ fun HomeTabLandscape() {
                 buttonState = (status == DeviceStatus.OPENED),
                 stringResource(id = R.string.close),
                 onClick = {
-                    homeViewModel.closeDevice()
+                    //homeViewModel.closeUsbDevice()
                 }
             )
         }
