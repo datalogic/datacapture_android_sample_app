@@ -422,7 +422,7 @@ private fun previewDevices() = listOf(
 @Composable
 fun DevicesScreenPreview_Populated() {
     val homeViewModel = LocalHomeViewModel.current
-    val allBluetoothDevices = homeViewModel.allBluetoothDevices.observeAsState(ArrayList()).value
+    val allBluetoothDevices = homeViewModel.selectedScannerBluetoothDevice.observeAsState(ArrayList()).value
     val usbDeviceList = homeViewModel.deviceList.observeAsState(ArrayList()).value
 
     MaterialTheme(colorScheme = lightColorScheme()) {

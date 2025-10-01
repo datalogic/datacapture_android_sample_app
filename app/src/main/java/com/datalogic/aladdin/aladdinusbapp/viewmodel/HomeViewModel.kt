@@ -85,8 +85,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     private val _usbDeviceList = MutableLiveData<ArrayList<UsbDevice>>(ArrayList())
     val usbDeviceList: LiveData<ArrayList<UsbDevice>> = _usbDeviceList
 
-    private val _allBluetoothDevices = MutableLiveData<ArrayList<BluetoothDevice>>(ArrayList())
-    val allBluetoothDevices: LiveData<ArrayList<BluetoothDevice>> = _allBluetoothDevices
+    private val _allBluetoothDevices = MutableLiveData<ArrayList<DatalogicBluetoothDevice>>(ArrayList())
+    val allBluetoothDevices: LiveData<ArrayList<DatalogicBluetoothDevice>> = _allBluetoothDevices
     private var bluetoothPollingJob: Job? = null
 
     private val _scanLabel = MutableLiveData("")
@@ -642,7 +642,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             }
         }
         selectedScannerBluetoothDevice.value?.let {
-            if (it.status == DeviceStatus.OPENED) {
+            if (it.status.value == DeviceStatus.OPENED) {
                 closeBluetoothDevice()
             }
         }
@@ -763,7 +763,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             }
         } else {
             selectedScannerBluetoothDevice.value?.let { device ->
-                if (device.status != DeviceStatus.OPENED) {
+                if (device.status.value != DeviceStatus.OPENED) {
                     Log.d(tag, "[executeDIOCommand] device.status: ${device.status}")
 
                     _dioStatus.postValue("Device must be opened first")
@@ -1109,7 +1109,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             }
         }
         selectedScannerBluetoothDevice.value?.let {
-            if (it.status == DeviceStatus.OPENED) {
+            if (it.status.value == DeviceStatus.OPENED) {
                 closeBluetoothDevice()
             }
         }
@@ -1654,7 +1654,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             }
             _isBluetoothEnabled.value = true
             Log.d(tag, "[toggleConnectType] Show list Bluetooth device")
-            if (selectedBluetoothDevice.value != null && allBluetoothDevices.value?.contains(selectedBluetoothDevice.value) == true) {
+            if (selectedBluetoothDevice.value != null && allBluetoothDevices.value?.contains(selectedScannerBluetoothDevice.value) == true) {
                 _status.postValue(DeviceStatus.CLOSED)
             }
 //            startBluetoothPolling(activity)
@@ -1789,7 +1789,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         selectedScannerBluetoothDevice.value?.unregisterBluetoothDioListener(bluetoothErrorListener)
         selectedScannerBluetoothDevice.value?.clearConnection(context)
         selectedScannerBluetoothDevice.let { device ->
-            _status.postValue(selectedScannerBluetoothDevice.value?.status)
+            _status.postValue(selectedScannerBluetoothDevice.value?.status?.value)
             _deviceStatus.postValue("No device selected")
         }
     }
