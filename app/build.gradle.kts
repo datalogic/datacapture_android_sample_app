@@ -81,4 +81,10 @@ dependencies {
 
     implementation("androidx.appcompat:appcompat:1.5.1")
     implementation("androidx.lifecycle:lifecycle-process:2.8.7")
+
+    implementation("com.google.code.gson:gson:2.13.2")
+    implementation("com.github.mik3y:usb-serial-for-android:3.9.0")
+    implementation("uk.org.okapibarcode:okapibarcode:0.5.2")
+    implementation("com.caverock:androidsvg:1.4")
+
 }
