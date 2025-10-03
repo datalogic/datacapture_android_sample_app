@@ -616,7 +616,7 @@ fun ScannerScreenPortrait() {
                 stringResource(id = R.string.close),
                 onClick = {
                     if (isBluetoothEnabled) {
-                        homeViewModel.closeBluetoothDevice()
+                        //homeViewModel.closeBluetoothDevice()
                     } else {
                         //homeViewModel.closeUsbDevice()
                     }

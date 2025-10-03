@@ -1,5 +1,6 @@
 package com.datalogic.aladdin.aladdinusbapp.views.compose
 
+import DatalogicBluetoothDevice
 import android.Manifest
 import android.bluetooth.BluetoothDevice
 import android.content.ContentValues.TAG
@@ -44,9 +45,9 @@ import com.datalogic.aladdin.aladdinusbapp.R
 @Composable
 fun BluetoothDeviceDropdown(
     modifier: Modifier,
-    selectedBluetoothDevice: BluetoothDevice?,
-    bluetoothDevices: List<BluetoothDevice>,
-    onBluetoothDeviceSelected: (BluetoothDevice?) -> Unit
+    selectedBluetoothDevice: DatalogicBluetoothDevice?,
+    bluetoothDevices: List<DatalogicBluetoothDevice>,
+    onBluetoothDeviceSelected: (DatalogicBluetoothDevice?) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
     var textFieldSize by remember { mutableStateOf(Size.Zero) }
@@ -60,7 +61,7 @@ fun BluetoothDeviceDropdown(
     ) {
         Log.d(TAG, "[BluetoothDeviceDropdown] permission denied")
     } else if (selectedBluetoothDevice != null){
-        deviceDisplayName = "${selectedBluetoothDevice.name}"
+        deviceDisplayName = selectedBluetoothDevice.name
     } else {
         deviceDisplayName = "No device selected"
     }

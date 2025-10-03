@@ -197,11 +197,7 @@ fun BluetoothDevicesList(
     ) {
         items(items, key = { it.id }) { device ->
             BluetoothDeviceRow(
-                device = device,
-                modifier = Modifier.combinedClickable(
-                    onClick = {
-                    },
-                )
+                device = device
             )
         }
     }
@@ -293,6 +289,12 @@ private fun BluetoothDeviceRow(
     val context = LocalContext.current
     val activity = context as? Activity
     val homeViewModel = LocalHomeViewModel.current
+    val isOpen = device.status.value == DeviceStatus.OPENED
+    val buttonText = if (isOpen) {
+        stringResource(id = R.string.close)
+    } else {
+        stringResource(id = R.string.open)
+    }
     Surface(
         tonalElevation = 1.dp,
         shape = RoundedCornerShape(16.dp),
@@ -310,8 +312,7 @@ private fun BluetoothDeviceRow(
                     .size(10.dp)
                     .clip(CircleShape)
                     .background(
-                        //if (device. == DeviceStatus.OPENED) Color(0xFF34C759) else
-                            Color(
+                        if (device.status.value == DeviceStatus.OPENED) Color(0xFF34C759) else Color(
                             0xFF999999
                         )
                     )
@@ -320,7 +321,7 @@ private fun BluetoothDeviceRow(
 
             Column(Modifier.weight(1f)) {
                 Text(
-                    text = device.id,
+                    text = device.name,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
@@ -340,12 +341,17 @@ private fun BluetoothDeviceRow(
                 modifier = Modifier
                     .weight(0.5f)
                     .semantics { contentDescription = "btn_open" },
-                openState = true,
-                stringResource(id = R.string.open),
+                openState = isOpen,
+                name = buttonText,
                 onClick = {
-                    Log.d(TAG, "btn_open on click")
                     activity?.let {
-                        homeViewModel.openBluetoothDevice(activity, device)
+                        if(isOpen) {
+                            Log.d(TAG, "btn_close on click")
+                            homeViewModel.closeBluetoothDevice(device)
+                        } else {
+                            Log.d(TAG, "btn_open on click")
+                            homeViewModel.coroutineOpenBluetoothDevice(device, activity)
+                        }
                     }
                 }
             )
@@ -422,7 +428,7 @@ private fun previewDevices() = listOf(
 @Composable
 fun DevicesScreenPreview_Populated() {
     val homeViewModel = LocalHomeViewModel.current
-    val allBluetoothDevices = homeViewModel.selectedScannerBluetoothDevice.observeAsState(ArrayList()).value
+    val allBluetoothDevices = homeViewModel.allBluetoothDevices.observeAsState(ArrayList()).value
     val usbDeviceList = homeViewModel.deviceList.observeAsState(ArrayList()).value
 
     MaterialTheme(colorScheme = lightColorScheme()) {

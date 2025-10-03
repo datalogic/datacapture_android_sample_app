@@ -51,17 +51,18 @@ class HomeActivity : AppCompatActivity() {
     private var bluetoohListener: BluetoothListener? = null
     private var statusListener: StatusListener? = null
     private val homeViewModel: HomeViewModel by viewModels {
-        MyViewModelFactory(usbDeviceManager, applicationContext)
+        MyViewModelFactory(usbDeviceManager, applicationContext, this)
     }
 
     class MyViewModelFactory(
         private val usbDeviceManager: DatalogicDeviceManager,
-        private val context: Context
+        private val context: Context,
+        private val activity: HomeActivity
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(HomeViewModel::class.java)) {
                 @Suppress("UNCHECKED_CAST")
-                return HomeViewModel(usbDeviceManager, context) as T
+                return HomeViewModel(usbDeviceManager, context, activity) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")
         }
