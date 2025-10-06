@@ -1,5 +1,6 @@
 package com.datalogic.aladdin.aladdinusbapp.views.activity
 
+import android.Manifest
 import android.bluetooth.BluetoothDevice
 import android.content.Context
 import android.content.pm.ActivityInfo
@@ -12,6 +13,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.annotation.RequiresPermission
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
@@ -69,7 +71,7 @@ class HomeActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         supportActionBar?.hide()
         handlerUsbListener()
-        handlerBluetoothListener()
+        handlerBluetoothListener(this)
 
         setContent {
             AladdinUSBAppTheme {
@@ -188,11 +190,13 @@ class HomeActivity : AppCompatActivity() {
         usbDeviceManager.registerStatusListener(statusListener)
     }
 
-    fun handlerBluetoothListener() {
+    fun handlerBluetoothListener(activity: HomeActivity) {
         usbDeviceManager = DatalogicDeviceManager
         bluetoohListener = object : BluetoothListener {
+            @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
             override fun onDeviceAttachedListener(device: BluetoothDevice) {
-                TODO("Not yet implemented")
+                homeViewModel.setDeviceStatus("Attached ${device.name}")
+                homeViewModel.getAllBluetoothDevice(activity)
             }
             override fun onDeviceDetachedListener(device: BluetoothDevice) {
                 homeViewModel.handleBluetoothDeviceDisconnection(device)

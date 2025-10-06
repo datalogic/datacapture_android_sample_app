@@ -1589,7 +1589,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             if (selectedBluetoothDevice.value != null && allBluetoothDevices.value?.contains(selectedBluetoothDevice.value) == true) {
                 _status.postValue(DeviceStatus.CLOSED)
             }
-            startBluetoothPolling(activity)
+//            startBluetoothPolling(activity)
         } else {
             Log.e(tag, "[toggleConnectType] getAllBluetoothDevice FAIL - Permission denied")
         }
