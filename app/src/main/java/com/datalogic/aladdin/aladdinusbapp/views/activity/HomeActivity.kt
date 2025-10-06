@@ -195,7 +195,9 @@ class HomeActivity : AppCompatActivity() {
         bluetoohListener = object : BluetoothListener {
             @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
             override fun onDeviceAttachedListener(device: BluetoothDevice) {
-                homeViewModel.setDeviceStatus("Attached ${device.name}")
+                if (homeViewModel.status.value != DeviceStatus.OPENED) {
+                    homeViewModel.setDeviceStatus("Attached ${device.name}")
+                }
                 homeViewModel.getAllBluetoothDevice(activity)
             }
             override fun onDeviceDetachedListener(device: BluetoothDevice) {
