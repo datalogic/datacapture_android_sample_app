@@ -1,6 +1,5 @@
 package com.datalogic.aladdin.aladdinusbapp.views.activity.homeScreen
 
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,7 +15,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
@@ -24,11 +22,10 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.activity.customConfigurationScreen.CustomConfigurationLandscape
-import com.datalogic.aladdin.aladdinusbapp.views.activity.devicesScreen.DevicesScreenPreview_Populated
+import com.datalogic.aladdin.aladdinusbapp.views.activity.devicesScreen.DeviceListScreen
 import com.datalogic.aladdin.aladdinusbapp.views.activity.imageCapture.ImageCaptureTabPortrait
 import com.datalogic.aladdin.aladdinusbapp.views.activity.updateFirmware.UpdateFirmwareScreen
 import com.datalogic.aladdin.aladdinusbapp.views.compose.BottomNavigationRow
@@ -85,7 +82,7 @@ fun HomeScreenLayoutLandscape() {
                 4 -> CustomConfigurationLandscape()
                 5 -> UpdateFirmwareScreen()
                 6 -> BluetoothTabLandscape()
-                7 -> DevicesScreenPreview_Populated()
+                7 -> DeviceListScreen()
 
             }
         }

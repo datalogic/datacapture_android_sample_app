@@ -131,7 +131,7 @@ object ComposableUtils {
         ) {
             Text(
                 text = name,
-                style = MaterialTheme.typography.labelMedium,
+                style = MaterialTheme.typography.labelSmall,
                 color = if (openState) colorResource(id = R.color.colorPrimary)
                 else colorResource(id = R.color.white)
             )

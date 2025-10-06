@@ -21,13 +21,10 @@ package com.datalogic.aladdin.aladdinusbapp.views.activity.devicesScreen
 
 import DatalogicBluetoothDevice
 import android.app.Activity
-import android.bluetooth.BluetoothDevice
 import android.content.ContentValues.TAG
-import android.hardware.usb.UsbDevice
 import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -56,7 +53,6 @@ import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.CustomB
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import java.util.UUID
 
 // --------- Data layer (sample) ---------
@@ -105,15 +101,11 @@ object DevicesRepositoryMock {
 fun DevicesScreen(
     usbDeviceList: ArrayList<DatalogicDevice>,
     bluetoothDeviceList: ArrayList<DatalogicBluetoothDevice>,
-    onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
 
     Scaffold(
-        topBar = {
-            MainTopBar(onRefresh = onRefresh)
-        },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { inner ->
         Column(modifier.padding(inner).fillMaxSize()) {
@@ -426,7 +418,7 @@ private fun previewDevices() = listOf(
 
 @Preview(showBackground = true)
 @Composable
-fun DevicesScreenPreview_Populated() {
+fun DeviceListScreen() {
     val homeViewModel = LocalHomeViewModel.current
     val allBluetoothDevices = homeViewModel.allBluetoothDevices.observeAsState(ArrayList()).value
     val usbDeviceList = homeViewModel.deviceList.observeAsState(ArrayList()).value
@@ -435,7 +427,6 @@ fun DevicesScreenPreview_Populated() {
         DevicesScreen(
             usbDeviceList = usbDeviceList,
             bluetoothDeviceList = allBluetoothDevices,
-            onRefresh = {},
         )
     }
 }

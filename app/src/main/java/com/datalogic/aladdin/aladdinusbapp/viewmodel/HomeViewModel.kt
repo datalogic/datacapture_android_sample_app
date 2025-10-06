@@ -285,6 +285,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
         // Update command dropdown with appropriate command for the device
         selectedCommand.value?.let { updateSelectedDIOCommand(it) }
         _readConfigData.postValue(hashMapOf())
+        selectedBluetoothDevice.value = null
     }
 
     fun setSelectedUsbDevice(device: UsbDevice?) {
@@ -294,6 +295,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
         } ?: run {
             _status.postValue(DeviceStatus.NONE)
         }
+        selectedBluetoothDevice.value = null
     }
 
     fun setSelectedDeviceType(deviceType: DeviceType) {
@@ -681,41 +683,38 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
      * Function updates the DIO dropdown field and Data field with the command selected from the dropdown.
      */
     fun updateSelectedDIOCommand(command: DIOCmdValue) {
-        if (isBluetoothEnabled.value == false) {
-            selectedDevice.value?.let {
-                CoroutineScope(Dispatchers.IO).launch {
-                    if (command != DIOCmdValue.OTHER) {
-                        // Use the string representation for display
-                        val isOem = it.connectionType == ConnectionType.USB_OEM
-                        // Use the display string instead of the hex value
-                        _dioData.postValue(command.getDisplayString(isOem))
+        selectedDevice.value?.let {
+            CoroutineScope(Dispatchers.IO).launch {
+                if (command != DIOCmdValue.OTHER) {
+                    // Use the string representation for display
+                    val isOem = it.connectionType == ConnectionType.USB_OEM
+                    // Use the display string instead of the hex value
+                    _dioData.postValue(command.getDisplayString(isOem))
+                } else {
+                    if (executeCmd) {
+                        executeCmd = false
                     } else {
-                        if (executeCmd) {
-                            executeCmd = false
-                        } else {
-                            _dioData.postValue("")
-                        }
+                        _dioData.postValue("")
                     }
-                    _selectedCommand.postValue(command)
                 }
+                _selectedCommand.postValue(command)
             }
-        } else {
-            selectedScannerBluetoothDevice.value?.let {
-                CoroutineScope(Dispatchers.IO).launch {
-                    if (command != DIOCmdValue.OTHER) {
-                        // Use the string representation for display
-                        val isOem = false
-                        // Use the display string instead of the hex value
-                        _dioData.postValue(command.getDisplayString(isOem))
+        }
+        selectedBluetoothDevice.value?.let {
+            CoroutineScope(Dispatchers.IO).launch {
+                if (command != DIOCmdValue.OTHER) {
+                    // Use the string representation for display
+                    val isOem = false
+                    // Use the display string instead of the hex value
+                    _dioData.postValue(command.getDisplayString(isOem))
+                } else {
+                    if (executeCmd) {
+                        executeCmd = false
                     } else {
-                        if (executeCmd) {
-                            executeCmd = false
-                        } else {
-                            _dioData.postValue("")
-                        }
+                        _dioData.postValue("")
                     }
-                    _selectedCommand.postValue(command)
                 }
+                _selectedCommand.postValue(command)
             }
         }
     }
@@ -725,67 +724,63 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
      */
     fun executeDIOCommand() {
         Log.d(tag, "[executeDIOCommand] isBluetoothEnabled: ${isBluetoothEnabled.value}")
-
-        if (isBluetoothEnabled.value == false) {
-            selectedDevice.value?.let { device ->
-                if (device.status.value != DeviceStatus.OPENED) {
-                    _dioStatus.postValue("Device must be opened first")
-                    return
-                }
-
-                _isLoading.postValue(true)
-                CoroutineScope(Dispatchers.IO).launch {
-                    val commandString = dioData.value.toString()
-
-                    if (commandString.isBlank()) {
-                        _dioStatus.postValue("Please enter a command")
-                        _isLoading.postValue(false)
-                        return@launch
-                    }
-
-                    // Get the selected command type
-                    val selectedCmd = selectedCommand.value ?: DIOCmdValue.OTHER
-
-                    // Execute the command
-                    val output = device.dioCommand(selectedCmd, commandString, context)
-
-                    _dioStatus.postValue(output)
-                    _isLoading.postValue(false)
-                }
+        selectedDevice.value?.let { device ->
+            if (device.status.value != DeviceStatus.OPENED) {
+                _dioStatus.postValue("Device must be opened first")
+                return
             }
-        } else {
-            selectedScannerBluetoothDevice.value?.let { device ->
-                if (device.status.value != DeviceStatus.OPENED) {
-                    Log.d(tag, "[executeDIOCommand] device.status: ${device.status}")
 
-                    _dioStatus.postValue("Device must be opened first")
-                    return
-                }
+            _isLoading.postValue(true)
+            CoroutineScope(Dispatchers.IO).launch {
+                val commandString = dioData.value.toString()
 
-                _isLoading.postValue(true)
-                CoroutineScope(Dispatchers.IO).launch {
-                    val commandString = dioData.value.toString()
-
-                    if (commandString.isBlank()) {
-                        Log.d(tag, "[executeDIOCommand] Please enter a command")
-
-                        _dioStatus.postValue("Please enter a command")
-                        _isLoading.postValue(false)
-                        return@launch
-                    }
-
-                    // Get the selected command type
-                    val selectedCmd = selectedCommand.value ?: DIOCmdValue.OTHER
-
-                    Log.d(tag, "[executeDIOCommand] selectedCommand: $selectedCommand")
-                    // Execute the command
-                    val output = device.dioCommand(selectedCmd, commandString, context)
-
-                    _dioStatus.postValue(output)
-                    Log.d(tag, "[executeDIOCommand] output: $output")
-
+                if (commandString.isBlank()) {
+                    _dioStatus.postValue("Please enter a command")
                     _isLoading.postValue(false)
+                    return@launch
                 }
+
+                // Get the selected command type
+                val selectedCmd = selectedCommand.value ?: DIOCmdValue.OTHER
+
+                // Execute the command
+                val output = device.dioCommand(selectedCmd, commandString, context)
+
+                _dioStatus.postValue(output)
+                _isLoading.postValue(false)
+            }
+        }
+        selectedBluetoothDevice.value?.let { device ->
+            if (device.status.value != DeviceStatus.OPENED) {
+                Log.d(tag, "[executeDIOCommand] device.status: ${device.status}")
+
+                _dioStatus.postValue("Device must be opened first")
+                return
+            }
+
+            _isLoading.postValue(true)
+            CoroutineScope(Dispatchers.IO).launch {
+                val commandString = dioData.value.toString()
+
+                if (commandString.isBlank()) {
+                    Log.d(tag, "[executeDIOCommand] Please enter a command")
+
+                    _dioStatus.postValue("Please enter a command")
+                    _isLoading.postValue(false)
+                    return@launch
+                }
+
+                // Get the selected command type
+                val selectedCmd = selectedCommand.value ?: DIOCmdValue.OTHER
+
+                Log.d(tag, "[executeDIOCommand] selectedCommand: $selectedCommand")
+                // Execute the command
+                val output = device.dioCommand(selectedCmd, commandString, context)
+
+                _dioStatus.postValue(output)
+                Log.d(tag, "[executeDIOCommand] output: $output")
+
+                _isLoading.postValue(false)
             }
         }
     }
@@ -1804,6 +1799,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
             _status.postValue(DeviceStatus.NONE)
         }
         selectedBluetoothDevice.value = device
+        selectedDevice.value = null
+        selectedUsbDevice.value = null
     }
 
     fun setSelectedBluetoothProfile(profile: PairingBarcodeType) {
