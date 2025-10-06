@@ -348,6 +348,18 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         detectDevice()
     }
 
+    fun handleBluetoothDeviceDisconnection(device: BluetoothDevice) {
+        clearScanData()
+        clearDIOStatus()
+        selectedScannerBluetoothDevice.value?.let {
+            if (it.bluetoothDevice.address == device.address) {
+                _status.postValue(DeviceStatus.CLOSED)
+                _deviceStatus.postValue("Device disconnected: ${selectedScannerBluetoothDevice.value?.name}")
+                _dioData.postValue("")
+            }
+        }
+    }
+
     /**
      * Set device status message
      */
