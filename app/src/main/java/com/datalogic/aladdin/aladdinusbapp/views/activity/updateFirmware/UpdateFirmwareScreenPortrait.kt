@@ -64,19 +64,26 @@ fun UpdateFirmwareScreen() {
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri: Uri? ->
             uri?.let {
-                swName = FileUtils.getFileNameFromUri(context, it)
-                    .toString().replace(".S37", "")
-                    .replace(".swu", "")
-                fileType = FileUtils.getFileNameFromUri(context, it)
-                    ?.let { it1 -> FileUtils.getFileExtension(it1) }.toString().uppercase()
-                file = FileUtils.getFileFromUri(context, it)
-                isLoadFile.value = true
-                pid = if (fileType != FileConstants.DFW_FILE_TYPE) {
-                    homeViewModel.getPid(file, fileType).toString()
+                val fileName = FileUtils.getFileNameFromUri(context, it).toString()
+                val fileSupport = fileName.contains(".S37", true) ||
+                                  fileName.contains(".SWU", true) ||
+                                  fileName.contains(".DFW", true)
+                if (fileSupport)
+                {
+                    swName = fileName.replace(".S37", "").replace(".swu", "")
+                    fileType = FileUtils.getFileNameFromUri(context, it)
+                        ?.let { it1 -> FileUtils.getFileExtension(it1) }.toString().uppercase()
+                    file = FileUtils.getFileFromUri(context, it)
+                    isLoadFile.value = true
+                    pid = if (fileType != FileConstants.DFW_FILE_TYPE) {
+                        homeViewModel.getPid(file, fileType).toString()
+                    } else {
+                        homeViewModel.getPidDWF(file, fileType)
+                    }
+                    filePath = FileUtils.getDisplayPath(context, uri) ?: ""
                 } else {
-                    homeViewModel.getPidDWF(file, fileType)
+                    Toast.makeText(context, "This file is not supported", Toast.LENGTH_LONG).show()
                 }
-                filePath = FileUtils.getDisplayPath(context, uri) ?: ""
             }
         }
     )
