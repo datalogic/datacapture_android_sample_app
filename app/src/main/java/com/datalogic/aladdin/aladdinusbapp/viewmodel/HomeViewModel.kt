@@ -1468,6 +1468,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     }
 
     fun upgradeFirmware(file: File, fileType: String, isBulkTransfer: Boolean = false) {
+        _progressUpgrade.postValue(0)
         _isLoadingPercent.postValue(true)
         viewModelScope.launch(Dispatchers.IO) {
             selectedDevice.value?.let {
