@@ -24,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat.getString
 import androidx.core.graphics.scale
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -1477,10 +1478,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                 }
 
                 it.upgradeFirmware(
-                    file, fileType, context,
-                    resetCallback = {
-                        showResetDeviceDialog = true
-                    },
+                    file, fileType,
                     progressCallback = { progress ->
                         run {
                             _progressUpgrade.postValue(progress)
@@ -1488,6 +1486,29 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                     }, isBulkTransfer
                 )
                 _isLoadingPercent.postValue(false)
+            }
+        }
+    }
+
+    fun loadFirmwareFile(
+        file: File?,
+        fileType: String,
+        context: Context
+    ) {
+        _isLoadingPercent.postValue(true)
+        viewModelScope.launch(Dispatchers.IO) {
+            selectedDevice.value?.let {
+                it.loadFirmwareFile(file!!, fileType, context, resetCallback = {
+                    if(fileType == FileConstants.DFW_FILE_TYPE) {
+                        showResetDeviceDialog = true
+                    }
+                }, onCompleteLoadFirmware = {
+                    _isLoadingPercent.postValue(false)
+                }, progressCallback = { progress ->
+                    run {
+                        _progressUpgrade.postValue(progress)
+                    }
+                } )
             }
         }
     }

@@ -84,6 +84,8 @@ fun UpdateFirmwareScreen() {
                 } else {
                     Toast.makeText(context, "This file is not supported", Toast.LENGTH_LONG).show()
                 }
+                filePath = FileUtils.getDisplayPath(context, uri) ?: ""
+                homeViewModel.loadFirmwareFile(file, fileType, context)
             }
         }
     )
