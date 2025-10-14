@@ -26,6 +26,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Text
@@ -195,13 +196,20 @@ fun CaptureButtons(model: HomeViewModel) {
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
+        val isLoading by model.isLoading.observeAsState(false)
+
         listOf("Capture Auto").forEach { label ->
-            // Each capture button uses the ToggleableButton with its own toggle state.
+            // For Capture Auto we drive the visual state from the ViewModel's isLoading
+            val controlledSelected: Boolean? = when (label) {
+                "Capture Auto" -> isLoading
+                else -> null
+            }
+
             ToggleableButton(label = label, onClick = {
-                when(label) {
+                when (label) {
                     "Capture Auto" -> model.startCaptureAuto()
                 }
-            })
+            }, selected = controlledSelected)
         }
     }
 }
@@ -209,6 +217,9 @@ fun CaptureButtons(model: HomeViewModel) {
 fun ToggleableButton(
     label: String,
     onClick: () -> Unit,
+    // If `selected` is non-null, the button becomes a controlled component and will
+    // reflect that external selected state. If null, it will manage selection internally.
+    selected: Boolean? = null,
     defaultColor: Color = Color.Gray,
     selectedColor: Color = colorResource(id = R.color.colorPrimary),
     defaultTextColor: Color = Color.Black,
@@ -216,11 +227,14 @@ fun ToggleableButton(
     modifier: Modifier = Modifier,
     content: (@Composable () -> Unit)? = null
 ) {
-    var isSelected by remember { mutableStateOf(false) }
+    var internalSelected by remember { mutableStateOf(false) }
+    val isSelected = selected ?: internalSelected
+
     Button(
         onClick = {
             onClick()
-            isSelected = !isSelected
+            // Only toggle internal state when not controlled externally
+            if (selected == null) internalSelected = !internalSelected
         },
         colors = ButtonDefaults.buttonColors(
             containerColor = if (isSelected) selectedColor else defaultColor
