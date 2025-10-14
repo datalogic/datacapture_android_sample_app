@@ -217,8 +217,6 @@ fun CaptureButtons(model: HomeViewModel) {
 fun ToggleableButton(
     label: String,
     onClick: () -> Unit,
-    // If `selected` is non-null, the button becomes a controlled component and will
-    // reflect that external selected state. If null, it will manage selection internally.
     selected: Boolean? = null,
     defaultColor: Color = Color.Gray,
     selectedColor: Color = colorResource(id = R.color.colorPrimary),
@@ -233,7 +231,6 @@ fun ToggleableButton(
     Button(
         onClick = {
             onClick()
-            // Only toggle internal state when not controlled externally
             if (selected == null) internalSelected = !internalSelected
         },
         colors = ButtonDefaults.buttonColors(
