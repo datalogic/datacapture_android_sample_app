@@ -24,7 +24,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,13 +39,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
 import androidx.core.app.ActivityCompat
 import com.datalogic.aladdin.aladdinusbapp.R
+import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
+import java.util.ArrayList
 
 @Composable
 fun UsbBTDeviceDropdown(
     modifier: Modifier,
     selectedBluetoothDevice: DatalogicBluetoothDevice?,
-    bluetoothDevices: List<DatalogicBluetoothDevice>,
+    bluetoothDevices: ArrayList<DatalogicBluetoothDevice>,
     onBluetoothDeviceSelected: (DatalogicBluetoothDevice?) -> Unit,
     usbDevices: ArrayList<DatalogicDevice>,
     onUsbDeviceSelected: (DatalogicDevice?) -> Unit,
@@ -65,17 +66,10 @@ fun UsbBTDeviceDropdown(
         Log.d(TAG, "[BluetoothDeviceDropdown] permission denied")
     } else if (selectedBluetoothDevice != null) {
         deviceDisplayName = selectedBluetoothDevice.name
+    } else if(selectedUsbDevice != null) {
+        deviceDisplayName = selectedUsbDevice.displayName
     } else {
-        deviceDisplayName = "No device selected"
-    }
-
-    LaunchedEffect(bluetoothDevices) {
-        if (selectedBluetoothDevice != null && !bluetoothDevices.contains(selectedBluetoothDevice)) {
-            onBluetoothDeviceSelected(null)
-        }
-        if (selectedUsbDevice != null && !usbDevices.contains(selectedUsbDevice)) {
-            onUsbDeviceSelected(null)
-        }
+        deviceDisplayName = stringResource(id = R.string.no_devices_connected)
     }
 
     Card(
@@ -111,7 +105,7 @@ fun UsbBTDeviceDropdown(
         )
 
         DropdownMenu(
-            expanded = expanded && bluetoothDevices.isNotEmpty(),
+            expanded = expanded && (usbDevices.isNotEmpty() || bluetoothDevices.isNotEmpty()),
             onDismissRequest = { expanded = false },
             modifier = Modifier.width(with(LocalDensity.current) { textFieldSize.width.toDp() })
         ) {

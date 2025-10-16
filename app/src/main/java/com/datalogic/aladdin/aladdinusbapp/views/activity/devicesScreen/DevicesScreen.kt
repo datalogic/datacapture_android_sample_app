@@ -392,29 +392,6 @@ private fun EmptyState() {
 
 // --------- Simple screen state holder (demo) ---------
 
-@Stable
-data class StateAndActions(
-    val state: DevicesUiState,
-    val onQueryChange: (String) -> Unit,
-    val onFilterChange: (DeviceFilter) -> Unit,
-    val onToggleActive: (Device) -> Unit,
-    val onRefresh: () -> Unit,
-    val onToggleSelect: (Device) -> Unit,
-    val onEnterSelectionWith: (Device) -> Unit,
-    val onClearSelection: () -> Unit,
-    val onBulkActivate: () -> Unit,
-    val onBulkDeactivate: () -> Unit,
-)
-
-// NEW: Previews with a static device list (no async), useful for Android Studio Preview
-private fun previewDevices() = listOf(
-    Device(id = "1", name = "Pixel 8 Pro", model = "Google", isActive = true, owner = "Nora"),
-    Device(id = "2", name = "Galaxy S22", model = "Samsung", isActive = false, owner = "Lee"),
-    Device(id = "3", name = "Nothing Phone (2)", model = "Nothing", isActive = true, owner = "Sam"),
-    Device(id = "4", name = "Xperia 5", model = "Sony", isActive = false),
-    Device(id = "5", name = "Redmi Note 13", model = "Xiaomi", isActive = true),
-    Device(id = "6", name = "Moto G Power", model = "Motorola", isActive = false),
-)
 
 @Preview(showBackground = true)
 @Composable

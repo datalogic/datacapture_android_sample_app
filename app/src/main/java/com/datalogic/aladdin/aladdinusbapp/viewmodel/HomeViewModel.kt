@@ -3,7 +3,6 @@ package com.datalogic.aladdin.aladdinusbapp.viewmodel
 import DatalogicBluetoothDevice
 import android.Manifest
 import android.app.Activity
-import android.bluetooth.BluetoothDevice
 import android.content.ContentValues
 import android.content.Context
 import android.content.pm.PackageManager
@@ -51,7 +50,6 @@ import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ConnectionType
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DIOCmdValue
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceType
-import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.HostType
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ScaleUnit
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbDioListener
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbScaleListener
@@ -88,6 +86,10 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
     private val _allBluetoothDevices = MutableLiveData<ArrayList<DatalogicBluetoothDevice>>(ArrayList())
     val allBluetoothDevices: LiveData<ArrayList<DatalogicBluetoothDevice>> = _allBluetoothDevices
     private var bluetoothPollingJob: Job? = null
+
+    val openUsbDeviceList = deviceList.value?.filter { it.status.value == DeviceStatus.OPENED }
+
+    val openBluetoothDeviceList = allBluetoothDevices.value?.filter { it.status.value == DeviceStatus.OPENED }
 
     private val _scanLabel = MutableLiveData("")
     val scanLabel: LiveData<String> = _scanLabel
@@ -198,7 +200,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
 
     //Listener
     private var scanEvent: UsbScanListener? = null
-    private lateinit var usbErrorListener: UsbDioListener
+    private var usbErrorListener: UsbDioListener? = null
     private lateinit var bluetoothErrorListener: UsbDioListener
 
     private lateinit var bluetoothScanEvent: UsbScanListener
@@ -541,8 +543,9 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                     }
                 }
             }
-            device.registerUsbDioListener(usbErrorListener)
-
+            usbErrorListener?.let {
+                device.registerUsbDioListener(it)
+            }
             // Setup scale listener
             scaleListener = object : UsbScaleListener {
                 override fun onScale(scaleData: ScaleData) {
@@ -585,9 +588,10 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                             scanEvent?.let {
                                 device.unregisterUsbScanListener(it)
                             }
-                            device.unregisterUsbDioListener(usbErrorListener)
+                            usbErrorListener?.let {
+                                device.unregisterUsbDioListener(it)
+                            }
                             device.unregisterUsbScaleListener(scaleListener)
-
                             // Clear scale listener if it was registered
                             if (device.deviceType == DeviceType.FRS) {
                                 try {
@@ -1801,6 +1805,29 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
         selectedBluetoothDevice.value = device
         selectedDevice.value = null
         selectedUsbDevice.value = null
+    }
+
+    // In HomeViewModel.kt
+
+    /**
+     * Checks the current open devices and sets a default selected device
+     * ONLY if no device is currently selected.
+     * This prevents overriding a user's manual selection.
+     */
+    fun setDefaultDevice() {
+        // Only proceed if no device is selected at all
+        if (selectedDevice.value == null && selectedBluetoothDevice.value == null) {
+            val openUsbDevices = _deviceList.value?.filter { it.status.value == DeviceStatus.OPENED }
+            val openBluetoothDevices = _allBluetoothDevices.value?.filter { it.status.value == DeviceStatus.OPENED }
+
+            if (!openUsbDevices.isNullOrEmpty()) {
+                setSelectedDevice(openUsbDevices[0])
+                Log.d("HomeViewModel", "Default device set to USB: ${openUsbDevices[0].displayName}")
+            } else if (!openBluetoothDevices.isNullOrEmpty()) {
+                setSelectedBluetoothDevice(openBluetoothDevices[0])
+                Log.d("HomeViewModel", "Default device set to Bluetooth: ${openBluetoothDevices[0].name}")
+            }
+        }
     }
 
     fun setSelectedBluetoothProfile(profile: PairingBarcodeType) {

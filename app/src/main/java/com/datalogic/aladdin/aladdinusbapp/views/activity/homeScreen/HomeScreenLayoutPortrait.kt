@@ -86,7 +86,10 @@ fun HomeScreenLayoutPortrait() {
             when (selectedTab) {
                 0 -> HomeTabPortrait()
                 1 -> ConfigurationTabPortrait()
-                2 -> DirectIOTabPortrait()
+                2 -> {
+                    homeViewModel.setDefaultDevice()
+                    DirectIOTabPortrait()
+                }
                 3 -> ImageCaptureTabPortrait()
                 4 -> CustomConfigurationPortrait()
                 5 -> UpdateFirmwareScreen()

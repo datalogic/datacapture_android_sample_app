@@ -1,5 +1,7 @@
 package com.datalogic.aladdin.aladdinusbapp.views.activity.homeScreen
 
+import DatalogicBluetoothDevice
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -23,6 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -37,14 +40,17 @@ import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.compose.DIODropdown
 import com.datalogic.aladdin.aladdinusbapp.views.compose.UsbBTDeviceDropdown
+import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DIOCmdValue
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 
 @Composable
 fun DirectIOTabPortrait() {
 
     val homeViewModel = LocalHomeViewModel.current
-    val deviceList = homeViewModel.deviceList.observeAsState(ArrayList()).value
-    val selectedDevice = homeViewModel.selectedDevice.observeAsState(null).value
+    val allUsbDevices = homeViewModel.deviceList.observeAsState(ArrayList()).value
+    val openUsbDeviceList = allUsbDevices.filter { it.status.value == DeviceStatus.OPENED } as ArrayList<DatalogicDevice>
+    val selectedUsbDevice = homeViewModel.selectedDevice.observeAsState(null).value
     val dioStatus = homeViewModel.dioStatus.observeAsState("").value
     val status = homeViewModel.status.observeAsState().value
     val selectedCommand = homeViewModel.selectedCommand.observeAsState(DIOCmdValue.IDENTIFICATION).value
@@ -52,6 +58,8 @@ fun DirectIOTabPortrait() {
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp
     val allBluetoothDevices = homeViewModel.allBluetoothDevices.observeAsState(ArrayList()).value
+    val openBluetoothDevices = allBluetoothDevices.filter {
+        it.status.value == DeviceStatus.OPENED } as ArrayList<DatalogicBluetoothDevice>
     val selectedBluetoothDevice = homeViewModel.selectedBluetoothDevice.observeAsState(null).value
     /**
      * Define a threshold for vertical scrolling
@@ -66,13 +74,13 @@ fun DirectIOTabPortrait() {
                     .semantics { contentDescription = "device_dropdown" }
                     .fillMaxWidth()
                     .height(dimensionResource(id = R.dimen._55sdp)),
-                usbDevices = deviceList,
-                bluetoothDevices = allBluetoothDevices,
+                usbDevices = openUsbDeviceList,
+                bluetoothDevices = openBluetoothDevices,
                 onUsbDeviceSelected = { device ->
                     homeViewModel.setSelectedDevice(device)
                 },
                 selectedBluetoothDevice = selectedBluetoothDevice,
-                selectedUsbDevice = selectedDevice,
+                selectedUsbDevice = selectedUsbDevice,
                 onBluetoothDeviceSelected = { device ->
                     homeViewModel.setSelectedBluetoothDevice(device)
                 }
