@@ -30,7 +30,6 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.datalogic.aladdin.aladdinusbapp.R
-import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.FileConstants
 import com.datalogic.aladdin.aladdinusbapp.utils.FileUtils
 import com.datalogic.aladdin.aladdinusbapp.utils.PairingBarcodeType
 import com.datalogic.aladdin.aladdinusbapp.utils.PairingStatus
@@ -42,6 +41,7 @@ import com.datalogic.aladdin.aladdinusbscannersdk.model.LabelCodeType
 import com.datalogic.aladdin.aladdinusbscannersdk.model.LabelIDControl
 import com.datalogic.aladdin.aladdinusbscannersdk.model.ScaleData
 import com.datalogic.aladdin.aladdinusbscannersdk.model.UsbScanData
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.FileConstants
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.BluetoothPairingStatus
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.BluetoothProfile
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ConfigurationFeature
@@ -134,6 +134,9 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     // Log toggle state
     private val _isLoggingEnabled = MutableLiveData(false)
     val isLoggingEnabled: LiveData<Boolean> = _isLoggingEnabled
+
+    private val _isDebugEnabled = MutableLiveData(false)
+    val isDebugEnabled: LiveData<Boolean> = _isDebugEnabled
 
     // Connect type toggle state
     private val _isBluetoothEnabled = MutableLiveData(false)
@@ -253,6 +256,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         previousBluetoothProfile.value = PairingBarcodeType.UNLINK
         _customerName.value = "Datalogic"
         _configName.value = ""
+        logcatHelper.start()
     }
 
     /**
@@ -1269,6 +1273,11 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             return true
         }
 
+        if (tabIndex == 7) {
+            setSelectedTabIndex(tabIndex)
+            return true
+        }
+
         // For tabs other than Home, we need a device
         if (deviceList.value?.isEmpty() == true && usbDeviceList.value?.isEmpty() == true && allBluetoothDevices.value?.isEmpty() == true) {
             connectDeviceAlert = true
@@ -1325,7 +1334,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                 }
                 return true
             }
-
             else -> return false
         }
     }
@@ -1565,6 +1573,23 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         }
     }
 
+    fun toggleDebug() {
+        if (_isDebugEnabled.value == true) {
+            logcatHelper.setDebugMode(false)
+            _isDebugEnabled.value = false
+            Log.d(tag, "toggleDebug stopped via UI toggle")
+            logcatHelper.exportLogsToPublicFolder(context)
+        } else {
+            logcatHelper.setDebugMode()
+            _isDebugEnabled.value = true
+            Log.d(tag, "toggleDebug started via UI toggle")
+        }
+    }
+
+    fun saveLog() {
+        logcatHelper.exportLogsToPublicFolder(context)
+    }
+
     // REMOVED: saveLogsToFile() function - no longer needed since logs are only stored as SDK_log files
     // Output folder functionality has been removed
 
@@ -1591,7 +1616,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
             }
 //            startBluetoothPolling(activity)
         } else {
-            Log.e(tag, "[toggleConnectType] getAllBluetoothDevice FAIL - Permission denied")
+            Log.d(tag, "[toggleConnectType] getAllBluetoothDevice FAIL - Permission denied")
         }
     }
 
@@ -1685,9 +1710,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     fun coroutineOpenBluetoothDevice(device: DatalogicBluetoothDevice, context: Activity) {
         bluetoothScanEvent = object : UsbScanListener {
             override fun onScan(scanData: UsbScanData) {
-//                Log.d(tag, "[coroutineOpenBluetoothDevice] Raw data scan: ${scanData.rawData}")
-                Log.d(tag, "[coroutineOpenBluetoothDevice] Data scan: ${scanData.barcodeData}")
-                Log.d(tag, "[coroutineOpenBluetoothDevice] Type: ${scanData.barcodeType}")
                 setScannedData(scanData)
             }
         }

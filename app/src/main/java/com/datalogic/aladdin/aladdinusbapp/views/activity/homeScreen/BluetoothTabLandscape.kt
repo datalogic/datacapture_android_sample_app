@@ -90,7 +90,7 @@ fun BluetoothTabLandscape() {
                 }
             },
             onButtonStartClicked = {
-                Log.e("BluetoothTabLandscape", "onButtonStartClicked on profile: $it")
+                Log.d("BluetoothTabLandscape", "onButtonStartClicked on profile: $it")
                 activity?.let { activity ->
                     if (it != null)
                         homeViewModel.createQrCode(it, activity)
@@ -142,7 +142,7 @@ fun BluetoothTabLandscape() {
                             }
                         }
 
-                        Log.e("BluetoothTabLandscape", "previousProfile: $previousProfile")
+                        Log.d("BluetoothTabLandscape", "previousProfile: $previousProfile")
                         if (previousProfile != null && previousProfile != PairingBarcodeType.UNLINK) {
                             Button(
                                 modifier = Modifier

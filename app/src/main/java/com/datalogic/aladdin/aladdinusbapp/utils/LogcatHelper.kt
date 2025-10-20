@@ -37,10 +37,18 @@
  */
 package com.dzungvu.packlog
 
+import android.content.ContentUris
+import android.content.ContentValues
 import android.content.Context
-import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import android.util.Log
-import java.io.*
+import java.io.BufferedReader
+import java.io.File
+import java.io.FileNotFoundException
+import java.io.FileOutputStream
+import java.io.IOException
+import java.io.InputStreamReader
 
 /**
  * Sealed class representing the result of an operation
@@ -112,6 +120,7 @@ class LogcatHelper private constructor(
     private val pID: Int                      // Current application process ID
     private var publicAppDirectory = ""       // Base directory for app logs
     private var logcatPath = ""              // Directory path for log files
+    private var debugMode = false
 
     companion object {
         private const val MAX_FILE_SIZE = 2097152L     // Default: 2MB per file
@@ -132,10 +141,20 @@ class LogcatHelper private constructor(
 
     private fun init(context: Context) {
         // Store logs in user-accessible Downloads folder for easy access
-        val externalStorageDir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
-        publicAppDirectory = externalStorageDir.absolutePath + File.separator + "AppLogs"
-        logcatPath = publicAppDirectory + File.separator + "logs"
-        
+//        val externalStorageDir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
+//        publicAppDirectory = externalStorageDir.absolutePath + File.separator + "AppLogs"
+//        logcatPath = publicAppDirectory + File.separator + "logs"
+
+        val internalLogDir = File(context.filesDir, "logs")
+
+        if (!internalLogDir.exists()) {
+            internalLogDir.mkdirs()
+        }
+
+        logcatPath = internalLogDir.absolutePath
+        publicAppDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            .absolutePath + File.separator + "AppLogs"
+
         val appLogDirectory = File(publicAppDirectory)
         val logDirectory = File(logcatPath)
         
@@ -145,6 +164,62 @@ class LogcatHelper private constructor(
         }
         if (!logDirectory.exists()) {
             logDirectory.mkdirs()
+        }
+    }
+
+    fun exportLogsToPublicFolder(context: Context) {
+        try {
+            val internalDir = File(context.filesDir, "logs")
+            if (!internalDir.exists()) {
+                Log.e("LogcatHelper", "No internal log directory found: ${internalDir.absolutePath}")
+                return
+            }
+            val files = internalDir.listFiles()?.filter { it.isFile } ?: emptyList()
+            if (files.isEmpty()) {
+                Log.w("LogcatHelper", "No log files to export in ${internalDir.absolutePath}")
+                return
+            }
+            val resolver = context.contentResolver
+
+            for (src in files) {
+                val fileName = src.name
+                val existingUri = resolver.query(
+                    MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+                    arrayOf(MediaStore.Downloads._ID),
+                    "${MediaStore.Downloads.DISPLAY_NAME}=?",
+                    arrayOf(fileName),
+                    null
+                )?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Downloads._ID))
+                        ContentUris.withAppendedId(MediaStore.Downloads.EXTERNAL_CONTENT_URI, id)
+                    } else null
+                }
+
+                val contentValues = ContentValues().apply {
+                    put(MediaStore.Downloads.DISPLAY_NAME, fileName)
+                    put(MediaStore.Downloads.MIME_TYPE, "text/plain")
+                    put(MediaStore.Downloads.RELATIVE_PATH, "Download/AppLogs/logs")
+                }
+                val targetUri = existingUri ?: resolver.insert(
+                    MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+                    contentValues
+                )
+                if (targetUri != null) {
+                    resolver.openOutputStream(targetUri, "wt")?.use { output ->
+                        src.inputStream().use { input ->
+                            input.copyTo(output)
+                        }
+                    }
+                    Log.d("LogcatHelper", "Exported: $targetUri $fileName")
+                } else {
+                    Log.e("LogcatHelper", "Failed to create file for: $fileName")
+                }
+            }
+            Log.d("LogcatHelper", "Export completed. Logs are available in /Download/AppLogs/logs")
+        } catch (e: Exception) {
+            Log.e("LogcatHelper", "Failed to export logs: ${e.message}")
+            e.printStackTrace()
         }
     }
 
@@ -240,19 +315,12 @@ class LogcatHelper private constructor(
                 Runtime.getRuntime().exec(clearLogCommand)
                 logcatProc = Runtime.getRuntime().exec(command)
                 reader = BufferedReader(InputStreamReader(logcatProc!!.inputStream), 1024)
-                var line: String? = null
 
-                // Continuously read logcat output while thread is running
-                while (mRunning && run {
-                        line = reader!!.readLine()
-                        line
-                    } != null) {
-                    if (!mRunning) {
-                        break
-                    }
-                    if (line!!.isEmpty()) {
-                        continue
-                    }
+                while (mRunning) {
+                    val line = reader?.readLine() ?: break
+
+                    if (!mRunning) break
+                    if (line.isEmpty()) continue
 
                     // Check if current file has reached maximum size
                     if (outputStream!!.channel.size() >= maxFileSize) {
@@ -272,9 +340,16 @@ class LogcatHelper private constructor(
                     if (getFolderSize(logcatPath) >= maxFolderSize) {
                         deleteOldestFile(logcatPath)
                     }
-                    
-                    // Write log line to current file
-                    outputStream!!.write((line + System.lineSeparator()).toByteArray())
+
+                    val regex = Regex("""\b$pID\s+\d+\s+[IWE]\b""")
+                    if (regex.containsMatchIn(line) || debugMode) {
+                        outputStream?.write((line + System.lineSeparator()).toByteArray())
+                    }
+//                    // Write log line to current file
+//                    if (line.contains(" I ") || line.contains(" W ") || line.contains(" E ") || debugMode) {
+//                        outputStream?.write((line + System.lineSeparator()).toByteArray())
+//                        outputStream?.flush()
+//                    }
                 }
             } catch (e: IOException) {
                 e.printStackTrace()
@@ -374,5 +449,9 @@ class LogcatHelper private constructor(
             // Default to 1 if no files found or error occurred
             return 1
         }
+    }
+
+    fun setDebugMode(debug: Boolean = true) {
+        debugMode = debug
     }
 }
