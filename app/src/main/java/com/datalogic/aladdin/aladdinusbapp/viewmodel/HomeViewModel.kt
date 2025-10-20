@@ -201,11 +201,11 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
     //Listener
     private var scanEvent: UsbScanListener? = null
     private var usbErrorListener: UsbDioListener? = null
-    private lateinit var bluetoothErrorListener: UsbDioListener
+    private var bluetoothErrorListener: UsbDioListener? = null
 
-    private lateinit var bluetoothScanEvent: UsbScanListener
+    private var bluetoothScanEvent: UsbScanListener? = null
 
-    private lateinit var scaleListener: UsbScaleListener
+    private var scaleListener: UsbScaleListener? = null
 
     private var currentDeviceType: DeviceType = DeviceType.HHS
     private var currentConnectionType: ConnectionType = ConnectionType.USB_COM
@@ -557,7 +557,9 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                     }
                 }
             }
-            device.registerUsbScaleListener(scaleListener)
+            scaleListener?.let {
+                device.registerUsbScaleListener(it)
+            }
         }
     }
 
@@ -591,7 +593,9 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                             usbErrorListener?.let {
                                 device.unregisterUsbDioListener(it)
                             }
-                            device.unregisterUsbScaleListener(scaleListener)
+                            scaleListener?.let {
+                                device.unregisterUsbScaleListener(it)
+                            }
                             // Clear scale listener if it was registered
                             if (device.deviceType == DeviceType.FRS) {
                                 try {
@@ -1750,36 +1754,42 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
 
         CoroutineScope(Dispatchers.IO).launch {
             Log.d(tag, "[coroutineOpenBluetoothDevice] connectDevice")
-            device.connectDevice(bluetoothScanEvent, context) { status ->
-                if (status == BluetoothPairingStatus.Successful) {
-                    bluetoothErrorListener = object : UsbDioListener {
-                        override fun fireDioErrorEvent(
-                            errorCode: Int,
-                            message: String
-                        ) {
-                            showToast(context, message + errorCode)
+            bluetoothScanEvent?.let {
+                device.connectDevice(it, context) { status ->
+                    if (status == BluetoothPairingStatus.Successful) {
+                        bluetoothErrorListener = object : UsbDioListener {
+                            override fun fireDioErrorEvent(
+                                errorCode: Int,
+                                message: String
+                            ) {
+                                showToast(context, message + errorCode)
+                            }
                         }
+                        bluetoothErrorListener?.let { listener ->
+                            selectedScannerBluetoothDevice.value?.registerBluetoothDioListener(
+                                listener
+                            )
+                        }
+                        Log.d(tag, "[coroutineOpenBluetoothDevice] connectDevice Successful")
+                        _status.postValue(DeviceStatus.OPENED)
+                        device.status.value = DeviceStatus.OPENED
+                        _deviceStatus.postValue("Device opened")
+                        showToast(context, "Device successfully opened")
+                    } else {
+                        Log.d(tag, "[coroutineOpenBluetoothDevice] connectDevice Failure")
+                        _status.postValue(DeviceStatus.CLOSED)
+                        device.status.value = DeviceStatus.CLOSED
+                        _deviceStatus.postValue("No device selected")
                     }
-                    selectedScannerBluetoothDevice.value?.registerBluetoothDioListener(
-                        bluetoothErrorListener
-                    )
-                    Log.d(tag, "[coroutineOpenBluetoothDevice] connectDevice Successful")
-                    _status.postValue(DeviceStatus.OPENED)
-                    device.status.value = DeviceStatus.OPENED
-                    _deviceStatus.postValue("Device opened")
-                    showToast(context, "Device successfully opened")
-                } else {
-                    Log.d(tag, "[coroutineOpenBluetoothDevice] connectDevice Failure")
-                    _status.postValue(DeviceStatus.CLOSED)
-                    device.status.value = DeviceStatus.CLOSED
-                    _deviceStatus.postValue("No device selected")
                 }
             }
         }
     }
 
     fun closeBluetoothDevice(dlBluetoothDevice: DatalogicBluetoothDevice?) {
-        dlBluetoothDevice?.unregisterBluetoothDioListener(bluetoothErrorListener)
+        bluetoothErrorListener?.let {
+            dlBluetoothDevice?.unregisterBluetoothDioListener(it)
+        }
         dlBluetoothDevice?.clearConnection(context)
         dlBluetoothDevice?.let { device ->
             _status.postValue(dlBluetoothDevice.status.value)

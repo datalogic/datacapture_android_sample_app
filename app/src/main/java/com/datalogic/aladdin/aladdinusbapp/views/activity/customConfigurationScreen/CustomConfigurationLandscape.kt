@@ -1,8 +1,11 @@
 package com.datalogic.aladdin.aladdinusbapp.views.activity.customConfigurationScreen
 
+import DatalogicBluetoothDevice
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,23 +15,26 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
@@ -37,10 +43,14 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.datalogic.aladdin.aladdinusbapp.R
-import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.viewmodel.HomeViewModel
+import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ResetDeviceAlertDialog
+import com.datalogic.aladdin.aladdinusbapp.views.compose.UsbBTDeviceDropdown
+import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 import java.util.Locale
 
 @Preview
@@ -48,19 +58,21 @@ import java.util.Locale
 fun CustomConfigurationLandscape() {
     val homeViewModel = LocalHomeViewModel.current
     val configData = homeViewModel.customConfiguration.observeAsState().value ?: ""
-    val textState = remember { mutableStateOf(configData ?: "") } // Initialize with configData
+    val textState = remember { mutableStateOf(configData) } // Initialize with configData
     val context = LocalContext.current
     val showDialog = remember { mutableStateOf(false) }
     val fileName = remember { mutableStateOf("") }
     val errorMessage = homeViewModel.msgConfigError.observeAsState("").value
-
+    val configName = homeViewModel.configName.observeAsState("").value
+    val customerName = homeViewModel.customerName.observeAsState("").value
+    val allUsbDevices = homeViewModel.deviceList.observeAsState(ArrayList()).value
+    val openUsbDeviceList = allUsbDevices.filter { it.status.value == DeviceStatus.OPENED } as ArrayList<DatalogicDevice>
+    val selectedUsbDevice = homeViewModel.selectedDevice.observeAsState(null).value
     // Configuration result dialog state
     val showConfigResultDialog = remember { mutableStateOf(false) }
     val configResultTitle = remember { mutableStateOf("") }
     val configResultMessage = remember { mutableStateOf("") }
 
-    val configuration = LocalConfiguration.current
-    val heightTextField = if (configuration.screenHeightDp > 350) 300 else 150
 
     // Set up callback for configuration results
     LaunchedEffect(Unit) {
@@ -80,6 +92,14 @@ fun CustomConfigurationLandscape() {
             textState.value = configData
         }
     }
+
+    // DisposableEffect to clear state when composable disappears
+    DisposableEffect(Unit) {
+        onDispose {
+            homeViewModel.clearConfig()
+        }
+    }
+
     // ActivityResultLauncher for picking a text file
     val pickFileLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -99,7 +119,7 @@ fun CustomConfigurationLandscape() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp, 0.dp)
+            .padding(16.dp)
     ) {
         val scroll = rememberScrollState()
         Column(
@@ -107,16 +127,103 @@ fun CustomConfigurationLandscape() {
                 .fillMaxSize()
                 .verticalScroll(scroll)
         ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth(),
+            ) {
+                UsbBTDeviceDropdown(
+                    modifier = Modifier
+                        .semantics { contentDescription = "device_dropdown" }
+                        .fillMaxWidth()
+                        .height(dimensionResource(id = R.dimen._55sdp)),
+                    usbDevices = openUsbDeviceList,
+                    bluetoothDevices = null,
+                    onUsbDeviceSelected = { device ->
+                        homeViewModel.setSelectedDevice(device)
+                    },
+                    selectedBluetoothDevice = null,
+                    selectedUsbDevice = selectedUsbDevice,
+                    onBluetoothDeviceSelected = { device ->
+                        homeViewModel.setSelectedBluetoothDevice(device)
+                    }
+                )
+                Text(
+                    modifier = Modifier
+                        .semantics { contentDescription = "lbl_customer" }
+                        .fillMaxWidth()
+                        .padding(
+                            start = dimensionResource(id = R.dimen._10sdp),
+                            bottom = dimensionResource(id = R.dimen._5sdp)
+                        ),
+                    text = "Customer Name",
+                    style = MaterialTheme.typography.headlineLarge
+                )
+                BasicTextField(
+                    value = customerName,
+                    onValueChange = { homeViewModel.updateCustomerName(it) },
+                    singleLine = true,
+                    textStyle = LocalTextStyle.current.copy(
+                        fontSize = 16.sp,
+                        color = Color.Black
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(
+                            BorderStroke(1.dp, Color.Black),
+                            RoundedCornerShape(dimensionResource(id = R.dimen._8sdp))
+                        )
+                        .padding(8.dp)
+                )
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth(),
+            ) {
+                Text(
+                    modifier = Modifier
+                        .semantics { contentDescription = "lbl_config" }
+                        .fillMaxWidth()
+                        .padding(
+                            start = dimensionResource(id = R.dimen._10sdp),
+                            bottom = dimensionResource(id = R.dimen._5sdp)
+                        ),
+                    text = "Config Name",
+                    style = MaterialTheme.typography.headlineLarge
+                )
+                BasicTextField(
+                    value = configName,
+                    onValueChange = {
+                        if (it.length <= 10)
+                            homeViewModel.updateCurrentConfigName(it)
+                    },
+                    singleLine = true,
+                    textStyle = LocalTextStyle.current.copy(
+                        fontSize = 16.sp,
+                        color = Color.Black
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(
+                            BorderStroke(1.dp, Color.Black),
+                            RoundedCornerShape(dimensionResource(id = R.dimen._8sdp))
+                        )
+                        .padding(8.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp)) // Push buttons to bottom
 
             LineNumberedTextField(
                 text = configData,
                 onTextChange = { textState.value = it },
                 modifier = Modifier
-                    .height(heightTextField.dp)
+//                    .weight(1f)
+                    .height(dimensionResource(id = R.dimen._190sdp))
                     .fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.weight(1f)) // Push buttons to bottom
+            Spacer(modifier = Modifier.height(16.dp)) // Push buttons to bottom
 
             Row(
                 modifier = Modifier
@@ -261,7 +368,7 @@ fun CustomConfigurationLandscape() {
                     Button(
                         onClick = { showConfigResultDialog.value = false }
                     ) {
-                        Text("OK")
+                        Text(stringResource(id = R.string.confirm))
                     }
                 }
             )
@@ -270,7 +377,7 @@ fun CustomConfigurationLandscape() {
 
     if (homeViewModel.showResetDeviceDialog) {
         Log.d("Custom config", "[showConfigResultDialog] showResetDeviceDialog == true")
-        ResetDeviceAlertDialog(homeViewModel, customConfig = false)
+        ResetDeviceAlertDialog(homeViewModel, customConfig = true)
         showConfigResultDialog.value = false
         Log.d("Custom config", "[showConfigResultDialog] showConfigResultDialog.value = false")
     }

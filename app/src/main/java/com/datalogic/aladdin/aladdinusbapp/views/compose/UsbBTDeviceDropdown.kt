@@ -47,7 +47,7 @@ import java.util.ArrayList
 fun UsbBTDeviceDropdown(
     modifier: Modifier,
     selectedBluetoothDevice: DatalogicBluetoothDevice?,
-    bluetoothDevices: ArrayList<DatalogicBluetoothDevice>,
+    bluetoothDevices: ArrayList<DatalogicBluetoothDevice>?,
     onBluetoothDeviceSelected: (DatalogicBluetoothDevice?) -> Unit,
     usbDevices: ArrayList<DatalogicDevice>,
     onUsbDeviceSelected: (DatalogicDevice?) -> Unit,
@@ -105,7 +105,7 @@ fun UsbBTDeviceDropdown(
         )
 
         DropdownMenu(
-            expanded = expanded && (usbDevices.isNotEmpty() || bluetoothDevices.isNotEmpty()),
+            expanded = expanded && (usbDevices.isNotEmpty() || bluetoothDevices?.isNotEmpty() == true),
             onDismissRequest = { expanded = false },
             modifier = Modifier.width(with(LocalDensity.current) { textFieldSize.width.toDp() })
         ) {
@@ -128,7 +128,7 @@ fun UsbBTDeviceDropdown(
                     }
                 )
             }
-            bluetoothDevices.forEach { device ->
+            bluetoothDevices?.forEach { device ->
                 DropdownMenuItem(
                     text = {
                         Text(

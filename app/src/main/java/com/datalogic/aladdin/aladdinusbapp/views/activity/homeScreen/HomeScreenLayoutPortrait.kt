@@ -85,14 +85,26 @@ fun HomeScreenLayoutPortrait() {
         ) {
             when (selectedTab) {
                 0 -> HomeTabPortrait()
-                1 -> ConfigurationTabPortrait()
+                1 ->{
+                    homeViewModel.setDefaultDevice()
+                    ConfigurationTabPortrait()
+                }
                 2 -> {
                     homeViewModel.setDefaultDevice()
                     DirectIOTabPortrait()
                 }
-                3 -> ImageCaptureTabPortrait()
-                4 -> CustomConfigurationPortrait()
-                5 -> UpdateFirmwareScreen()
+                3 ->{
+                    homeViewModel.setDefaultDevice()
+                    ImageCaptureTabPortrait()
+                }
+                4 -> {
+                    homeViewModel.setDefaultDevice()
+                    CustomConfigurationPortrait()
+                }
+                5 ->{
+                    homeViewModel.setDefaultDevice()
+                    UpdateFirmwareScreen()
+                }
                 6 -> BluetoothTabPortrait()
                 7 -> SettingsTabPortrait()
                 7 -> DevicesScreenPreview_Populated()

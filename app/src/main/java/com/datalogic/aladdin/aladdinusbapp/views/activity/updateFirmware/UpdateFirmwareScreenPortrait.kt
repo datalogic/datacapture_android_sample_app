@@ -1,5 +1,6 @@
 package com.datalogic.aladdin.aladdinusbapp.views.activity.updateFirmware
 
+import DatalogicBluetoothDevice
 import android.content.Context
 import android.net.Uri
 import android.widget.Toast
@@ -25,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -32,7 +34,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -43,7 +48,10 @@ import com.datalogic.aladdin.aladdinusbapp.viewmodel.HomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ReleaseInformationCard
 import com.datalogic.aladdin.aladdinusbapp.views.compose.UpgradeConfigurationCard
+import com.datalogic.aladdin.aladdinusbapp.views.compose.UsbBTDeviceDropdown
+import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.FileConstants
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 import java.io.File
 
 @Preview(showBackground = true)
@@ -59,7 +67,9 @@ fun UpdateFirmwareScreen() {
     var filePath by remember { mutableStateOf("") }
     var pid by remember { mutableStateOf("") }
     var fileType by remember { mutableStateOf("") }
-
+    val allUsbDevices = homeViewModel.deviceList.observeAsState(ArrayList()).value
+    val openUsbDeviceList = allUsbDevices.filter { it.status.value == DeviceStatus.OPENED } as ArrayList<DatalogicDevice>
+    val selectedUsbDevice = homeViewModel.selectedDevice.observeAsState(null).value
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri: Uri? ->
@@ -110,6 +120,22 @@ fun UpdateFirmwareScreen() {
             verticalArrangement = Arrangement.SpaceBetween,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            UsbBTDeviceDropdown(
+                modifier = Modifier
+                    .semantics { contentDescription = "device_dropdown" }
+                    .fillMaxWidth()
+                    .height(dimensionResource(id = R.dimen._55sdp)),
+                usbDevices = openUsbDeviceList,
+                bluetoothDevices = null,
+                onUsbDeviceSelected = { device ->
+                    homeViewModel.setSelectedDevice(device)
+                },
+                selectedBluetoothDevice = null,
+                selectedUsbDevice = selectedUsbDevice,
+                onBluetoothDeviceSelected = { device ->
+                    homeViewModel.setSelectedBluetoothDevice(device)
+                }
+            )
             // FW information
             if (isLoadFile.value) {
                 ReleaseInformationCard(swName, pid, filePath)
