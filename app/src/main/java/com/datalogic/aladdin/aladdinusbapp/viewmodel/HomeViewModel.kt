@@ -30,11 +30,13 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.datalogic.aladdin.aladdinusbapp.R
+import com.datalogic.aladdin.aladdinusbapp.utils.AboutModel
 import com.datalogic.aladdin.aladdinusbapp.utils.FileUtils
 import com.datalogic.aladdin.aladdinusbapp.utils.PairingBarcodeType
 import com.datalogic.aladdin.aladdinusbapp.utils.PairingStatus
 import com.datalogic.aladdin.aladdinusbapp.utils.ResultContants
 import com.datalogic.aladdin.aladdinusbapp.utils.USBConstants
+import com.datalogic.aladdin.aladdinusbscannersdk.BuildConfig
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDeviceManager
 import com.datalogic.aladdin.aladdinusbscannersdk.model.LabelCodeType
@@ -137,6 +139,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
 
     private val _isDebugEnabled = MutableLiveData(false)
     val isDebugEnabled: LiveData<Boolean> = _isDebugEnabled
+    val aboutApp: MutableLiveData<AboutModel?> = MutableLiveData(null)
 
     // Connect type toggle state
     private val _isBluetoothEnabled = MutableLiveData(false)
@@ -1587,7 +1590,12 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     }
 
     fun saveLog() {
-        logcatHelper.exportLogsToPublicFolder(context)
+        val saveLog = logcatHelper.exportLogsToPublicFolder(context)
+        if (saveLog) {
+            showToast(context, "Save logs to /Download/AppLogs/logs.")
+        } else {
+            showToast(context, "Failed to save logs.")
+        }
     }
 
     // REMOVED: saveLogsToFile() function - no longer needed since logs are only stored as SDK_log files
@@ -1848,6 +1856,31 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                 )
             }
         }
+    }
+
+    fun getAppInfo() {
+        val osName = "Android"
+        val osVersion = Build.VERSION.RELEASE
+        val sdkInt = Build.VERSION.SDK_INT
+        val deviceModel = Build.MODEL
+        val deviceBrand = Build.BRAND
+        val arch = System.getProperty("os.arch") ?: "unknown"
+        val timeZone = java.util.TimeZone.getDefault().id
+        val versionSDK = BuildConfig.LIBRARY_VERSION_NAME
+        val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+        val appVersion = pInfo.versionName
+
+        Log.i("AppInfo", "App Version: $appVersion")
+        Log.i("AppInfo", "Version SDK: $versionSDK")
+        Log.i("AppInfo", "Device OS: $osName $osVersion (SDK $sdkInt; $arch; $deviceBrand $deviceModel)")
+        Log.i("AppInfo", "Time zone: $timeZone")
+
+        aboutApp.postValue(
+            AboutModel(
+                osName, osVersion, sdkInt, deviceModel,
+                deviceBrand, arch, timeZone, versionSDK, appVersion
+            )
+        )
     }
 }
 

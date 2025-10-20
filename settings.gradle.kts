@@ -17,4 +17,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "Aladdin USB App"
 include(":app")
+include(":aladdinusbscannersdk")
  
