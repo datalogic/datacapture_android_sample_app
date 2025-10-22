@@ -35,6 +35,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.datalogic.aladdin.aladdinusbapp.R
+//import com.datalogic.aladdin.aladdinusbapp.utils.CommonUtils.rememberEnsureBluetoothEnabled
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.compose.BluetoothDeviceDropdown
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils
@@ -64,7 +65,6 @@ fun HomeTabPortrait() {
     val isBluetoothEnabled = homeViewModel.isBluetoothEnabled.observeAsState(false).value
 
     val selectedBluetoothDevice = homeViewModel.selectedBluetoothDevice.observeAsState(null).value
-    val selectedScannerBluetoothDevice = homeViewModel.selectedScannerBluetoothDevice.observeAsState(null).value
     val allBluetoothDevices = homeViewModel.allBluetoothDevices.observeAsState(ArrayList()).value
 
     val usbDeviceList = homeViewModel.usbDeviceList.observeAsState(ArrayList()).value
@@ -74,6 +74,8 @@ fun HomeTabPortrait() {
 
     val context = LocalContext.current
     val activity = context as? Activity
+//    val ensureBluetoothEnabled = rememberEnsureBluetoothEnabled(context)
+
 
     val content = @Composable {
         if (isBluetoothEnabled) {
@@ -127,7 +129,7 @@ fun HomeTabPortrait() {
             Switch(
                 checked = isBluetoothEnabled,
                 onCheckedChange = {
-                    homeViewModel.toggleConnectionType()
+                    activity?.let {homeViewModel.toggleConnectionType(activity)}
                 }
             )
 
@@ -408,7 +410,7 @@ fun HomeTabPortrait() {
 
                 Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen._15sdp)))
 
-                if(status == DeviceStatus.OPENED) {
+                if (status == DeviceStatus.OPENED) {
                     LabelIDControlDropdown(
                         modifier = Modifier
                             .semantics { contentDescription = "label_id_control_dropdown" }
@@ -592,7 +594,6 @@ fun HomeTabPortrait() {
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Log.d(TAG, "status = $status && allBluetoothDevices not empty == ${allBluetoothDevices.isNotEmpty()}")
             CustomButton(
                 modifier = Modifier
                     .weight(0.5f)
@@ -602,7 +603,9 @@ fun HomeTabPortrait() {
                 stringResource(id = R.string.open),
                 onClick = {
                     Log.d(TAG, "btn_open on click")
-                    homeViewModel.openDevice()
+                    activity?.let {
+                        homeViewModel.openDevice(activity)
+                    }
                 }
             )
             Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen._10sdp)))

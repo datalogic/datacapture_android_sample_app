@@ -1,5 +1,7 @@
 package com.datalogic.aladdin.aladdinusbapp.views.activity
 
+import android.Manifest
+import android.bluetooth.BluetoothDevice
 import android.content.Context
 import android.content.pm.ActivityInfo
 import android.hardware.usb.UsbDevice
@@ -11,6 +13,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.annotation.RequiresPermission
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
@@ -25,10 +28,13 @@ import com.datalogic.aladdin.aladdinusbapp.utils.CommonUtils
 import com.datalogic.aladdin.aladdinusbapp.viewmodel.HomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.theme.AladdinUSBAppTheme
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDeviceManager
+import com.datalogic.aladdin.aladdinusbscannersdk.model.LabelCodeType
+import com.datalogic.aladdin.aladdinusbscannersdk.model.LabelIDControl
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.AladdinConstants.CLAIM_FAILURE
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.AladdinConstants.ENABLE_FAILURE
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.AladdinConstants.OPEN_FAILURE
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.BluetoothListener
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.StatusListener
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbListener
 import java.io.File
@@ -42,6 +48,7 @@ class HomeActivity : AppCompatActivity() {
     private var TAG = HomeActivity::class.java.simpleName
     private lateinit var usbDeviceManager: DatalogicDeviceManager
     private var usbListener: UsbListener? = null
+    private var bluetoohListener: BluetoothListener? = null
     private var statusListener: StatusListener? = null
     private val homeViewModel: HomeViewModel by viewModels {
         MyViewModelFactory(usbDeviceManager, applicationContext)
@@ -63,58 +70,8 @@ class HomeActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         supportActionBar?.hide()
-        usbDeviceManager = DatalogicDeviceManager
-        usbListener = object : UsbListener {
-            override fun onDeviceAttachedListener(device: UsbDevice) {
-                homeViewModel.setDeviceStatus("Attached ${device.productName}")
-                homeViewModel.detectDevice()
-                homeViewModel.deviceReAttached(device)
-            }
-
-            override fun onDeviceDetachedListener(device: UsbDevice) {
-                homeViewModel.setDeviceStatus("Detached ${device.productName}")
-                homeViewModel.handleDeviceDisconnection(device)
-            }
-        }
-        usbListener?.let {
-            usbDeviceManager.registerUsbListener(it)
-        }
-
-        // USB connection status listener implementation
-        val statusListener = object : StatusListener {
-            override fun onStatus(productId: String, status: DeviceStatus) {
-                runOnUiThread {
-                    homeViewModel.setStatus(productId, status)
-
-                    // Update UI based on new status
-                    when (status) {
-                        DeviceStatus.OPENED -> {
-                            homeViewModel.onOpenDeviceSuccessResultAction(productId)
-                            //Setup listener
-                            homeViewModel.setupCustomListeners(homeViewModel.selectedDevice.value)
-                            showToast(applicationContext, "Device successfully opened")
-                        }
-                        DeviceStatus.CLOSED -> {
-                            showToast(applicationContext, "Device closed")
-                            homeViewModel.clearConfig()
-                        }
-                        else -> {}
-                    }
-                }
-            }
-
-            override fun onError(errorStatus: Int) {
-                runOnUiThread {
-                    when (errorStatus) {
-                        OPEN_FAILURE -> showToast(applicationContext, "Failed to open device")
-                        CLAIM_FAILURE -> showToast(applicationContext, "Failed to claim interface")
-                        ENABLE_FAILURE -> showToast(applicationContext, "Failed to enable scanner")
-                        else -> showToast(applicationContext, "Error: $errorStatus")
-                    }
-                }
-            }
-        }
-        usbDeviceManager.registerStatusListener(statusListener)
+        handlerUsbListener()
+        handlerBluetoothListener(this)
 
         setContent {
             AladdinUSBAppTheme {
@@ -174,6 +131,82 @@ class HomeActivity : AppCompatActivity() {
         homeViewModel.onCleared()
         usbListener?.let { usbDeviceManager.unregisterUsbListener(it) }
         statusListener?.let { usbDeviceManager.unregisterStatusListener(it) }
+    }
+
+    fun handlerUsbListener() {
+        usbDeviceManager = DatalogicDeviceManager
+        usbListener = object : UsbListener {
+            override fun onDeviceAttachedListener(device: UsbDevice) {
+                homeViewModel.setDeviceStatus("Attached ${device.productName}")
+                homeViewModel.detectDevice()
+                homeViewModel.deviceReAttached(device)
+            }
+
+            override fun onDeviceDetachedListener(device: UsbDevice) {
+                homeViewModel.setDeviceStatus("Detached ${device.productName}")
+                homeViewModel.handleDeviceDisconnection(device)
+            }
+        }
+        usbListener?.let {
+            usbDeviceManager.registerUsbListener(it)
+        }
+
+        // USB connection status listener implementation
+        val statusListener = object : StatusListener {
+            override fun onStatus(productId: String, status: DeviceStatus) {
+                runOnUiThread {
+                    homeViewModel.setStatus(productId, status)
+
+                    // Update UI based on new status
+                    when (status) {
+                        DeviceStatus.OPENED -> {
+                            homeViewModel.onOpenDeviceSuccessResultAction(productId)
+                            //Setup listener
+                            homeViewModel.setupCustomListeners(homeViewModel.selectedDevice.value)
+                            showToast(applicationContext, "Device successfully opened")
+                        }
+                        DeviceStatus.CLOSED -> {
+                            showToast(applicationContext, "Device closed")
+                            homeViewModel.clearConfig()
+                            homeViewModel.setSelectedLabelIDControl(LabelIDControl.DISABLE)
+                            homeViewModel.setSelectedLabelCodeType(LabelCodeType.NONE)
+                        }
+                        else -> {}
+                    }
+                }
+            }
+
+            override fun onError(errorStatus: Int) {
+                runOnUiThread {
+                    when (errorStatus) {
+                        OPEN_FAILURE -> showToast(applicationContext, "Failed to open device")
+                        CLAIM_FAILURE -> showToast(applicationContext, "Failed to claim interface")
+                        ENABLE_FAILURE -> showToast(applicationContext, "Failed to enable scanner")
+                        else -> showToast(applicationContext, "Error: $errorStatus")
+                    }
+                }
+            }
+        }
+        usbDeviceManager.registerStatusListener(statusListener)
+    }
+
+    fun handlerBluetoothListener(activity: HomeActivity) {
+        usbDeviceManager = DatalogicDeviceManager
+        bluetoohListener = object : BluetoothListener {
+            @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+            override fun onDeviceAttachedListener(device: BluetoothDevice) {
+                if (homeViewModel.status.value != DeviceStatus.OPENED) {
+                    homeViewModel.setDeviceStatus("Attached ${device.name}")
+                }
+                homeViewModel.getAllBluetoothDevice(activity)
+            }
+            override fun onDeviceDetachedListener(device: BluetoothDevice) {
+                homeViewModel.handleBluetoothDeviceDisconnection(device)
+            }
+        }
+        bluetoohListener?.let {
+            usbDeviceManager.registerBluetoothListener(it)
+        }
     }
 
 }

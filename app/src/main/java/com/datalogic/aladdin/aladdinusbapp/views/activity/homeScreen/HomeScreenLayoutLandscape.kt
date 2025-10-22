@@ -1,5 +1,6 @@
 package com.datalogic.aladdin.aladdinusbapp.views.activity.homeScreen
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
@@ -22,9 +24,12 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
+import com.datalogic.aladdin.aladdinusbapp.views.activity.customConfigurationScreen.CustomConfigurationLandscape
 import com.datalogic.aladdin.aladdinusbapp.views.activity.imageCapture.ImageCaptureTabPortrait
+import com.datalogic.aladdin.aladdinusbapp.views.activity.updateFirmware.UpdateFirmwareScreen
 import com.datalogic.aladdin.aladdinusbapp.views.compose.BottomNavigationRow
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.FooterImageView
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.HeaderImageView
@@ -40,6 +45,7 @@ fun HomeScreenLayoutLandscape() {
 
     ShowPopup((homeViewModel.openAlert && homeViewModel.selectedTabIndex.value != 6), onDismiss = { homeViewModel.openAlert = false }, stringResource(id = R.string.alert_message_for_open_device))
     ShowPopup((homeViewModel.oemAlert && homeViewModel.selectedTabIndex.value != 6), onDismiss = { homeViewModel.oemAlert = false }, stringResource(id = R.string.oem_device_feature_restriction))
+    ShowPopup((homeViewModel.bluetoothAlert && homeViewModel.selectedTabIndex.value != 6), onDismiss = { homeViewModel.bluetoothAlert = false }, stringResource(R.string.not_support_ble_device))
     ShowPopup((homeViewModel.connectDeviceAlert && homeViewModel.selectedTabIndex.value != 6), onDismiss = { homeViewModel.connectDeviceAlert = false }, stringResource(id = R.string.alert_message_for_connect_device))
     ShowPopup((homeViewModel.magellanConfigAlert  && homeViewModel.selectedTabIndex.value != 6), onDismiss = { homeViewModel.magellanConfigAlert = false }, stringResource(id = R.string.alert_message_for_magellan_config))
 
@@ -52,18 +58,20 @@ fun HomeScreenLayoutLandscape() {
             .fillMaxSize(),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        HeaderImageView(
-            modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentHeight()
-        )
+        if (selectedTab != 6) {
+            HeaderImageView(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight()
+            )
+        }
         Column(
             modifier = Modifier
                 .semantics { contentDescription = "home_tab_content_layout" }
                 .fillMaxSize()
                 .padding(
                     horizontal = dimensionResource(id = R.dimen._20sdp),
-                    vertical = dimensionResource(id = R.dimen._20sdp)
+                    vertical = dimensionResource(id = R.dimen._5sdp)
                 )
                 .weight(1f),
             verticalArrangement = Arrangement.SpaceBetween
@@ -73,38 +81,43 @@ fun HomeScreenLayoutLandscape() {
                 1 -> ConfigurationTabLandscape()
                 2 -> DirectIOTabLandscape()
                 3 -> ImageCaptureTabPortrait()
+                4 -> CustomConfigurationLandscape()
+                5 -> UpdateFirmwareScreen()
                 6 -> BluetoothTabLandscape()
             }
         }
-
-        Card(
-            shape = RoundedCornerShape(dimensionResource(id = R.dimen._10sdp)),
-            colors = CardDefaults.cardColors(colorResource(id = R.color.bottom_nav_selected_background)),
-            elevation = CardDefaults.cardElevation(defaultElevation = dimensionResource(id = R.dimen._10sdp)),
-            modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentHeight()
-                .padding(horizontal = dimensionResource(id = R.dimen._20sdp))
-        ) {
-            Text(
+        if (selectedTab != 6) {
+            Card(
+                shape = RoundedCornerShape(dimensionResource(id = R.dimen._10sdp)),
+                colors = CardDefaults.cardColors(colorResource(id = R.color.bottom_nav_selected_background)),
+                elevation = CardDefaults.cardElevation(defaultElevation = dimensionResource(id = R.dimen._10sdp)),
                 modifier = Modifier
-                    .semantics { contentDescription = "status_msg"}
                     .fillMaxWidth()
-                    .height(dimensionResource(id = R.dimen._35sdp))
-                    .padding(
-                        vertical = dimensionResource(id = R.dimen._5sdp),
-                        horizontal = dimensionResource(id = R.dimen._15sdp)
-                    ),
-                text = stringResource(id = R.string.status_label) + deviceStatus,
-                overflow = TextOverflow.Ellipsis
-            )
+                    .wrapContentHeight()
+                    .padding(horizontal = dimensionResource(id = R.dimen._20sdp))
+            ) {
+                Text(
+                    modifier = Modifier
+                        .semantics { contentDescription = "status_msg" }
+                        .fillMaxWidth()
+                        .height(dimensionResource(id = R.dimen._35sdp))
+                        .padding(
+                            vertical = dimensionResource(id = R.dimen._5sdp),
+                            horizontal = dimensionResource(id = R.dimen._15sdp)
+                        ),
+                    text = stringResource(id = R.string.status_label) + deviceStatus,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
 
-        FooterImageView(
-            modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentHeight()
-        )
+        if (selectedTab != 6) {
+            FooterImageView(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight()
+            )
+        }
 
         BottomNavigationRow(
             modifier = Modifier

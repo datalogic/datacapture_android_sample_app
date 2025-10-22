@@ -1,5 +1,6 @@
 package com.datalogic.aladdin.aladdinusbapp.views.activity.customConfigurationScreen
 
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -13,6 +14,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -25,6 +28,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
@@ -36,6 +40,8 @@ import androidx.compose.ui.unit.dp
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.viewmodel.HomeViewModel
+import com.datalogic.aladdin.aladdinusbapp.views.compose.ResetDeviceAlertDialog
+import java.util.Locale
 
 @Preview
 @Composable
@@ -46,15 +52,19 @@ fun CustomConfigurationLandscape() {
     val context = LocalContext.current
     val showDialog = remember { mutableStateOf(false) }
     val fileName = remember { mutableStateOf("") }
-    
+
     // Configuration result dialog state
     val showConfigResultDialog = remember { mutableStateOf(false) }
     val configResultTitle = remember { mutableStateOf("") }
     val configResultMessage = remember { mutableStateOf("") }
 
+    val configuration = LocalConfiguration.current
+    val heightTextField = if (configuration.screenHeightDp > 350) 300 else 150
+
     // Set up callback for configuration results
     LaunchedEffect(Unit) {
-        homeViewModel.setConfigurationResultCallback(object : HomeViewModel.ConfigurationResultCallback {
+        homeViewModel.setConfigurationResultCallback(object :
+            HomeViewModel.ConfigurationResultCallback {
             override fun onConfigurationResult(isSuccess: Boolean, title: String, message: String) {
                 configResultTitle.value = title
                 configResultMessage.value = message
@@ -88,19 +98,21 @@ fun CustomConfigurationLandscape() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(16.dp, 0.dp)
     ) {
+        val scroll = rememberScrollState()
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(scroll)
         ) {
 
-            TextField(
-                value = configData ?: "",
-                onValueChange = { textState.value = it },
+            LineNumberedTextField(
+                text = configData,
+                onTextChange = { textState.value = it },
                 modifier = Modifier
+                    .height(heightTextField.dp)
                     .fillMaxWidth()
-                    .height(300.dp),
             )
 
             Spacer(modifier = Modifier.weight(1f)) // Push buttons to bottom
@@ -147,7 +159,7 @@ fun CustomConfigurationLandscape() {
                 modifier = Modifier
                     .fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
-            ){
+            ) {
                 Button(
                     modifier = Modifier
                         .semantics { contentDescription = "btn_load" }
@@ -171,7 +183,7 @@ fun CustomConfigurationLandscape() {
                         .weight(0.5f)
                         .padding(horizontal = dimensionResource(id = R.dimen._16sdp))
                         .wrapContentSize(),
-                    onClick = { showDialog.value = true},
+                    onClick = { showDialog.value = true },
                     colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary)),
                 ) {
                     Text(
@@ -212,20 +224,37 @@ fun CustomConfigurationLandscape() {
             }
         )
     }
-    
+
     // Configuration result dialog
     if (showConfigResultDialog.value) {
-        AlertDialog(
-            onDismissRequest = { showConfigResultDialog.value = false },
-            title = { Text(configResultTitle.value) },
-            text = { Text(configResultMessage.value) },
-            confirmButton = {
-                Button(
-                    onClick = { showConfigResultDialog.value = false }
-                ) {
-                    Text("OK")
-                }
-            }
+        Log.d(
+            "Custom config",
+            "[showConfigResultDialog] configResultTitle: ${configResultTitle.value}"
         )
+
+        if (configResultTitle.value.toUpperCase(Locale.ROOT) == "SUCCESSFULLY") {
+            homeViewModel.showResetDeviceDialog = true
+            Log.d("Custom config", "[showConfigResultDialog] showResetDeviceDialog == true")
+        } else {
+            AlertDialog(
+                onDismissRequest = { showConfigResultDialog.value = false },
+                title = { Text(configResultTitle.value) },
+                text = { Text(configResultMessage.value) },
+                confirmButton = {
+                    Button(
+                        onClick = { showConfigResultDialog.value = false }
+                    ) {
+                        Text("OK")
+                    }
+                }
+            )
+        }
+    }
+
+    if (homeViewModel.showResetDeviceDialog) {
+        Log.d("Custom config", "[showConfigResultDialog] showResetDeviceDialog == true")
+        ResetDeviceAlertDialog(homeViewModel, customConfig = false)
+        showConfigResultDialog.value = false
+        Log.d("Custom config", "[showConfigResultDialog] showConfigResultDialog.value = false")
     }
 }

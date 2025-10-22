@@ -64,9 +64,7 @@ fun ImageCaptureTabPortrait() {
 
     DisposableEffect(imageCaptureModel) {
         imageCaptureModel.setImageCallback { bitmap ->
-            if (bitmap != null) {
-                previewImage = bitmap
-            }
+            previewImage = bitmap
         }
         onDispose {
             imageCaptureModel.setImageCallback(null)
@@ -115,19 +113,16 @@ fun ImageCaptureTabPortrait() {
         }
 
         // You can similarly implement Image Format if needed.
-        CaptureButtons(imageCaptureModel)
+        CaptureButtons(imageCaptureModel, onBeforeCapture = { previewImage = null })
 
         Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp),
+            modifier = Modifier.fillMaxWidth(),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         )
         {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(200.dp)
                     .background(Color.LightGray)
                     .padding(16.dp),
                 contentAlignment = Alignment.Center
@@ -191,7 +186,7 @@ fun DropdownRow(
 }
 
 @Composable
-fun CaptureButtons(model: HomeViewModel) {
+fun CaptureButtons(model: HomeViewModel, onBeforeCapture: () -> Unit) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.fillMaxWidth()
@@ -206,8 +201,11 @@ fun CaptureButtons(model: HomeViewModel) {
             }
 
             ToggleableButton(label = label, onClick = {
-                when (label) {
-                    "Capture Auto" -> model.startCaptureAuto()
+                when(label) {
+                    "Capture Auto" -> {
+                        onBeforeCapture()
+                        model.startCaptureAuto()
+                    }
                 }
             }, selected = controlledSelected)
         }

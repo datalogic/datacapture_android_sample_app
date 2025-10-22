@@ -60,8 +60,8 @@
     <string name="configuration_empty">Configuration is empty</string>
     <string name="file_name_empty">File name is empty</string>
     <string name="update_firmware">Update Firmware</string>
-    <string name="btn_load_file">Load file</string>
-    <string name="btn_upgrade_firmware">Upgrade firmware</string>
+    <string name="btn_load_file">Load File</string>
+    <string name="btn_upgrade_firmware">Upgrade Firmware</string>
     <string name="btn_upgrade_complete">Upgrade complete</string>
     <string name="txt_done">Upgrade Completed!</string>
     <string name="reset_device_title">Reset Device</string>
@@ -72,11 +72,15 @@
     <string name="directory_label">Directory</string>
     <string name="upgrade_configuration_title">Upgrade Configuration</string>
     <string name="check_pid_label">Check PID</string>
-    <string name="bulk_transfer_label">Bulk Transfer</string>
+    <string name="bulk_transfer_label">Bulk Transfer (MG 9600i/9900i, 900i, 9550i)</string>
     <string name="pid_is_not_valid">PID is not valid</string>
     <string name="bulk_transfer_is_not_valid">Bulk Transfer is not valid</string>
     <string name="swu_is_not_valid">SWU firmware is invalid.</string>
     <string name="ok">OK</string>
     <string name="msg_restart_device">Your device has been successfully upgraded with the new firmware. Please restart the device to complete the upgrade process.</string>
-    <string name="scan_to_pair">Scan below barcode to pair your device</string>
+    <string name="scan_to_pair">Scan below barcode to pair your device.</string>
+    <string name="device_paired_successfully">Device paired successfully.</string>
+    <string name="device_pairing_fail">Problem occurred while pairing. Please unlink your device and try again.</string>
+    <string name="scan_unlink_barcode">Please scan the barcode below to deactivate the Bluetooth connection from your devices.</string>
+    <string name="not_support_ble_device">This feature is not supported on Bluetooth devices</string>
 </resources>

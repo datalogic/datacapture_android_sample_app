@@ -45,7 +45,8 @@ fun HomeScreenLayoutPortrait() {
 
 //    ShowPopup((homeViewModel.bluetoothPermission.value == false && homeViewModel.selectedTabIndex.value == 6), onDismiss = { homeViewModel.openAlert = false }, stringResource(id = R.string.alert_message_for_open_device))
     ShowPopup((homeViewModel.openAlert && homeViewModel.selectedTabIndex.value != 6), onDismiss = { homeViewModel.openAlert = false }, stringResource(id = R.string.alert_message_for_open_device))
-    ShowPopup((homeViewModel.oemAlert && homeViewModel.selectedTabIndex.value != 6), onDismiss = { homeViewModel.oemAlert = false }, stringResource(id = R.string.oem_device_feature_restriction))
+    ShowPopup((homeViewModel.oemAlert && homeViewModel.selectedTabIndex.value != 6), onDismiss = { homeViewModel.oemAlert = false }, stringResource(R.string.oem_device_feature_restriction))
+    ShowPopup((homeViewModel.bluetoothAlert && homeViewModel.selectedTabIndex.value != 6), onDismiss = { homeViewModel.bluetoothAlert = false }, stringResource(R.string.not_support_ble_device))
     ShowPopup((homeViewModel.connectDeviceAlert && homeViewModel.selectedTabIndex.value != 6), onDismiss = { homeViewModel.connectDeviceAlert = false }, stringResource(id = R.string.alert_message_for_connect_device))
     ShowPopup((homeViewModel.magellanConfigAlert  && homeViewModel.selectedTabIndex.value != 6), onDismiss = { homeViewModel.magellanConfigAlert = false }, stringResource(id = R.string.alert_message_for_magellan_config))
 
@@ -62,18 +63,21 @@ fun HomeScreenLayoutPortrait() {
             .fillMaxSize(),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        HeaderImageView(
-            modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentHeight()
-        )
+
+        if (selectedTab != 6) {
+            HeaderImageView(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight()
+            )
+        }
         Column(
             modifier = Modifier
                 .semantics { contentDescription = "home_tab_content_layout" }
                 .fillMaxSize()
                 .padding(
                     horizontal = dimensionResource(id = R.dimen._20sdp),
-                    vertical = dimensionResource(id = R.dimen._20sdp)
+                    vertical = dimensionResource(id = R.dimen._5sdp)
                 )
                 .weight(1f),
             verticalArrangement = Arrangement.SpaceBetween
@@ -101,7 +105,7 @@ fun HomeScreenLayoutPortrait() {
             ) {
                 Text(
                     modifier = Modifier
-                        .semantics { contentDescription = "status_msg"}
+                        .semantics { contentDescription = "status_msg" }
                         .fillMaxWidth()
                         .height(dimensionResource(id = R.dimen._35sdp))
                         .padding(

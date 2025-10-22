@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
@@ -36,13 +38,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.datalogic.aladdin.aladdinusbapp.R
-import com.datalogic.aladdin.aladdinusbapp.utils.FileConstants
 import com.datalogic.aladdin.aladdinusbapp.utils.FileUtils
 import com.datalogic.aladdin.aladdinusbapp.viewmodel.HomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ReleaseInformationCard
-import com.datalogic.aladdin.aladdinusbapp.views.compose.ResetDeviceAlertDialog
 import com.datalogic.aladdin.aladdinusbapp.views.compose.UpgradeConfigurationCard
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.FileConstants
 import java.io.File
 
 @Preview(showBackground = true)
@@ -63,21 +64,25 @@ fun UpdateFirmwareScreen() {
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri: Uri? ->
             uri?.let {
-                swName = FileUtils.getFileNameFromUri(context, it)
-                    .toString().replace(".S37", "")
-                    .replace(".swu", "")
-                fileType = FileUtils.getFileNameFromUri(context, it)
-                    ?.let { it1 -> FileUtils.getFileExtension(it1) }.toString().uppercase()
-                file = FileUtils.getFileFromUri(context, it)
-                isLoadFile.value = true
-                if(fileType != FileConstants.DFW_FILE_TYPE) {
-                    pid = homeViewModel.getPid(file, fileType).toString()
-                }
-                filePath = file?.absolutePath ?: ""
-                val realPath = FileUtils.getRealPathFromUri(context, it)
-                if (realPath != null) {
-                    val file1 = File(realPath)
-                    filePath = file1.parent?.toString() ?: ""
+                val fileName = FileUtils.getFileNameFromUri(context, it).toString()
+                val fileSupport = fileName.contains(".S37", true) ||
+                                  fileName.contains(".SWU", true) ||
+                                  fileName.contains(".DFW", true)
+                if (fileSupport)
+                {
+                    swName = fileName.replace(".S37", "").replace(".swu", "")
+                    fileType = FileUtils.getFileNameFromUri(context, it)
+                        ?.let { it1 -> FileUtils.getFileExtension(it1) }.toString().uppercase()
+                    file = FileUtils.getFileFromUri(context, it)
+                    isLoadFile.value = true
+                    pid = if (fileType != FileConstants.DFW_FILE_TYPE) {
+                        homeViewModel.getPid(file, fileType).toString()
+                    } else {
+                        homeViewModel.getPidDWF(file, fileType)
+                    }
+                    filePath = FileUtils.getDisplayPath(context, uri) ?: ""
+                } else {
+                    Toast.makeText(context, "This file is not supported", Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -92,13 +97,16 @@ fun UpdateFirmwareScreen() {
             .fillMaxSize()
             .padding(8.dp)
     ) {
+        val scroll = rememberScrollState()
         Column(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(scroll),
             verticalArrangement = Arrangement.SpaceBetween,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // FW information
-            if(isLoadFile.value) {
+            if (isLoadFile.value) {
                 ReleaseInformationCard(swName, pid, filePath)
                 Spacer(modifier = Modifier.height(4.dp))
                 UpgradeConfigurationCard(
@@ -117,9 +125,9 @@ fun UpdateFirmwareScreen() {
                 )
             }
             // Progress Section
-            
+
             Spacer(modifier = Modifier.weight(1f))
-            
+
             // Buttons at bottom
             Row(
                 modifier = Modifier
@@ -132,7 +140,8 @@ fun UpdateFirmwareScreen() {
                         .weight(1f)
                         .fillMaxHeight(),
                     onClick = {
-                        filePickerLauncher.launch("application/octet-stream") },
+                        filePickerLauncher.launch("application/octet-stream")
+                    },
                     enabled = true,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = colorResource(id = R.color.colorPrimary),
@@ -159,14 +168,26 @@ fun UpdateFirmwareScreen() {
                             if (isCheckPidToggle && fileType == FileConstants.S37_FILE_TYPE) {
                                 homeViewModel.setPid(it, fileType) { isValid ->
                                     if (isCheckPidToggle != isValid) {
-                                        Toast.makeText(context, context.getString(R.string.pid_is_not_valid), Toast.LENGTH_LONG).show()
+                                        Toast.makeText(context,context.getString(R.string.pid_is_not_valid),Toast.LENGTH_LONG).show()
                                         return@setPid
                                     }
                                     handleBulkTransferAndUpgrade(it, isBulkTransferToggle, homeViewModel, context, fileType)
                                 }
                                 return@let
+                            } else if (isCheckPidToggle && fileType == FileConstants.DFW_FILE_TYPE) {
+                                homeViewModel.setPidDWF(it, fileType) { isValid ->
+                                    if (isCheckPidToggle != isValid) {
+                                        Toast.makeText(context,context.getString(R.string.pid_is_not_valid),Toast.LENGTH_LONG).show()
+                                        return@setPidDWF
+                                    }
+                                    handleBulkTransferAndUpgrade(it, isBulkTransferToggle, homeViewModel, context, fileType)
+                                }
+                                return@let
+                            } else if (fileType == FileConstants.SWU_FILE_TYPE) {
+                                handleBulkTransferAndUpgrade(it, isBulkTransferToggle, homeViewModel, context, fileType)
+                            } else {
+                                Toast.makeText(context, "This file is not supported", Toast.LENGTH_SHORT).show()
                             }
-                            handleBulkTransferAndUpgrade(it, isBulkTransferToggle, homeViewModel, context, fileType)
                         }
                     },
                     enabled = isLoadFile.value,
@@ -205,7 +226,7 @@ fun handleBulkTransferAndUpgrade(
                 ).show()
                 return@getBulkTransferSupported
             } else {
-                homeViewModel.upgradeFirmware(file, fileType)
+                homeViewModel.upgradeFirmware(file, fileType, true)
                 return@getBulkTransferSupported
             }
         }
