@@ -1478,8 +1478,11 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                     }
                 }
 
-                it.upgradeFirmware(
-                    file, fileType,
+                it.upgradeOnlyFirmware(
+                    file, fileType, context,
+                    resetCallback = {
+                        showResetDeviceDialog = true
+                    },
                     progressCallback = { progress ->
                         run {
                             _progressUpgrade.postValue(progress)
@@ -1499,11 +1502,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         _isLoadingPercent.postValue(true)
         viewModelScope.launch(Dispatchers.IO) {
             selectedDevice.value?.let {
-                it.loadFirmwareFile(file!!, fileType, context, resetCallback = {
-                    if(fileType == FileConstants.DFW_FILE_TYPE) {
-                        showResetDeviceDialog = true
-                    }
-                }, onCompleteLoadFirmware = {
+                it.loadFirmwareFile(file!!, fileType, context,
+                    onCompleteLoadFirmware = {
                     _isLoadingPercent.postValue(false)
                 }, progressCallback = { progress ->
                     run {
@@ -1514,9 +1514,9 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         }
     }
 
-    fun getPid(file: File?, fileType: String): String? {
+    fun getPid(file: File?, fileType: String, context: Context): String? {
         selectedDevice.value?.let {
-            return it.getPid(file, fileType)
+            return it.getPid(file, fileType, context)
         }
         return ""
     }
@@ -1532,10 +1532,10 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         return ""
     }
 
-    fun getBulkTransferSupported(file: File?, fileType: String, onResult: (Boolean) -> Unit) {
+    fun getBulkTransferSupported(file: File?, fileType: String, onResult: (Boolean) -> Unit, context: Context) {
         viewModelScope.launch(Dispatchers.IO) {
             selectedDevice.value?.let {
-                val supported = it.isBulkTransferSupported(file, fileType)
+                val supported = it.isBulkTransferSupported(file, fileType, context)
                 _isBulkTransferSupported.postValue(supported)
                 withContext(Dispatchers.Main) {
                     supported?.let { supported -> onResult(supported) }
@@ -1553,13 +1553,13 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         return selectedDevice.value?.deviceType == DeviceType.FRS
     }
 
-    fun setPid(file: File?, fileType: String, onResult: (Boolean) -> Unit) {
-        val result = selectedDevice.value?.isCheckPid(file, fileType) ?: false
+    fun setPid(file: File?, fileType: String, onResult: (Boolean) -> Unit, context: Context) {
+        val result = selectedDevice.value?.isCheckPid(file, fileType, context) ?: false
         setCheckPid(result)
         onResult(result)
     }
 
-    fun setPidDWF(file: File?, fileType: String, onResult: (Boolean) -> Unit) {
+    fun setPidDWF(file: File, fileType: String, onResult: (Boolean) -> Unit) {
         selectedDevice.value?.let {
             val result = it.isCheckPidDFW(file, fileType, context)
             if (result != null) {
@@ -1641,8 +1641,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         _isLoggingEnabled.value = logcatHelper.isActive()
     }
 
-    fun isSWUValid(file: File): Boolean? {
-        return selectedDevice.value?.isSWUFirmwareValid(file)
+    fun isSWUValid(file: File, context: Context): Boolean? {
+        return selectedDevice.value?.isSWUFirmwareValid(file, context)
     }
 
     fun getAllBluetoothDevice(activity: Activity) : Boolean {

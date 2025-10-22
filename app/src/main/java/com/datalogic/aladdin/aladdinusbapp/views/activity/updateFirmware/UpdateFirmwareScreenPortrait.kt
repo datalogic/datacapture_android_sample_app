@@ -76,7 +76,7 @@ fun UpdateFirmwareScreen() {
                     file = FileUtils.getFileFromUri(context, it)
                     isLoadFile.value = true
                     pid = if (fileType != FileConstants.DFW_FILE_TYPE) {
-                        homeViewModel.getPid(file, fileType).toString()
+                        homeViewModel.getPid(file, fileType, context).toString()
                     } else {
                         homeViewModel.getPidDWF(file, fileType)
                     }
@@ -168,13 +168,13 @@ fun UpdateFirmwareScreen() {
                     onClick = {
                         file?.let {
                             if (isCheckPidToggle && fileType == FileConstants.S37_FILE_TYPE) {
-                                homeViewModel.setPid(it, fileType) { isValid ->
+                                homeViewModel.setPid(it, fileType, { isValid ->
                                     if (isCheckPidToggle != isValid) {
                                         Toast.makeText(context,context.getString(R.string.pid_is_not_valid),Toast.LENGTH_LONG).show()
                                         return@setPid
                                     }
                                     handleBulkTransferAndUpgrade(it, isBulkTransferToggle, homeViewModel, context, fileType)
-                                }
+                                }, context)
                                 return@let
                             } else if (isCheckPidToggle && fileType == FileConstants.DFW_FILE_TYPE) {
                                 homeViewModel.setPidDWF(it, fileType) { isValid ->
@@ -219,7 +219,7 @@ fun handleBulkTransferAndUpgrade(
     fileType: String
 ) {
     if (isBulkTransferToggle) {
-        homeViewModel.getBulkTransferSupported(file, fileType) { supported ->
+        homeViewModel.getBulkTransferSupported(file, fileType, { supported ->
             if (isBulkTransferToggle != supported) {
                 Toast.makeText(
                     context,
@@ -231,10 +231,10 @@ fun handleBulkTransferAndUpgrade(
                 homeViewModel.upgradeFirmware(file, fileType, true)
                 return@getBulkTransferSupported
             }
-        }
+        }, context)
     } else {
         if (fileType == FileConstants.SWU_FILE_TYPE) {
-            if (!homeViewModel.isSWUValid(file)!!) {
+            if (!homeViewModel.isSWUValid(file, context)!!) {
                 Toast.makeText(
                     context,
                     context.getString(R.string.swu_is_not_valid),
