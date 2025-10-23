@@ -219,7 +219,7 @@ fun handleBulkTransferAndUpgrade(
     fileType: String
 ) {
     if (isBulkTransferToggle) {
-        homeViewModel.getBulkTransferSupported(file, fileType, { supported ->
+        homeViewModel.getBulkTransferSupported({ supported ->
             if (isBulkTransferToggle != supported) {
                 Toast.makeText(
                     context,
@@ -228,10 +228,10 @@ fun handleBulkTransferAndUpgrade(
                 ).show()
                 return@getBulkTransferSupported
             } else {
-                homeViewModel.upgradeFirmware(file, fileType, true)
+                homeViewModel.upgradeFirmware(true)
                 return@getBulkTransferSupported
             }
-        }, context)
+        })
     } else {
         if (fileType == FileConstants.SWU_FILE_TYPE) {
             if (!homeViewModel.isSWUValid(file, context)!!) {
@@ -243,6 +243,6 @@ fun handleBulkTransferAndUpgrade(
                 return
             }
         }
-        homeViewModel.upgradeFirmware(file, fileType)
+        homeViewModel.upgradeFirmware(false)
     }
 }

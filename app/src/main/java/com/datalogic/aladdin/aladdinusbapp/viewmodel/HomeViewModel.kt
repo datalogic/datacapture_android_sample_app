@@ -1467,19 +1467,12 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         }
     }
 
-    fun upgradeFirmware(file: File, fileType: String, isBulkTransfer: Boolean = false) {
+    fun upgradeFirmware(isBulkTransfer: Boolean = false) {
         _progressUpgrade.postValue(0)
         _isLoadingPercent.postValue(true)
         viewModelScope.launch(Dispatchers.IO) {
             selectedDevice.value?.let {
-                when (fileType) {
-                    FileConstants.DFW_FILE_TYPE -> {
-                        showResetDeviceDialog = true
-                    }
-                }
-
-                it.upgradeOnlyFirmware(
-                    file, fileType, context,
+                it.upgradeLoadedFirmware(
                     resetCallback = {
                         showResetDeviceDialog = true
                     },
@@ -1532,10 +1525,10 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
         return ""
     }
 
-    fun getBulkTransferSupported(file: File?, fileType: String, onResult: (Boolean) -> Unit, context: Context) {
+    fun getBulkTransferSupported(onResult: (Boolean) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             selectedDevice.value?.let {
-                val supported = it.isBulkTransferSupported(file, fileType, context)
+                val supported = it.isBulkTransferSupported()
                 _isBulkTransferSupported.postValue(supported)
                 withContext(Dispatchers.Main) {
                     supported?.let { supported -> onResult(supported) }
