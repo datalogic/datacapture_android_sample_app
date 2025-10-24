@@ -3,6 +3,7 @@ package com.datalogic.aladdin.aladdinusbapp.viewmodel
 import DatalogicBluetoothDevice
 import android.Manifest
 import android.app.Activity
+import android.bluetooth.BluetoothDevice
 import android.content.ContentValues
 import android.content.Context
 import android.content.pm.PackageManager
