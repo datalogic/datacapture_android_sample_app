@@ -206,7 +206,7 @@ class HomeActivity : AppCompatActivity() {
 
         // USB connection status listener implementation
         val statusListener = object : StatusListener {
-            override fun onStatus(productId: String, status: DeviceStatus) {
+            override fun onStatus(productId: String, status: DeviceStatus, deviceName: String) {
                 runOnUiThread {
                     homeViewModel.setStatus(productId, status)
 
@@ -215,7 +215,7 @@ class HomeActivity : AppCompatActivity() {
                         DeviceStatus.OPENED -> {
                             homeViewModel.onOpenDeviceSuccessResultAction(productId)
                             //Setup listener
-                            homeViewModel.setupCustomListeners(homeViewModel.selectedDevice.value)
+                            homeViewModel.setupCustomListeners(homeViewModel.deviceList.value?.firstOrNull {it.id == deviceName})
                             showToast(applicationContext, "Device successfully opened")
                         }
                         DeviceStatus.CLOSED -> {
