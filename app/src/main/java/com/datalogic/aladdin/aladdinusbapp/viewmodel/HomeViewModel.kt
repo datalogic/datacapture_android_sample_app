@@ -1807,11 +1807,11 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                 Log.d(tag, "[setSelectedBluetoothDevice] do not have permission")
                 _status.postValue(DeviceStatus.NONE)
             }
-            _status.postValue(DeviceStatus.CLOSED)
+            //_status.postValue(DeviceStatus.CLOSED)
             _deviceStatus.postValue("Selected: ${device.name}")
         } ?: run {
             _deviceStatus.postValue("No device selected")
-            _status.postValue(DeviceStatus.NONE)
+            //_status.postValue(DeviceStatus.NONE)
         }
         selectedBluetoothDevice.value = device
         selectedDevice.value = null
