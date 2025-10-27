@@ -1490,19 +1490,22 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
     fun loadFirmwareFile(
         file: File?,
         fileType: String,
-        context: Context
+        context: Context,
+        onCompleteLoadFirmware: () -> Unit
     ) {
         _isLoadingPercent.postValue(true)
         viewModelScope.launch(Dispatchers.IO) {
             selectedDevice.value?.let {
-                it.loadFirmwareFile(file!!, fileType, context,
+                it.loadFirmwareFile(
+                    file!!, fileType, context,
                     onCompleteLoadFirmware = {
-                    _isLoadingPercent.postValue(false)
-                }, progressCallback = { progress ->
-                    run {
-                        _progressUpgrade.postValue(progress)
-                    }
-                } )
+                        _isLoadingPercent.postValue(false)
+                        onCompleteLoadFirmware()
+                    }, progressCallback = { progress ->
+                        run {
+                            _progressUpgrade.postValue(progress)
+                        }
+                    })
             }
         }
     }

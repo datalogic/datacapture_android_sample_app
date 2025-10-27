@@ -75,17 +75,20 @@ fun UpdateFirmwareScreen() {
                         ?.let { it1 -> FileUtils.getFileExtension(it1) }.toString().uppercase()
                     file = FileUtils.getFileFromUri(context, it)
                     isLoadFile.value = true
-                    pid = if (fileType != FileConstants.DFW_FILE_TYPE) {
-                        homeViewModel.getPid(file, fileType, context).toString()
-                    } else {
-                        homeViewModel.getPidDWF(file, fileType)
-                    }
+                    homeViewModel.loadFirmwareFile(file, fileType, context,
+                        onCompleteLoadFirmware =  {
+                        pid = if (fileType != FileConstants.DFW_FILE_TYPE) {
+                            homeViewModel.getPid(file, fileType, context).toString()
+                        } else {
+                            homeViewModel.getPidDWF(file, fileType)
+                        }
+                    })
+
                     filePath = FileUtils.getDisplayPath(context, uri) ?: ""
                 } else {
                     Toast.makeText(context, "This file is not supported", Toast.LENGTH_LONG).show()
                 }
                 filePath = FileUtils.getDisplayPath(context, uri) ?: ""
-                homeViewModel.loadFirmwareFile(file, fileType, context)
             }
         }
     )
