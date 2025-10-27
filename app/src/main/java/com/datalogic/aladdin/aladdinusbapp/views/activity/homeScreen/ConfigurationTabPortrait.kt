@@ -71,8 +71,10 @@ fun ConfigurationTabPortrait() {
 
     val isButtonClicked = remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        homeViewModel.readConfigData()
+    LaunchedEffect(configData, selectedUsbDevice) {
+        if (selectedUsbDevice != null) homeViewModel.readConfigData()
+        checkedStates.clear()
+        checkedStates.putAll(configData)
     }
 
     Column(
