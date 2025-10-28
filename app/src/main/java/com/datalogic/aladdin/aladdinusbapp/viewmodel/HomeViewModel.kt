@@ -43,6 +43,7 @@ import com.datalogic.aladdin.aladdinusbscannersdk.model.LabelCodeType
 import com.datalogic.aladdin.aladdinusbscannersdk.model.LabelIDControl
 import com.datalogic.aladdin.aladdinusbscannersdk.model.ScaleData
 import com.datalogic.aladdin.aladdinusbscannersdk.model.UsbScanData
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.AladdinConstants.CONFIG_ERR_FAILURE
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.BluetoothPairingStatus
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.BluetoothProfile
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ConfigurationFeature
@@ -240,6 +241,9 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
 
     private val _qrBitmap = MutableLiveData<Bitmap>()
     val qrBitmap: LiveData<Bitmap> get() = _qrBitmap
+
+    private val _msgConfigError = MutableLiveData("")
+    val msgConfigError: LiveData<String> = _msgConfigError
 
     private val mainHandler = Handler(Looper.getMainLooper())
     private val bufferBluetoothData = ArrayDeque<ByteArray>()
@@ -528,7 +532,11 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                     errorCode: Int,
                     message: String
                 ) {
-                    showToast(context, message + errorCode)
+                    if (errorCode == CONFIG_ERR_FAILURE) {
+                        setMsgConfigError(message + errorCode)
+                    } else {
+                        showToast(context, message + errorCode)
+                    }
                 }
             }
             device.registerUsbDioListener(usbErrorListener)
@@ -1841,6 +1849,10 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                 )
             }
         }
+    }
+
+    fun setMsgConfigError(message: String) {
+        _msgConfigError.postValue(message)
     }
 }
 
