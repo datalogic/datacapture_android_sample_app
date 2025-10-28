@@ -533,7 +533,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                     message: String
                 ) {
                     if (errorCode == CONFIG_ERR_FAILURE) {
-                        setMsgConfigError(message)
+                        setMsgConfigError(message + errorCode)
                     } else {
                         showToast(context, message + errorCode)
                     }
@@ -1724,7 +1724,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                             errorCode: Int,
                             message: String
                         ) {
-                            showToast(context, "$message - Code: $errorCode")
+                            showToast(context, message + errorCode)
                         }
                     }
                     selectedScannerBluetoothDevice.value?.registerBluetoothDioListener(
