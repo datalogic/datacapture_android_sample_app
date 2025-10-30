@@ -24,14 +24,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
-import com.datalogic.aladdin.aladdinusbapp.views.activity.customConfigurationScreen.CustomConfigurationLandscape
-import com.datalogic.aladdin.aladdinusbapp.views.activity.devicesScreen.DeviceListScreen
+import com.datalogic.aladdin.aladdinusbapp.views.activity.customConfigurationScreen.CustomConfigurationPortrait
 import com.datalogic.aladdin.aladdinusbapp.views.activity.imageCapture.ImageCaptureTabPortrait
+import com.datalogic.aladdin.aladdinusbapp.views.activity.scannerScreen.ScannerScreenPortrait
 import com.datalogic.aladdin.aladdinusbapp.views.activity.updateFirmware.UpdateFirmwareScreen
 import com.datalogic.aladdin.aladdinusbapp.views.compose.BottomNavigationRow
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.FooterImageView
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.HeaderImageView
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.ShowLoading
+import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.ShowPercentLoading
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.ShowPopup
 
 @Composable
@@ -40,15 +41,23 @@ fun HomeScreenLayoutLandscape() {
     val deviceStatus = homeViewModel.deviceStatus.observeAsState("").value
     val selectedTab by homeViewModel.selectedTabIndex.observeAsState(0)
     var isLoading = homeViewModel.isLoading.observeAsState().value
+    var isLoadingPercent = homeViewModel.isLoadingPercent.observeAsState().value
+    var progressUpgrade = homeViewModel.progressUpgrade.observeAsState().value
 
+//    ShowPopup((homeViewModel.bluetoothPermission.value == false && homeViewModel.selectedTabIndex.value == 6), onDismiss = { homeViewModel.openAlert = false }, stringResource(id = R.string.alert_message_for_open_device))
     ShowPopup((homeViewModel.openAlert && homeViewModel.selectedTabIndex.value != 6), onDismiss = { homeViewModel.openAlert = false }, stringResource(id = R.string.alert_message_for_open_device))
-    ShowPopup((homeViewModel.oemAlert && homeViewModel.selectedTabIndex.value != 6), onDismiss = { homeViewModel.oemAlert = false }, stringResource(id = R.string.oem_device_feature_restriction))
+    ShowPopup((homeViewModel.oemAlert && homeViewModel.selectedTabIndex.value != 6), onDismiss = { homeViewModel.oemAlert = false }, stringResource(R.string.oem_device_feature_restriction))
     ShowPopup((homeViewModel.bluetoothAlert && homeViewModel.selectedTabIndex.value != 6), onDismiss = { homeViewModel.bluetoothAlert = false }, stringResource(R.string.not_support_ble_device))
-    ShowPopup((homeViewModel.connectDeviceAlert && homeViewModel.selectedTabIndex.value != 6), onDismiss = { homeViewModel.connectDeviceAlert = false }, stringResource(id = R.string.alert_message_for_connect_device))
+    /*ShowPopup((homeViewModel.connectDeviceAlert && homeViewModel.selectedTabIndex.value != 6 ||
+            homeViewModel.selectedTabIndex.value != 7), onDismiss = { homeViewModel.connectDeviceAlert = false }, stringResource(id = R.string.alert_message_for_connect_device))*/
     ShowPopup((homeViewModel.magellanConfigAlert  && homeViewModel.selectedTabIndex.value != 6), onDismiss = { homeViewModel.magellanConfigAlert = false }, stringResource(id = R.string.alert_message_for_magellan_config))
 
     if (isLoading!!) {
         ShowLoading(onDismiss = { isLoading = false })
+    }
+
+    if (isLoadingPercent!!) {
+        ShowPercentLoading(onDismiss = { isLoading = false }, "$progressUpgrade%")
     }
 
     Column(
@@ -56,6 +65,7 @@ fun HomeScreenLayoutLandscape() {
             .fillMaxSize(),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
+
         if (selectedTab != 6) {
             HeaderImageView(
                 modifier = Modifier
@@ -75,17 +85,32 @@ fun HomeScreenLayoutLandscape() {
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             when (selectedTab) {
-                0 -> HomeTabLandscape()
-                1 -> ConfigurationTabLandscape()
-                2 -> DirectIOTabLandscape()
-                3 -> ImageCaptureTabPortrait()
-                4 -> CustomConfigurationLandscape()
-                5 -> UpdateFirmwareScreen()
-                6 -> BluetoothTabLandscape()
-                7 -> DeviceListScreen()
-
+                0 -> HomeTabPortrait()
+                1 ->{
+                    homeViewModel.setDefaultDevice()
+                    ConfigurationTabPortrait()
+                }
+                2 -> {
+                    homeViewModel.setDefaultDevice()
+                    DirectIOTabPortrait()
+                }
+                3 ->{
+                    homeViewModel.setDefaultDevice()
+                    ImageCaptureTabPortrait()
+                }
+                4 -> {
+                    homeViewModel.setDefaultDevice()
+                    CustomConfigurationPortrait()
+                }
+                5 ->{
+                    homeViewModel.setDefaultDevice()
+                    UpdateFirmwareScreen()
+                }
+                6 -> BluetoothTabPortrait()
+                7 -> ScannerScreenPortrait()
             }
         }
+
         if (selectedTab != 6) {
             Card(
                 shape = RoundedCornerShape(dimensionResource(id = R.dimen._10sdp)),
@@ -111,13 +136,11 @@ fun HomeScreenLayoutLandscape() {
             }
         }
 
-        if (selectedTab != 6) {
-            FooterImageView(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight()
-            )
-        }
+        FooterImageView(
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight()
+        )
 
         BottomNavigationRow(
             modifier = Modifier

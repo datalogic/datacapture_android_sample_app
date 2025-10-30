@@ -22,253 +22,261 @@ package com.datalogic.aladdin.aladdinusbapp.views.activity.devicesScreen
 import DatalogicBluetoothDevice
 import android.app.Activity
 import android.content.ContentValues.TAG
+import android.hardware.usb.UsbDevice
 import android.util.Log
-import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.CustomButtonRow
+import com.datalogic.aladdin.aladdinusbapp.views.compose.ConnectionTypeDropdown
+import com.datalogic.aladdin.aladdinusbapp.views.compose.DeviceTypeDropdown
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
-import kotlinx.coroutines.delay
-import java.util.UUID
-
-// --------- Data layer (sample) ---------
-
-data class Device(
-    val id: String = UUID.randomUUID().toString(),
-    val name: String,
-    val model: String,
-    val isActive: Boolean,
-    val owner: String? = null,
-)
-
-enum class DeviceFilter { All, Active, Inactive }
-
-@Immutable
-data class DevicesUiState(
-    val devices: List<DatalogicDevice> = emptyList(),
-    val query: String = "",
-    val filter: DeviceFilter = DeviceFilter.All,
-    val isLoading: Boolean = false,
-    val error: String? = null,
-    val selectedIds: Set<String> = emptySet(),
-)
-
-// Simulated repository for demo purposes.
-object DevicesRepositoryMock {
-    private val seed = listOf(
-        Device(name = "Pixel 8 Pro", model = "Google", isActive = true, owner = "Nora"),
-        Device(name = "Galaxy S22", model = "Samsung", isActive = false, owner = "Lee"),
-        Device(name = "Nothing Phone (2)", model = "Nothing", isActive = true, owner = "Sam"),
-        Device(name = "Xperia 5", model = "Sony", isActive = false),
-        Device(name = "Redmi Note 13", model = "Xiaomi", isActive = true),
-        Device(name = "Moto G Power", model = "Motorola", isActive = false),
-    )
-
-    suspend fun load(): List<Device> {
-        delay(600) // simulate network
-        return seed
-    }
-}
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.lifecycle.compose.LocalLifecycleOwner
 
 // --------- UI layer ---------
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DevicesScreen(
-    usbDeviceList: ArrayList<DatalogicDevice>,
-    bluetoothDeviceList: ArrayList<DatalogicBluetoothDevice>,
+fun BluetoothDeviceItem(device: DatalogicBluetoothDevice, modifier: Modifier = Modifier) {
+    BluetoothDeviceRow(device = device, modifier = modifier)
+}
+
+@Composable
+fun DeviceRow(
+    dlDevice: DatalogicDevice?,
+    usbDevice: UsbDevice?,
     modifier: Modifier = Modifier,
-) {
-    val snackbarHostState = remember { SnackbarHostState() }
-
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
-    ) { inner ->
-        Column(modifier.padding(inner).fillMaxSize()) {
-            UsbDevicesList(
-                items = usbDeviceList,
-            )
-            BluetoothDevicesList(
-                items = bluetoothDeviceList
-            )
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun MainTopBar(onRefresh: () -> Unit) {
-    TopAppBar(
-        title = { Text("Devices", fontWeight = FontWeight.SemiBold) },
-        navigationIcon = {
-            Icon(
-                imageVector = Icons.Default.Face,
-                contentDescription = null,
-                modifier = Modifier.padding(start = 16.dp)
-            )
-        },
-        actions = {
-            IconButton(onClick = onRefresh) {
-                Icon(Icons.Default.Refresh, contentDescription = "Refresh")
-            }
-        }
-    )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun SelectionTopBar(
-    selectedCount: Int,
-    onClose: () -> Unit,
-    onBulkActivate: () -> Unit,
-    onBulkDeactivate: () -> Unit,
-) {
-    TopAppBar(
-        title = { Text("$selectedCount selected", fontWeight = FontWeight.SemiBold) },
-        navigationIcon = {
-            IconButton(onClick = onClose) { Icon(Icons.Default.Close, contentDescription = "Close selection") }
-        },
-        actions = {
-            IconButton(onClick = onBulkDeactivate) { Icon(Icons.Default.Call, contentDescription = "Deactivate") }
-            IconButton(onClick = onBulkActivate) { Icon(Icons.Default.CheckCircle, contentDescription = "Activate") }
-        }
-    )
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun UsbDevicesList(
-    items: List<DatalogicDevice>
-) {
-    LazyColumn(
-        modifier = Modifier.wrapContentHeight(),
-        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        items(items, key = { it.id }) { device ->
-            UsbDeviceRow(
-                device = device
-            )
-        }
-    }
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun BluetoothDevicesList(
-    items: List<DatalogicBluetoothDevice>
-) {
-    LazyColumn(
-        modifier = Modifier.wrapContentHeight(),
-        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        items(items, key = { it.id }) { device ->
-            BluetoothDeviceRow(
-                device = device
-            )
-        }
-    }
-}
-
-@Composable
-private fun UsbDeviceRow(
-    device: DatalogicDevice,
-    modifier: Modifier = Modifier,
+    isManualDetection: Boolean = false
 ) {
     val context = LocalContext.current
     val activity = context as? Activity
     val homeViewModel = LocalHomeViewModel.current
-    val isOpen = device.status.value == DeviceStatus.OPENED
+    var isExpanded by remember { mutableStateOf(false) }
+    val icon = if (isExpanded)
+        Icons.Filled.KeyboardArrowUp
+    else
+        Icons.Filled.KeyboardArrowDown
+    val deviceList by homeViewModel.deviceList.observeAsState(emptyList()) // <-- the live list of DatalogicDevice
+    val selectedUsb by homeViewModel.selectedUsbDevice.observeAsState()
+    val boundDevice = dlDevice ?: deviceList.firstOrNull { dev ->
+        usbDevice != null &&
+                dev.usbDevice.vendorId == usbDevice.vendorId &&
+                dev.usbDevice.productId == usbDevice.productId
+    }
+
+    val isOpen = boundDevice?.status?.value == DeviceStatus.OPENED
     val buttonText = if (isOpen) {
         stringResource(id = R.string.close)
     } else {
         stringResource(id = R.string.open)
     }
+    val usbDeviceName = "${usbDevice?.productName}-${usbDevice?.vendorId}-${usbDevice?.productId}"
     Surface(
         tonalElevation = 1.dp,
         shape = RoundedCornerShape(16.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Row(
-            modifier = modifier
-                .fillMaxWidth()
-                .padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Status dot
-            Box(
-                modifier = Modifier
-                    .size(10.dp)
-                    .clip(CircleShape)
-                    .background(
-                        if (device.status.value == DeviceStatus.OPENED) Color(0xFF34C759) else Color(
-                            0xFF999999
+        Column {
+            Row(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Status dot
+                Box(
+                    modifier = Modifier
+                        .size(10.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (isOpen) Color(0xFF34C759) else Color(
+                                0xFF999999
+                            )
                         )
+                )
+                Spacer(Modifier.width(12.dp))
+
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = dlDevice?.displayName ?: usbDeviceName,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
-            )
-            Spacer(Modifier.width(12.dp))
-
-            Column(Modifier.weight(1f)) {
-                Text(
-                    text = device.displayName,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = stringResource(R.string.usb_device),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-
-            Spacer(Modifier.width(12.dp))
-            CustomButtonRow(
-                modifier = Modifier
-                    .weight(0.5f)
-                    .semantics { contentDescription = "btn_open" },
-                openState = isOpen,
-                name = buttonText,
-                onClick = {
-                    activity?.let {
-                        if(isOpen) {
-                            Log.d(TAG, "btn_close on click")
-                            homeViewModel.closeUsbDevice(device)
-                        } else {
-                            Log.d(TAG, "btn_open on click")
-                            homeViewModel.openUsbDevice(activity, device)
-                        }
-                    }
+                    Text(
+                        text = stringResource(R.string.usb_device),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
-            )
+
+                Spacer(Modifier.width(12.dp))
+                if (isManualDetection) {
+                    IconButton(onClick = {
+                        isExpanded = !isExpanded
+                    }) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = stringResource(id = R.string.arrow_dropdown),
+                            tint = Color.Black
+                        )
+                    }
+                } else {
+                    CustomButtonRow(
+                        modifier = Modifier
+                            .weight(0.5f)
+                            .semantics { contentDescription = "btn_open" },
+                        openState = isOpen,
+                        name = buttonText,
+                        onClick = {
+                            activity?.let {
+                                if (isOpen) {
+                                    // If you keep a raw row “open” concept, close by usb id
+                                    homeViewModel.closeUsbDeviceByUsb(usbDevice)
+                                } else {
+                                    homeViewModel.setSelectedUsbDevice(usbDevice)
+                                    homeViewModel.openUsbDevice(activity, datalogicDevice = null)
+                                    // After open, render it via the DatalogicDevice list row
+                                }
+                            }
+                        }
+                    )
+                }
+            }
+            if(isExpanded){
+                Column(
+                    modifier = Modifier
+                        .semantics { contentDescription = "device_settings" }
+                        .fillMaxWidth()
+                        .padding(vertical = dimensionResource(id = R.dimen._5sdp))
+                ) {
+                    Text(
+                        modifier = Modifier
+                            .semantics { contentDescription = "lbl_device_settings" }
+                            .fillMaxWidth()
+                            .padding(
+                                start = dimensionResource(id = R.dimen._10sdp),
+                                bottom = dimensionResource(id = R.dimen._5sdp)
+                            ),
+                        text = stringResource(id = R.string.device_settings),
+                        style = MaterialTheme.typography.headlineLarge
+                    )
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(
+                                BorderStroke(1.dp, Color.Black),
+                                RoundedCornerShape(dimensionResource(id = R.dimen._8sdp))
+                            )
+                            .padding(horizontal = dimensionResource(id = R.dimen._16sdp)),
+                    ) {
+                        Text(
+                            modifier = Modifier
+                                .semantics { contentDescription = "lbl_device_vid" }
+                                .fillMaxWidth()
+                                .padding(
+                                    top = dimensionResource(id = R.dimen._10sdp),
+                                    bottom = dimensionResource(id = R.dimen._5sdp)
+                                ),
+                            text = "VID: " + (usbDevice?.vendorId ?: "None"),
+                            style = MaterialTheme.typography.labelLarge
+                        )
+
+                        Text(
+                            modifier = Modifier
+                                .semantics { contentDescription = "lbl_device_pid" }
+                                .fillMaxWidth()
+                                .padding(
+                                    top = dimensionResource(id = R.dimen._10sdp),
+                                    bottom = dimensionResource(id = R.dimen._5sdp)
+                                ),
+                            text = "PID: " + (usbDevice?.productId ?: "None"),
+                            style = MaterialTheme.typography.labelLarge
+                        )
+
+                        Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen._5sdp)))
+
+                        DeviceTypeDropdown(
+                            modifier = Modifier
+                                .semantics { contentDescription = "device_type_dropdown" }
+                                .fillMaxWidth()
+                                .height(dimensionResource(id = R.dimen._55sdp)),
+                            homeViewModel.getSelectedDeviceType(),
+                            onDeviceTypeSelected = {
+                                homeViewModel.setSelectedDeviceType(it)
+                            }
+                        )
+
+                        Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen._15sdp)))
+
+                        ConnectionTypeDropdown(
+                            modifier = Modifier
+                                .semantics { contentDescription = "connection_type_dropdown" }
+                                .fillMaxWidth()
+                                .height(dimensionResource(id = R.dimen._55sdp)),
+                            homeViewModel.getSelectedConnectionType(),
+                            onDeviceTypeSelected = {
+                                homeViewModel.setSelectedConnectionType(it)
+                            }
+                        )
+
+                        Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen._15sdp)))
+
+                    }
+                    Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen._5sdp)))
+
+                    CustomButtonRow(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .semantics { contentDescription = "btn_open" },
+                        openState = isOpen,
+                        name = buttonText,
+                        onClick = {
+                            if (usbDevice != null) homeViewModel.setSelectedUsbDevice(usbDevice)
+                            activity?.let {
+                                if (isOpen) {
+                                    // close the *actual* opened instance for this row
+                                    boundDevice?.let { homeViewModel.closeUsbDevice(it) }
+                                        ?: usbDevice?.let { homeViewModel.closeUsbDeviceByUsb(it) }
+                                } else {
+                                    // ensure VM knows which USB to open, then open (VM will create/reuse a DatalogicDevice)
+                                    usbDevice?.let { homeViewModel.setSelectedUsbDevice(it) }
+                                    homeViewModel.openUsbDevice(activity, datalogicDevice = boundDevice)
+                                }
+                            }
+                        }
+                    )
+                }
+            }
         }
     }
 }
@@ -352,19 +360,6 @@ private fun BluetoothDeviceRow(
 }
 
 @Composable
-private fun LoadingState() {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        CircularProgressIndicator()
-        Spacer(Modifier.height(12.dp))
-        Text("Loading devices…", color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-}
-
-@Composable
 private fun ErrorState(message: String, onRetry: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -376,35 +371,6 @@ private fun ErrorState(message: String, onRetry: () -> Unit) {
         Text(message, color = MaterialTheme.colorScheme.error)
         Spacer(Modifier.height(12.dp))
         Button(onClick = onRetry) { Text("Retry") }
-    }
-}
-
-@Composable
-private fun EmptyState() {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text("No devices match your filters", color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-}
-
-// --------- Simple screen state holder (demo) ---------
-
-
-@Preview(showBackground = true)
-@Composable
-fun DeviceListScreen() {
-    val homeViewModel = LocalHomeViewModel.current
-    val allBluetoothDevices = homeViewModel.allBluetoothDevices.observeAsState(ArrayList()).value
-    val usbDeviceList = homeViewModel.deviceList.observeAsState(ArrayList()).value
-
-    MaterialTheme(colorScheme = lightColorScheme()) {
-        DevicesScreen(
-            usbDeviceList = usbDeviceList,
-            bluetoothDeviceList = allBluetoothDevices,
-        )
     }
 }
 
