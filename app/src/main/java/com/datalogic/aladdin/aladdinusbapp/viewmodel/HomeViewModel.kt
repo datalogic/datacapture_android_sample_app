@@ -1488,7 +1488,10 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                         run {
                             _progressUpgrade.postValue(progress)
                         }
-                    }, isBulkTransfer
+                    }, isBulkTransfer, onFailure = { message ->
+                        showResetDeviceDialog = false
+                        showToast(context, message)
+                    }
                 )
                 _isLoadingPercent.postValue(false)
             }
