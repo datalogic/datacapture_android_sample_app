@@ -115,7 +115,7 @@ fun BluetoothTabPortrait() {
                             contentDescription = "Unlink code",
                             modifier = Modifier.size(280.dp, 100.dp)
                         )
-                        Log.e("BluetoothTabPortrait", "previousProfile: $previousProfile")
+                        Log.d("BluetoothTabPortrait", "previousProfile: $previousProfile")
                         if (previousProfile != null && previousProfile != PairingBarcodeType.UNLINK) {
                             Button(
                                 modifier = Modifier
