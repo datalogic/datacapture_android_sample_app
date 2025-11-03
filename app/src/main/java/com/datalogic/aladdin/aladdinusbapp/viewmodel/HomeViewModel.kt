@@ -1313,10 +1313,10 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                     return false
                 }
 
-                setSelectedTabIndex(tabIndex)
                 if (selectedDevice.value?.usbDevice?.productId.toString() == "16386") {
                     magellanConfigAlert = true
                 } else {
+                    setSelectedTabIndex(tabIndex)
                     readConfigData()
                 }
                 return true
@@ -1334,6 +1334,10 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context) 
                 }
                 if (isBluetoothEnabled.value == true) {
                     bluetoothAlert = true
+                    return false
+                }
+                if (selectedDevice.value?.usbDevice?.productId.toString() == "16386") {
+                    magellanConfigAlert = true
                     return false
                 }
                 setSelectedTabIndex(tabIndex)
