@@ -50,15 +50,16 @@ object CommonUtils {
     }
 
     fun getUsbDeviceIndex(dlDeviceList: ArrayList<DatalogicDevice>,
-                          usbDeviceList: ArrayList<UsbDevice>): Int {
+                          usbDeviceList: ArrayList<UsbDevice>): Set<Int> {
+        val indices = mutableSetOf<Int>()
         for (usbDevice in usbDeviceList) {
             for (dlDevice in dlDeviceList) {
                 if (usbDevice == dlDevice.usbDevice) {
-                    return usbDeviceList.indexOf(usbDevice)
+                    indices += usbDeviceList.indexOf(usbDevice)
                 }
             }
         }
-        return -1
+        return indices
     }
 
 }

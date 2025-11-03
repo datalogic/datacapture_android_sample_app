@@ -81,6 +81,9 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
     private val _deviceList = MutableLiveData<ArrayList<DatalogicDevice>>(ArrayList())
     val deviceList: LiveData<ArrayList<DatalogicDevice>> = _deviceList
 
+    private val _dlDeviceListTemp = MutableLiveData<ArrayList<DatalogicDevice>>(ArrayList())
+    val dlDeviceListTemp: LiveData<ArrayList<DatalogicDevice>> = _dlDeviceListTemp
+
     private val _usbDeviceList = MutableLiveData<ArrayList<UsbDevice>>(ArrayList())
     val usbDeviceList: LiveData<ArrayList<UsbDevice>> = _usbDeviceList
 
@@ -255,6 +258,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
 
     private val mainHandler = Handler(Looper.getMainLooper())
     private val bufferBluetoothData = ArrayDeque<ByteArray>()
+
+    private val dlDevices = ArrayList<DatalogicDevice>()
 
     init {
         this.usbDeviceManager = usbDeviceManager
@@ -490,6 +495,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                         // Initialize label settings from device
                         initializeLabelSettingsFromDevice()
                         device.status.value = DeviceStatus.OPENED
+                        dlDevices.add(device)
+                        _dlDeviceListTemp.postValue(dlDevices)
                     }
 
                     else -> {
@@ -607,6 +614,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                                     Log.e(tag, "Error unregistering scale listener", e)
                                 }
                             }
+                            dlDevices.remove(device)
+                            _dlDeviceListTemp.postValue(dlDevices)
                         }
 
                         else -> {

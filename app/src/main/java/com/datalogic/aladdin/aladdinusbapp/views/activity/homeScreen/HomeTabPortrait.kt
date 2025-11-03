@@ -4,33 +4,26 @@ import android.app.Activity
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import com.datalogic.aladdin.aladdinusbapp.R
 //import com.datalogic.aladdin.aladdinusbapp.utils.CommonUtils.rememberEnsureBluetoothEnabled
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
-import com.datalogic.aladdin.aladdinusbapp.views.compose.ConnectionTypeDropdown
-import com.datalogic.aladdin.aladdinusbapp.views.compose.DeviceTypeDropdown
 import com.datalogic.aladdin.aladdinusbapp.views.compose.LoggingDropdown
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -51,6 +44,7 @@ fun HomeTabPortrait() {
     val dlDeviceList = homeViewModel.deviceList.observeAsState(ArrayList()).value
     val selectedUsbDevice = homeViewModel.selectedUsbDevice.observeAsState(null).value
     val usbDeviceList = homeViewModel.usbDeviceList.observeAsState(ArrayList()).value
+    val dlDeviceListTemp = homeViewModel.dlDeviceListTemp.observeAsState(ArrayList()).value
 
     val context = LocalContext.current
     val activity = context as? Activity
@@ -94,7 +88,7 @@ fun HomeTabPortrait() {
                 )
             }
         }
-        val usbDeviceIndex = CommonUtils.getUsbDeviceIndex(dlDeviceList, usbDeviceList)
+        val openUsbIndices = CommonUtils.getUsbDeviceIndex(dlDeviceListTemp, usbDeviceList)
         if(autoDetectChecked) {
             // DL USB devices section
             if (dlDeviceList.isNotEmpty()) {
@@ -109,15 +103,8 @@ fun HomeTabPortrait() {
         } else {
             // USB devices section
             if (usbDeviceList.isNotEmpty()) {
-                itemsIndexed(items = usbDeviceList,
-                    key = { _, it -> it.deviceId }   // keep your stable key
-                ) { index, device ->
-                    DeviceRow(
-                        dlDevice = null,
-                        usbDevice = device,
-                        isManualDetection = true,
-                        isManualOpen = usbDeviceIndex == index
-                    ) // from DevicesScreen.kt (below)
+                itemsIndexed(usbDeviceList, key = { _, it -> it.deviceId }) { _, device ->
+                    DeviceRow(dlDevice = null, usbDevice = device, isManualDetection = true)
                 }
             }
         }
