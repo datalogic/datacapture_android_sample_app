@@ -52,6 +52,7 @@ fun CustomConfigurationLandscape() {
     val context = LocalContext.current
     val showDialog = remember { mutableStateOf(false) }
     val fileName = remember { mutableStateOf("") }
+    val errorMessage = homeViewModel.msgConfigError.observeAsState("").value
 
     // Configuration result dialog state
     val showConfigResultDialog = remember { mutableStateOf(false) }
@@ -220,6 +221,22 @@ fun CustomConfigurationLandscape() {
                     onClick = { showDialog.value = false }
                 ) {
                     Text("Cancel")
+                }
+            }
+        )
+    }
+
+    if (errorMessage != "") {
+        AlertDialog(
+            onDismissRequest = { homeViewModel.setMsgConfigError("") },
+            title = { Text("Error: $errorMessage") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        homeViewModel.setMsgConfigError("")
+                    }
+                ) {
+                    Text("OK")
                 }
             }
         )

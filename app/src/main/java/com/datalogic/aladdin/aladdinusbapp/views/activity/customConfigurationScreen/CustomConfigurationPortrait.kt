@@ -60,6 +60,7 @@ fun CustomConfigurationPortrait() {
     val fileName = remember { mutableStateOf("") }
     val configName = homeViewModel.configName.observeAsState("").value
     val customerName = homeViewModel.customerName.observeAsState("").value
+    val errorMessage = homeViewModel.msgConfigError.observeAsState("").value
 
 
     // Configuration result dialog state
@@ -305,6 +306,22 @@ fun CustomConfigurationPortrait() {
                     onClick = { showDialog.value = false }
                 ) {
                     Text("Cancel")
+                }
+            }
+        )
+    }
+
+    if (errorMessage != "") {
+        AlertDialog(
+            onDismissRequest = { homeViewModel.setMsgConfigError("") },
+            title = { Text("Error: $errorMessage") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        homeViewModel.setMsgConfigError("")
+                    }
+                ) {
+                    Text("OK")
                 }
             }
         )
