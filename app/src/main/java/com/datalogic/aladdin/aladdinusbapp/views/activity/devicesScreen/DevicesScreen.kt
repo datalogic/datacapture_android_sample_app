@@ -57,7 +57,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.lifecycle.compose.LocalLifecycleOwner
 
 // --------- UI layer ---------
 
@@ -71,25 +70,19 @@ fun DeviceRow(
     dlDevice: DatalogicDevice?,
     usbDevice: UsbDevice?,
     modifier: Modifier = Modifier,
-    isManualDetection: Boolean = false
+    isManualDetection: Boolean = false,
+    isManualOpen: Boolean = false
 ) {
     val context = LocalContext.current
     val activity = context as? Activity
     val homeViewModel = LocalHomeViewModel.current
-    var isExpanded by remember { mutableStateOf(false) }
-    val icon = if (isExpanded)
+    var isManual by remember { mutableStateOf(false) }
+    val icon = if (isManual)
         Icons.Filled.KeyboardArrowUp
     else
         Icons.Filled.KeyboardArrowDown
     val deviceList by homeViewModel.deviceList.observeAsState(emptyList()) // <-- the live list of DatalogicDevice
-    val selectedUsb by homeViewModel.selectedUsbDevice.observeAsState()
-    val boundDevice = dlDevice ?: deviceList.firstOrNull { dev ->
-        usbDevice != null &&
-                dev.usbDevice.vendorId == usbDevice.vendorId &&
-                dev.usbDevice.productId == usbDevice.productId
-    }
-
-    val isOpen = boundDevice?.status?.value == DeviceStatus.OPENED
+    val isOpen = dlDevice?.status?.value == DeviceStatus.OPENED || isManualOpen
     val buttonText = if (isOpen) {
         stringResource(id = R.string.close)
     } else {
@@ -141,7 +134,7 @@ fun DeviceRow(
                 Spacer(Modifier.width(12.dp))
                 if (isManualDetection) {
                     IconButton(onClick = {
-                        isExpanded = !isExpanded
+                        isManual = !isManual
                     }) {
                         Icon(
                             imageVector = icon,
@@ -160,10 +153,10 @@ fun DeviceRow(
                             activity?.let {
                                 if (isOpen) {
                                     // If you keep a raw row “open” concept, close by usb id
-                                    homeViewModel.closeUsbDeviceByUsb(usbDevice)
+                                    homeViewModel.closeUsbDevice(dlDevice)
                                 } else {
                                     homeViewModel.setSelectedUsbDevice(usbDevice)
-                                    homeViewModel.openUsbDevice(activity, datalogicDevice = null)
+                                    homeViewModel.openUsbDevice(dlDevice)
                                     // After open, render it via the DatalogicDevice list row
                                 }
                             }
@@ -171,7 +164,7 @@ fun DeviceRow(
                     )
                 }
             }
-            if(isExpanded){
+            if(isManual){
                 Column(
                     modifier = Modifier
                         .semantics { contentDescription = "device_settings" }
@@ -265,12 +258,11 @@ fun DeviceRow(
                             activity?.let {
                                 if (isOpen) {
                                     // close the *actual* opened instance for this row
-                                    boundDevice?.let { homeViewModel.closeUsbDevice(it) }
-                                        ?: usbDevice?.let { homeViewModel.closeUsbDeviceByUsb(it) }
+                                    homeViewModel.closeUsbDevice(dlDevice)
                                 } else {
                                     // ensure VM knows which USB to open, then open (VM will create/reuse a DatalogicDevice)
                                     usbDevice?.let { homeViewModel.setSelectedUsbDevice(it) }
-                                    homeViewModel.openUsbDevice(activity, datalogicDevice = boundDevice)
+                                    homeViewModel.openUsbDevice(datalogicDevice = dlDevice)
                                 }
                             }
                         }

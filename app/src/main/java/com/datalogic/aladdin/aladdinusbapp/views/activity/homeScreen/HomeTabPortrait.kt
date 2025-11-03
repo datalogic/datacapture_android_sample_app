@@ -35,6 +35,8 @@ import com.datalogic.aladdin.aladdinusbapp.views.compose.LoggingDropdown
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.lazy.itemsIndexed
+import com.datalogic.aladdin.aladdinusbapp.utils.CommonUtils
 import com.datalogic.aladdin.aladdinusbapp.views.activity.devicesScreen.BluetoothDeviceItem
 import com.datalogic.aladdin.aladdinusbapp.views.activity.devicesScreen.DeviceRow
 
@@ -92,7 +94,7 @@ fun HomeTabPortrait() {
                 )
             }
         }
-
+        val usbDeviceIndex = CommonUtils.getUsbDeviceIndex(dlDeviceList, usbDeviceList)
         if(autoDetectChecked) {
             // DL USB devices section
             if (dlDeviceList.isNotEmpty()) {
@@ -107,11 +109,14 @@ fun HomeTabPortrait() {
         } else {
             // USB devices section
             if (usbDeviceList.isNotEmpty()) {
-                items(usbDeviceList, key = { it.deviceId }) { device ->
+                itemsIndexed(items = usbDeviceList,
+                    key = { _, it -> it.deviceId }   // keep your stable key
+                ) { index, device ->
                     DeviceRow(
                         dlDevice = null,
                         usbDevice = device,
-                        isManualDetection = true
+                        isManualDetection = true,
+                        isManualOpen = usbDeviceIndex == index
                     ) // from DevicesScreen.kt (below)
                 }
             }

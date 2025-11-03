@@ -445,7 +445,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
     /**
      * Open device - perform full open, claim and enable operation
      */
-    fun openUsbDevice(activity: Activity, datalogicDevice: DatalogicDevice?) {
+    fun openUsbDevice(datalogicDevice: DatalogicDevice?) {
         Log.d(tag, "[openDevice] Begin")
         if (autoDetectChecked.value == true) {
             datalogicDevice?.let { device ->
