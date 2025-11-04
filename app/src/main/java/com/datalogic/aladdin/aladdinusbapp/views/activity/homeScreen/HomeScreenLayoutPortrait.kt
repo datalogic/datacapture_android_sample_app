@@ -107,8 +107,7 @@ fun HomeScreenLayoutPortrait() {
                 }
                 6 -> BluetoothTabPortrait()
                 7 -> SettingsTabPortrait()
-                7 -> DevicesScreenPreview_Populated()
-                7 -> ScannerScreenPortrait()
+                8 -> ScannerScreenPortrait()
             }
         }
 

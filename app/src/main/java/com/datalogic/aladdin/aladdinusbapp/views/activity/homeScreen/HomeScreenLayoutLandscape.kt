@@ -107,7 +107,8 @@ fun HomeScreenLayoutLandscape() {
                     UpdateFirmwareScreen()
                 }
                 6 -> BluetoothTabPortrait()
-                7 -> ScannerScreenPortrait()
+                7 -> SettingsTabPortrait()
+                8 -> ScannerScreenPortrait()
             }
         }
 
