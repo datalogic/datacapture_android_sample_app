@@ -42,9 +42,7 @@ fun HomeTabPortrait() {
     val allBluetoothDevices = homeViewModel.allBluetoothDevices.observeAsState(ArrayList()).value
 
     val dlDeviceList = homeViewModel.deviceList.observeAsState(ArrayList()).value
-    val selectedUsbDevice = homeViewModel.selectedUsbDevice.observeAsState(null).value
     val usbDeviceList = homeViewModel.usbDeviceList.observeAsState(ArrayList()).value
-    val dlDeviceListTemp = homeViewModel.dlDeviceListTemp.observeAsState(ArrayList()).value
 
     val context = LocalContext.current
     val activity = context as? Activity
@@ -88,7 +86,6 @@ fun HomeTabPortrait() {
                 )
             }
         }
-        val openUsbIndices = CommonUtils.getUsbDeviceIndex(dlDeviceListTemp, usbDeviceList)
         if(autoDetectChecked) {
             // DL USB devices section
             if (dlDeviceList.isNotEmpty()) {

@@ -3,6 +3,7 @@ package com.datalogic.aladdin.aladdinusbapp.viewmodel
 import DatalogicBluetoothDevice
 import android.Manifest
 import android.app.Activity
+import android.bluetooth.BluetoothClass
 import android.bluetooth.BluetoothDevice
 import android.content.ContentValues
 import android.content.Context
@@ -81,19 +82,12 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
     private val _deviceList = MutableLiveData<ArrayList<DatalogicDevice>>(ArrayList())
     val deviceList: LiveData<ArrayList<DatalogicDevice>> = _deviceList
 
-    private val _dlDeviceListTemp = MutableLiveData<ArrayList<DatalogicDevice>>(ArrayList())
-    val dlDeviceListTemp: LiveData<ArrayList<DatalogicDevice>> = _dlDeviceListTemp
-
     private val _usbDeviceList = MutableLiveData<ArrayList<UsbDevice>>(ArrayList())
     val usbDeviceList: LiveData<ArrayList<UsbDevice>> = _usbDeviceList
 
     private val _allBluetoothDevices = MutableLiveData<ArrayList<DatalogicBluetoothDevice>>(ArrayList())
     val allBluetoothDevices: LiveData<ArrayList<DatalogicBluetoothDevice>> = _allBluetoothDevices
     private var bluetoothPollingJob: Job? = null
-
-    val openUsbDeviceList = deviceList.value?.filter { it.status.value == DeviceStatus.OPENED }
-
-    val openBluetoothDeviceList = allBluetoothDevices.value?.filter { it.status.value == DeviceStatus.OPENED }
 
     private val _scanLabel = MutableLiveData("")
     val scanLabel: LiveData<String> = _scanLabel
@@ -258,8 +252,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
 
     private val mainHandler = Handler(Looper.getMainLooper())
     private val bufferBluetoothData = ArrayDeque<ByteArray>()
-
-    private val dlDevices = ArrayList<DatalogicDevice>()
 
     init {
         this.usbDeviceManager = usbDeviceManager
@@ -495,8 +487,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                         // Initialize label settings from device
                         initializeLabelSettingsFromDevice()
                         device.status.value = DeviceStatus.OPENED
-                        dlDevices.add(device)
-                        _dlDeviceListTemp.postValue(dlDevices)
+                        updateDeviceStatusInList(device, DeviceStatus.OPENED)
                     }
 
                     else -> {
@@ -507,6 +498,25 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
 
                 _isLoading.postValue(false)
             }
+        }
+    }
+
+    fun updateDeviceStatusInList(target: DatalogicDevice, newStatus: DeviceStatus) {
+        val list = _deviceList.value ?: return
+
+        // Prefer a stable, session-level id. Fall back to VID:PID if needed.
+        val idx = list.indexOfFirst { dev ->
+            dev.usbDevice.deviceId == target.usbDevice.deviceId &&
+                    dev.usbDevice.deviceName == target.usbDevice.deviceName
+        }
+
+        if (idx >= 0) {
+            val device = list[idx]
+            // Update the device’s own LiveData so rows bound to it recompose
+            device.status.value = newStatus
+
+            // Post a new list instance so collectors of deviceList see the change
+            _deviceList.postValue(ArrayList(list))
         }
     }
 
@@ -614,8 +624,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                                     Log.e(tag, "Error unregistering scale listener", e)
                                 }
                             }
-                            dlDevices.remove(device)
-                            _dlDeviceListTemp.postValue(dlDevices)
+                            updateDeviceStatusInList(device, DeviceStatus.CLOSED)
                         }
 
                         else -> {

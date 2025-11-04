@@ -49,17 +49,4 @@ object CommonUtils {
         orientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED // Allow rotation
     }
 
-    fun getUsbDeviceIndex(dlDeviceList: ArrayList<DatalogicDevice>,
-                          usbDeviceList: ArrayList<UsbDevice>): Set<Int> {
-        val indices = mutableSetOf<Int>()
-        for (usbDevice in usbDeviceList) {
-            for (dlDevice in dlDeviceList) {
-                if (usbDevice == dlDevice.usbDevice) {
-                    indices += usbDeviceList.indexOf(usbDevice)
-                }
-            }
-        }
-        return indices
-    }
-
 }
