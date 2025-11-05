@@ -31,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Text
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
@@ -47,6 +48,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.viewmodel.HomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
+import com.datalogic.aladdin.aladdinusbapp.views.compose.UsbBTDeviceDropdown
+import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 
 
 @Composable
@@ -61,6 +65,10 @@ fun ImageCaptureTabPortrait() {
         mutableStateOf(imageCaptureModel.getContrastPercentage().toFloat())
     }
     var previewImage by remember { mutableStateOf<Bitmap?>(null) }
+
+    val allUsbDevices = imageCaptureModel.deviceList.observeAsState(ArrayList()).value
+    val openUsbDeviceList = allUsbDevices.filter { it.status.value == DeviceStatus.OPENED } as ArrayList<DatalogicDevice>
+    val selectedUsbDevice = imageCaptureModel.selectedDevice.observeAsState(null).value
 
     DisposableEffect(imageCaptureModel) {
         imageCaptureModel.setImageCallback { bitmap ->
@@ -87,6 +95,22 @@ fun ImageCaptureTabPortrait() {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        UsbBTDeviceDropdown(
+            modifier = Modifier
+                .semantics { contentDescription = "device_dropdown" }
+                .fillMaxWidth()
+                .height(dimensionResource(id = R.dimen._55sdp)),
+            usbDevices = openUsbDeviceList,
+            bluetoothDevices = null,
+            onUsbDeviceSelected = { device ->
+                imageCaptureModel.setSelectedDevice(device)
+            },
+            selectedBluetoothDevice = null,
+            selectedUsbDevice = selectedUsbDevice,
+            onBluetoothDeviceSelected = { device ->
+                imageCaptureModel.setSelectedBluetoothDevice(device)
+            }
+        )
         if (imageCaptureModel.selectedDevice.value
                 ?.deviceType
                 ?.name

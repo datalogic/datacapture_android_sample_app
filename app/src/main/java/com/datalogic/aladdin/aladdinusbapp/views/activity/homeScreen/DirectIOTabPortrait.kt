@@ -1,5 +1,7 @@
 package com.datalogic.aladdin.aladdinusbapp.views.activity.homeScreen
 
+import DatalogicBluetoothDevice
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -23,6 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -36,20 +39,28 @@ import androidx.compose.ui.unit.dp
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.compose.DIODropdown
+import com.datalogic.aladdin.aladdinusbapp.views.compose.UsbBTDeviceDropdown
+import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DIOCmdValue
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 
 @Composable
 fun DirectIOTabPortrait() {
 
     val homeViewModel = LocalHomeViewModel.current
-    val deviceList = homeViewModel.deviceList.observeAsState(ArrayList()).value
-    val selectedDevice = homeViewModel.selectedDevice.observeAsState(null).value
+    val allUsbDevices = homeViewModel.deviceList.observeAsState(ArrayList()).value
+    val openUsbDeviceList = allUsbDevices.filter { it.status.value == DeviceStatus.OPENED } as ArrayList<DatalogicDevice>
+    val selectedUsbDevice = homeViewModel.selectedDevice.observeAsState(null).value
     val dioStatus = homeViewModel.dioStatus.observeAsState("").value
     val status = homeViewModel.status.observeAsState().value
     val selectedCommand = homeViewModel.selectedCommand.observeAsState(DIOCmdValue.IDENTIFICATION).value
     val dioData = homeViewModel.dioData.observeAsState("").value
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp
+    val allBluetoothDevices = homeViewModel.allBluetoothDevices.observeAsState(ArrayList()).value
+    val openBluetoothDevices = allBluetoothDevices.filter {
+        it.status.value == DeviceStatus.OPENED } as ArrayList<DatalogicBluetoothDevice>
+    val selectedBluetoothDevice = homeViewModel.selectedBluetoothDevice.observeAsState(null).value
     /**
      * Define a threshold for vertical scrolling
      * */
@@ -58,6 +69,22 @@ fun DirectIOTabPortrait() {
     val content = @Composable {
 
         Column {
+            UsbBTDeviceDropdown(
+                modifier = Modifier
+                    .semantics { contentDescription = "device_dropdown" }
+                    .fillMaxWidth()
+                    .height(dimensionResource(id = R.dimen._55sdp)),
+                usbDevices = openUsbDeviceList,
+                bluetoothDevices = openBluetoothDevices,
+                onUsbDeviceSelected = { device ->
+                    homeViewModel.setSelectedDevice(device)
+                },
+                selectedBluetoothDevice = selectedBluetoothDevice,
+                selectedUsbDevice = selectedUsbDevice,
+                onBluetoothDeviceSelected = { device ->
+                    homeViewModel.setSelectedBluetoothDevice(device)
+                }
+            )
             Text(
                 modifier = Modifier
                     .semantics { contentDescription = "lbl_command" }
@@ -99,7 +126,10 @@ fun DirectIOTabPortrait() {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(BorderStroke(1.dp, Color.Black), RoundedCornerShape(dimensionResource(id = R.dimen._8sdp)))
+                    .border(
+                        BorderStroke(1.dp, Color.Black),
+                        RoundedCornerShape(dimensionResource(id = R.dimen._8sdp))
+                    )
                     .padding(horizontal = dimensionResource(id = R.dimen._16sdp)),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
@@ -108,7 +138,10 @@ fun DirectIOTabPortrait() {
                         modifier = Modifier
                             .semantics { contentDescription = "lbl_data" }
                             .fillMaxWidth()
-                            .padding(bottom = dimensionResource(id = R.dimen._5sdp), top = dimensionResource(id = R.dimen._10sdp)),
+                            .padding(
+                                bottom = dimensionResource(id = R.dimen._5sdp),
+                                top = dimensionResource(id = R.dimen._10sdp)
+                            ),
                         text = stringResource(id = R.string.data),
                         style = MaterialTheme.typography.labelLarge
                     )
@@ -121,7 +154,10 @@ fun DirectIOTabPortrait() {
                             .semantics { contentDescription = "command_data" }
                             .fillMaxWidth()
                             .wrapContentHeight()
-                            .border(BorderStroke(1.dp, Color.Black), RoundedCornerShape(dimensionResource(id = R.dimen._8sdp))),
+                            .border(
+                                BorderStroke(1.dp, Color.Black),
+                                RoundedCornerShape(dimensionResource(id = R.dimen._8sdp))
+                            ),
                         singleLine = true,
                         enabled = true,
                         colors = TextFieldDefaults.colors(
@@ -150,7 +186,10 @@ fun DirectIOTabPortrait() {
                         .semantics { contentDescription = "status_message" }
                         .fillMaxWidth()
                         .height(dimensionResource(id = R.dimen._dioStatus))
-                        .border(BorderStroke(1.dp, Color.Black), RoundedCornerShape(dimensionResource(id = R.dimen._8sdp)))
+                        .border(
+                            BorderStroke(1.dp, Color.Black),
+                            RoundedCornerShape(dimensionResource(id = R.dimen._8sdp))
+                        )
                         .padding(dimensionResource(id = R.dimen._8sdp))
                         .verticalScroll(rememberScrollState()),
                     text =  dioStatus,
@@ -207,7 +246,9 @@ fun DirectIOTabPortrait() {
      * Vertical scroll only if the screen height is less than the threshold
      */
     if (screenHeight < scrollableThreshold) {
-        Column(modifier = Modifier.padding(vertical = dimensionResource(id = R.dimen._3sdp)).verticalScroll(rememberScrollState())) {
+        Column(modifier = Modifier
+            .padding(vertical = dimensionResource(id = R.dimen._3sdp))
+            .verticalScroll(rememberScrollState())) {
             content()
         }
     } else {

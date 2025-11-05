@@ -1,5 +1,6 @@
 package com.datalogic.aladdin.aladdinusbapp.views.activity.customConfigurationScreen
 
+import DatalogicBluetoothDevice
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -47,6 +48,9 @@ import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.viewmodel.HomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ResetDeviceAlertDialog
+import com.datalogic.aladdin.aladdinusbapp.views.compose.UsbBTDeviceDropdown
+import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 import java.util.Locale
 
 @Preview
@@ -61,12 +65,14 @@ fun CustomConfigurationPortrait() {
     val configName = homeViewModel.configName.observeAsState("").value
     val customerName = homeViewModel.customerName.observeAsState("").value
     val errorMessage = homeViewModel.msgConfigError.observeAsState("").value
-
-
+    val allUsbDevices = homeViewModel.deviceList.observeAsState(ArrayList()).value
+    val openUsbDeviceList = allUsbDevices.filter { it.status.value == DeviceStatus.OPENED } as ArrayList<DatalogicDevice>
+    val selectedUsbDevice = homeViewModel.selectedDevice.observeAsState(null).value
     // Configuration result dialog state
     val showConfigResultDialog = remember { mutableStateOf(false) }
     val configResultTitle = remember { mutableStateOf("") }
     val configResultMessage = remember { mutableStateOf("") }
+
 
     // Set up callback for configuration results
     LaunchedEffect(Unit) {
@@ -125,6 +131,22 @@ fun CustomConfigurationPortrait() {
                 modifier = Modifier
                     .fillMaxWidth(),
             ) {
+                UsbBTDeviceDropdown(
+                    modifier = Modifier
+                        .semantics { contentDescription = "device_dropdown" }
+                        .fillMaxWidth()
+                        .height(dimensionResource(id = R.dimen._55sdp)),
+                    usbDevices = openUsbDeviceList,
+                    bluetoothDevices = null,
+                    onUsbDeviceSelected = { device ->
+                        homeViewModel.setSelectedDevice(device)
+                    },
+                    selectedBluetoothDevice = null,
+                    selectedUsbDevice = selectedUsbDevice,
+                    onBluetoothDeviceSelected = { device ->
+                        homeViewModel.setSelectedBluetoothDevice(device)
+                    }
+                )
                 Text(
                     modifier = Modifier
                         .semantics { contentDescription = "lbl_customer" }

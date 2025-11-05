@@ -44,6 +44,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.datalogic.aladdin.aladdinusbapp.R
+import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
 import kotlinx.coroutines.delay
 
 object ComposableUtils {
@@ -108,6 +109,31 @@ object ComposableUtils {
                 style = MaterialTheme.typography.labelLarge,
                 color = if (buttonState) colorResource(id = R.color.white)
                 else colorResource(id = R.color.colorPrimary)
+            )
+        }
+    }
+
+    @Composable
+    fun CustomButtonRow(modifier: Modifier, openState: Boolean, name: String, onClick: () -> Unit) {
+        Button(
+            modifier = modifier
+                .height(dimensionResource(id = R.dimen._50sdp)),
+            onClick = onClick,
+            colors = if(openState) ButtonDefaults.buttonColors(
+                containerColor = colorResource(id = R.color.white),
+                disabledContainerColor = colorResource(id = R.color.colorPrimary)
+            ) else ButtonDefaults.buttonColors(
+                containerColor = colorResource(id = R.color.colorPrimary),
+                disabledContainerColor = colorResource(R.color.white)),
+            elevation = ButtonDefaults.buttonElevation(disabledElevation = dimensionResource(id = R.dimen._4sdp),
+                pressedElevation = dimensionResource(id = R.dimen._4sdp)),
+            interactionSource = remember { MutableInteractionSource() }
+        ) {
+            Text(
+                text = name,
+                style = MaterialTheme.typography.labelSmall,
+                color = if (openState) colorResource(id = R.color.colorPrimary)
+                else colorResource(id = R.color.white)
             )
         }
     }
