@@ -520,6 +520,24 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
         }
     }
 
+    fun isOpenDevice(): Boolean {
+        _deviceList.value?.let {
+            _deviceList.value?.forEach { item ->
+                if (item.status.value == DeviceStatus.OPENED) {
+                    return true
+                }
+            }
+        }
+        _allBluetoothDevices.value?.let {
+            _allBluetoothDevices.value?.forEach { item ->
+                if (item.status.value == DeviceStatus.OPENED) {
+                    return true
+                }
+            }
+        }
+        return false
+    }
+
     fun onOpenDeviceSuccessResultAction(deviceId: String) {
         val device: DatalogicDevice = selectedDevice.value ?: run {
             Log.e(tag, "No device selected for opening")
@@ -752,7 +770,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
     fun executeDIOCommand() {
         Log.d(tag, "[executeDIOCommand] isBluetoothEnabled: ${isBluetoothEnabled.value}")
         selectedDevice.value?.let { device ->
-            if (device.status.value != DeviceStatus.OPENED) {
+            if (!isOpenDevice()) {
                 _dioStatus.postValue("Device must be opened first")
                 return
             }
@@ -778,7 +796,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
             }
         }
         selectedBluetoothDevice.value?.let { device ->
-            if (device.status.value != DeviceStatus.OPENED) {
+            if (!isOpenDevice()) {
                 Log.d(tag, "[executeDIOCommand] device.status: ${device.status}")
 
                 _dioStatus.postValue("Device must be opened first")
@@ -974,7 +992,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
      */
     fun readConfigData() {
         selectedDevice.value?.let { device ->
-            if (device.status.value != DeviceStatus.OPENED) {
+            if (!isOpenDevice()) {
                 resultLiveData.postValue("Device must be opened first")
                 return
             }
@@ -1024,7 +1042,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
 
     fun readCustomConfig() {
         selectedDevice.value?.let { device ->
-            if (device.status.value != DeviceStatus.OPENED) {
+            if (!isOpenDevice()) {
                 resultLiveData.postValue("Device must be opened first")
                 return
             }
@@ -1056,7 +1074,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
      */
     fun writeCustomConfig(configurationData: String) {
         selectedDevice.value?.let { device ->
-            if (device.status.value != DeviceStatus.OPENED) {
+            if (!isOpenDevice()) {
                 resultLiveData.postValue("Device must be opened first")
                 return
             }
@@ -1315,11 +1333,11 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
         }
 
         // For tabs other than Home, device needs to be open
-        /*if (status.value != DeviceStatus.OPENED) {
+        if (!isOpenDevice()) {
             Log.d(tag, "[handleTabSelection] status: ${status.value}")
             openAlert = true
             return false
-        }*/
+        }
 
         // Tab-specific logic
         when (tabIndex) {
@@ -1374,7 +1392,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
             else -> return false
         }
     }
-
     /**
      * Check if the selected device has scale protocol enabled
      */
