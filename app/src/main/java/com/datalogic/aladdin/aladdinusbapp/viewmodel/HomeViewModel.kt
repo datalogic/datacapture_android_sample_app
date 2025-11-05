@@ -1027,7 +1027,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                     }
                 }
             }
-        } ?: resultLiveData.postValue("No device selected")
+        }
     }
 
     /**
