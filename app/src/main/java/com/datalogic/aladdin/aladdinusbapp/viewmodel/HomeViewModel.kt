@@ -1387,6 +1387,11 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                 if (tabIndex == 4) {
                     getDeviceConfigName()
                 }
+                if(tabIndex == 3) {
+                    val command = DIOCmdValue.ENABLE_SCANNER
+                    Log.d("HomeViewModel", "Enable scanner ...")
+                    selectedDevice.value?.dioCommand(command, command.value, context)
+                }
                 return true
             }
 
