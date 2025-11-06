@@ -2,7 +2,6 @@ package com.datalogic.aladdin.aladdinusbapp.views.compose
 
 import DatalogicBluetoothDevice
 import android.Manifest
-import android.bluetooth.BluetoothDevice
 import android.content.ContentValues.TAG
 import android.content.pm.PackageManager
 import android.os.Build
@@ -25,7 +24,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,13 +39,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
 import androidx.core.app.ActivityCompat
 import com.datalogic.aladdin.aladdinusbapp.R
+import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
+import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
+import java.util.ArrayList
 
 @Composable
-fun BluetoothDeviceDropdown(
+fun UsbBTDeviceDropdown(
     modifier: Modifier,
     selectedBluetoothDevice: DatalogicBluetoothDevice?,
-    bluetoothDevices: List<DatalogicBluetoothDevice>,
-    onBluetoothDeviceSelected: (DatalogicBluetoothDevice?) -> Unit
+    bluetoothDevices: ArrayList<DatalogicBluetoothDevice>?,
+    onBluetoothDeviceSelected: (DatalogicBluetoothDevice?) -> Unit,
+    usbDevices: ArrayList<DatalogicDevice>,
+    onUsbDeviceSelected: (DatalogicDevice?) -> Unit,
+    selectedUsbDevice: DatalogicDevice?
 ) {
     var expanded by remember { mutableStateOf(false) }
     var textFieldSize by remember { mutableStateOf(Size.Zero) }
@@ -60,16 +64,12 @@ fun BluetoothDeviceDropdown(
         ) != PackageManager.PERMISSION_GRANTED
     ) {
         Log.d(TAG, "[BluetoothDeviceDropdown] permission denied")
-    } else if (selectedBluetoothDevice != null){
+    } else if (selectedBluetoothDevice != null) {
         deviceDisplayName = selectedBluetoothDevice.name
+    } else if(selectedUsbDevice != null) {
+        deviceDisplayName = selectedUsbDevice.displayName
     } else {
-        deviceDisplayName = "No device selected"
-    }
-
-    LaunchedEffect(bluetoothDevices) {
-        if (selectedBluetoothDevice != null && !bluetoothDevices.contains(selectedBluetoothDevice)) {
-            onBluetoothDeviceSelected(null)
-        }
+        deviceDisplayName = stringResource(id = R.string.no_devices_connected)
     }
 
     Card(
@@ -105,13 +105,37 @@ fun BluetoothDeviceDropdown(
         )
 
         DropdownMenu(
-            expanded = expanded && bluetoothDevices.isNotEmpty(),
+            expanded = expanded && (usbDevices.isNotEmpty() || bluetoothDevices?.isNotEmpty() == true),
             onDismissRequest = { expanded = false },
             modifier = Modifier.width(with(LocalDensity.current) { textFieldSize.width.toDp() })
         ) {
-            bluetoothDevices.forEach { device ->
+            usbDevices.forEach { device ->
                 DropdownMenuItem(
-                    text = { Text(text = device.name ?: "Unknown", style = MaterialTheme.typography.labelLarge) },
+                    text = {
+                        Text(
+                            text = device.displayName,
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                    },
+                    onClick = {
+                        Toast.makeText(
+                            context,
+                            "Selected device ${device.displayName}",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        onUsbDeviceSelected(device)
+                        expanded = false
+                    }
+                )
+            }
+            bluetoothDevices?.forEach { device ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = device.name,
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                    },
                     onClick = {
                         Toast.makeText(
                             context,

@@ -18,6 +18,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -35,8 +36,11 @@ import androidx.compose.ui.unit.sp
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.CustomSwitch
-import com.datalogic.aladdin.aladdinusbapp.views.compose.ResetDeviceAlertDialog
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ConfigurationFeature
+import com.datalogic.aladdin.aladdinusbapp.views.compose.ResetDeviceAlertDialog
+import com.datalogic.aladdin.aladdinusbapp.views.compose.UsbBTDeviceDropdown
+import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 
 @Composable
 fun ConfigurationTabLandscape() {
@@ -45,6 +49,9 @@ fun ConfigurationTabLandscape() {
     val configData = homeViewModel.readConfigData.observeAsState(hashMapOf()).value
     val writeResult = homeViewModel.resultLiveData.observeAsState("").value
     val checkedStates = remember { mutableStateMapOf<ConfigurationFeature, Boolean>() }
+    val allUsbDevices = homeViewModel.deviceList.observeAsState(ArrayList()).value
+    val openUsbDeviceList = allUsbDevices.filter { it.status.value == DeviceStatus.OPENED } as ArrayList<DatalogicDevice>
+    val selectedUsbDevice = homeViewModel.selectedDevice.observeAsState(null).value
 
     configData.forEach { (feature, value) ->
         if (checkedStates[feature] == null) {
@@ -63,6 +70,12 @@ fun ConfigurationTabLandscape() {
     }
 
     val isButtonClicked = remember { mutableStateOf(false) }
+
+    LaunchedEffect(configData, selectedUsbDevice) {
+        if (selectedUsbDevice != null) homeViewModel.readConfigData()
+        checkedStates.clear()
+        checkedStates.putAll(configData)
+    }
 
     Column(
         modifier = Modifier
@@ -92,6 +105,23 @@ fun ConfigurationTabLandscape() {
                 .padding(dimensionResource(id = R.dimen._8sdp)),
             verticalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen._30sdp))
         ){
+            UsbBTDeviceDropdown(
+                modifier = Modifier
+                    .semantics { contentDescription = "device_dropdown" }
+                    .fillMaxWidth()
+                    .height(dimensionResource(id = R.dimen._55sdp)),
+                usbDevices = openUsbDeviceList,
+                bluetoothDevices = null,
+                onUsbDeviceSelected = { device ->
+                    homeViewModel.setSelectedDevice(device)
+                    homeViewModel.readConfigData()
+                },
+                selectedBluetoothDevice = null,
+                selectedUsbDevice = selectedUsbDevice,
+                onBluetoothDeviceSelected = { device ->
+                    homeViewModel.setSelectedBluetoothDevice(device)
+                }
+            )
             val sortedConfigData = configData.toList().sortedBy { it.first.featureName }
             for ((feature, value) in sortedConfigData) {
                 val checkedState = checkedStates[feature] ?: false
