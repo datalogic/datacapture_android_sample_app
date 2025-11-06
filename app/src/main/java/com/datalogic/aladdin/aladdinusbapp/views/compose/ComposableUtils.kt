@@ -1,16 +1,21 @@
 package com.datalogic.aladdin.aladdinusbapp.views.compose
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -28,6 +33,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,6 +50,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.datalogic.aladdin.aladdinusbapp.R
+import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
 import kotlinx.coroutines.delay
 
@@ -51,21 +58,41 @@ object ComposableUtils {
 
     @Composable
     fun HeaderImageView(modifier: Modifier) {
+        val homeViewModel = LocalHomeViewModel.current
+        val aboutAppModel = homeViewModel.aboutApp.observeAsState(null).value
+        val version = aboutAppModel?.appVersion ?: ""
+        val versionApp = if (version.isEmpty()) "" else "V $version"
         val configuration = LocalConfiguration.current
         if (configuration.screenHeightDp > 350) {
-            Row (
-                modifier
-                    .semantics { contentDescription = "app_logo" }
+            Box(
+                modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = dimensionResource(id = R.dimen._5sdp)),
-                Arrangement.Center,
-            ){
-                Image(
-                    modifier = Modifier.size(dimensionResource(id = R.dimen._81sdp), dimensionResource(id = R.dimen._46sdp)),
-                    painter = painterResource(id = R.drawable.ic_logo_version_screen),
-                    contentDescription = "app_logo"
-                )
+                    .padding(top = dimensionResource(id = R.dimen._5sdp))
+            ) {
+                Row(
+                    modifier = Modifier.align(Alignment.Center),
+                    verticalAlignment = Alignment.Bottom
+                ) {
+                    Image(
+                        modifier = Modifier
+                            .size(
+                                width = dimensionResource(id = R.dimen._81sdp),
+                                height = dimensionResource(id = R.dimen._46sdp)
+                            ),
+                        painter = painterResource(id = R.drawable.ic_logo_version_screen),
+                        contentDescription = "app_logo"
+                    )
+
+                    Text(
+                        modifier = Modifier
+//                            .padding(start = 4.dp)
+                            .semantics { contentDescription = "lbl_version" },
+                        text = versionApp,
+                        style = MaterialTheme.typography.headlineSmall
+                    )
+                }
             }
+
         }
     }
 
@@ -273,6 +300,49 @@ object ComposableUtils {
                 keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
                 singleLine = true
             )
+        }
+    }
+
+    @Composable
+    fun TextValueRow(title: String, value: String?, customModifier: Modifier? = null){
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(2.dp),
+        ) {
+            if (customModifier != null) {
+                Text(
+                    modifier = customModifier,
+                    text = title,
+                    style = MaterialTheme.typography.headlineLarge
+                )
+            } else {
+                Text(
+                    modifier = Modifier
+                        .semantics { contentDescription = "lbl_title" }
+                        .fillMaxWidth()
+                        .padding(
+                            start = dimensionResource(id = R.dimen._5sdp),
+                            bottom = dimensionResource(id = R.dimen._5sdp)
+                        ),
+                    text = title,
+                    style = MaterialTheme.typography.headlineLarge
+                )
+            }
+
+            if (value != null) {
+                Text(
+                    modifier = Modifier
+                        .semantics { contentDescription = "lbl_value" }
+                        .fillMaxWidth()
+                        .padding(
+                            start = dimensionResource(id = R.dimen._10sdp),
+                            bottom = dimensionResource(id = R.dimen._5sdp)
+                        ),
+                    text = value,
+                    style = MaterialTheme.typography.headlineLarge
+                )
+            }
         }
     }
 }

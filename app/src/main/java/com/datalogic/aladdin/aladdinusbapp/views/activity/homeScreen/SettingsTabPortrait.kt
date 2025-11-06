@@ -1,8 +1,6 @@
 package com.datalogic.aladdin.aladdinusbapp.views.activity.homeScreen
 
 import android.annotation.SuppressLint
-import android.app.Activity
-import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -30,15 +28,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
+import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils
 
 
 @SuppressLint("CoroutineCreationDuringComposition")
@@ -47,23 +44,68 @@ fun SettingsTabPortrait() {
     val homeViewModel = LocalHomeViewModel.current
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp
-    val context = LocalContext.current
-    val activity = context as? Activity
     /**
      * Define a threshold for vertical scrolling
      * */
     val scrollableThreshold = 500
+    val aboutAppModel = homeViewModel.aboutApp.observeAsState(null).value
     val content = @Composable {
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
+                .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
         ) {
-            logAndroidSystemInfo()
             Spacer(modifier = Modifier.height(16.dp))
+            //About
+            Column(
+                modifier = Modifier
+                    .semantics { contentDescription = "about" }
+                    .fillMaxWidth()
+                    .padding(vertical = dimensionResource(id = R.dimen._10sdp))
+            ) {
+                Text(
+                    modifier = Modifier
+                        .semantics { contentDescription = "lbl_about" }
+                        .fillMaxWidth()
+                        .padding(
+                            start = dimensionResource(id = R.dimen._10sdp),
+                            bottom = dimensionResource(id = R.dimen._5sdp)
+                        ),
+                    text = "About",
+                    style = MaterialTheme.typography.headlineLarge
+                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(
+                            BorderStroke(1.dp, Color.Black),
+                            RoundedCornerShape(dimensionResource(id = R.dimen._8sdp))
+                        )
+                        .padding(horizontal = dimensionResource(id = R.dimen._16sdp)),
+                ) {
 
+                    val cusModifier = Modifier
+                        .semantics { contentDescription = "lbl_title" }
+                        .width(120.dp)
+                        .padding(
+                            start = dimensionResource(id = R.dimen._5sdp),
+                            bottom = dimensionResource(id = R.dimen._5sdp)
+                        )
+
+                    ComposableUtils.TextValueRow("Version:", aboutAppModel?.appVersion, cusModifier)
+                    ComposableUtils.TextValueRow("SDK Version:", aboutAppModel?.versionSDK, cusModifier)
+                    ComposableUtils.TextValueRow(
+                        "Android Version:",
+                        "${aboutAppModel?.osName} ${aboutAppModel?.osVersion} " +
+                                "(SDK ${aboutAppModel?.sdkInt} - ${aboutAppModel?.arch})",
+                        cusModifier
+                    )
+                    ComposableUtils.TextValueRow("Device Name:", "${aboutAppModel?.deviceBrand} ${aboutAppModel?.deviceModel}", cusModifier)
+                    ComposableUtils.TextValueRow("Time Zone:", aboutAppModel?.timeZone, cusModifier)
+                }
+            }
+            //Log
             Column(
                 modifier = Modifier
                     .semantics { contentDescription = "log" }
@@ -158,16 +200,4 @@ fun SettingsTabPortrait() {
             content()
         }
     }
-}
-fun logAndroidSystemInfo() {
-    val osName = "Android"
-    val osVersion = android.os.Build.VERSION.RELEASE
-    val sdkInt = android.os.Build.VERSION.SDK_INT
-    val deviceModel = android.os.Build.MODEL
-    val deviceBrand = android.os.Build.BRAND
-    val arch = System.getProperty("os.arch") ?: "unknown"
-    val timeZone = java.util.TimeZone.getDefault().id
-
-    Log.i("SystemInfo", "Device OS: $osName $osVersion (SDK $sdkInt; $arch; $deviceBrand $deviceModel)")
-    Log.i("SystemInfo", "user.timezone: $timeZone")
 }

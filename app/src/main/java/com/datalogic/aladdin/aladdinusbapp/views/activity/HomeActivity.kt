@@ -23,9 +23,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.datalogic.aladdin.aladdinusbapp.R
+import com.datalogic.aladdin.aladdinusbapp.utils.AboutModel
 import com.datalogic.aladdin.aladdinusbapp.utils.CommonUtils
 import com.datalogic.aladdin.aladdinusbapp.viewmodel.HomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.theme.AladdinUSBAppTheme
+import com.datalogic.aladdin.aladdinusbscannersdk.BuildConfig
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDeviceManager
 import com.datalogic.aladdin.aladdinusbscannersdk.model.LabelCodeType
 import com.datalogic.aladdin.aladdinusbscannersdk.model.LabelIDControl
@@ -36,6 +38,8 @@ import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.BluetoothListener
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.StatusListener
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbListener
+import java.io.File
+import kotlin.String
 
 val LocalHomeViewModel = staticCompositionLocalOf<HomeViewModel> {
     error("No HomeViewModel provided")
@@ -148,6 +152,7 @@ class HomeActivity : AppCompatActivity() {
         // Initialize logging state
         homeViewModel.initializeLoggingState()
         homeViewModel.initializeConnectTypeState()
+        homeViewModel.getAppInfo()
     }
 
     override fun onRequestPermissionsResult(
@@ -261,5 +266,4 @@ class HomeActivity : AppCompatActivity() {
             usbDeviceManager.registerBluetoothListener(it)
         }
     }
-
 }

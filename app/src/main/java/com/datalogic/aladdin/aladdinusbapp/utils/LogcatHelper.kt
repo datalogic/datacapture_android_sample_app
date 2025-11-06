@@ -167,20 +167,20 @@ class LogcatHelper private constructor(
         }
     }
 
-    fun exportLogsToPublicFolder(context: Context) {
+    fun exportLogsToPublicFolder(context: Context) : Boolean {
         try {
             val internalDir = File(context.filesDir, "logs")
             if (!internalDir.exists()) {
                 Log.e("LogcatHelper", "No internal log directory found: ${internalDir.absolutePath}")
-                return
+                return false
             }
             val files = internalDir.listFiles()?.filter { it.isFile } ?: emptyList()
             if (files.isEmpty()) {
                 Log.w("LogcatHelper", "No log files to export in ${internalDir.absolutePath}")
-                return
+                return false
             }
             val resolver = context.contentResolver
-
+            var result = false
             for (src in files) {
                 val fileName = src.name
                 val existingUri = resolver.query(
@@ -195,16 +195,17 @@ class LogcatHelper private constructor(
                         ContentUris.withAppendedId(MediaStore.Downloads.EXTERNAL_CONTENT_URI, id)
                     } else null
                 }
-
-                val contentValues = ContentValues().apply {
-                    put(MediaStore.Downloads.DISPLAY_NAME, fileName)
-                    put(MediaStore.Downloads.MIME_TYPE, "text/plain")
-                    put(MediaStore.Downloads.RELATIVE_PATH, "Download/AppLogs/logs")
+                val targetUri = if (existingUri != null) {
+                    Log.d("LogcatHelper", "Overwriting existing: $fileName")
+                    existingUri
+                } else {
+                    val values = ContentValues().apply {
+                        put(MediaStore.Downloads.DISPLAY_NAME, fileName)
+                        put(MediaStore.Downloads.MIME_TYPE, "text/plain")
+                        put(MediaStore.Downloads.RELATIVE_PATH, "Download/AppLogs/logs/")
+                    }
+                    resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
                 }
-                val targetUri = existingUri ?: resolver.insert(
-                    MediaStore.Downloads.EXTERNAL_CONTENT_URI,
-                    contentValues
-                )
                 if (targetUri != null) {
                     resolver.openOutputStream(targetUri, "wt")?.use { output ->
                         src.inputStream().use { input ->
@@ -212,15 +213,18 @@ class LogcatHelper private constructor(
                         }
                     }
                     Log.d("LogcatHelper", "Exported: $targetUri $fileName")
+                    result = true
                 } else {
                     Log.e("LogcatHelper", "Failed to create file for: $fileName")
                 }
             }
             Log.d("LogcatHelper", "Export completed. Logs are available in /Download/AppLogs/logs")
+            return result
         } catch (e: Exception) {
             Log.e("LogcatHelper", "Failed to export logs: ${e.message}")
             e.printStackTrace()
         }
+        return false
     }
 
     /**
