@@ -71,61 +71,6 @@ class HomeActivity : AppCompatActivity() {
         supportActionBar?.hide()
         handlerUsbListener()
         handlerBluetoothListener(this)
-        usbDeviceManager = DatalogicDeviceManager
-        usbListener = object : UsbListener {
-            override fun onDeviceAttachedListener(device: UsbDevice) {
-                homeViewModel.setDeviceStatus("Attached ${device.productName}")
-                homeViewModel.detectDevice()
-                homeViewModel.deviceReAttached(device)
-            }
-
-            override fun onDeviceDetachedListener(device: UsbDevice) {
-                homeViewModel.setDeviceStatus("Detached ${device.productName}")
-                homeViewModel.handleDeviceDisconnection(device)
-            }
-        }
-        usbListener?.let {
-            usbDeviceManager.registerUsbListener(it)
-        }
-
-        // USB connection status listener implementation
-        val statusListener = object : StatusListener {
-            override fun onStatus(productId: String, status: DeviceStatus, deviceName: String) {
-                runOnUiThread {
-                    homeViewModel.setStatus(productId, status)
-
-                    // Update UI based on new status
-                    when (status) {
-                        DeviceStatus.OPENED -> {
-                            homeViewModel.onOpenDeviceSuccessResultAction(productId)
-                            //Setup listener
-                            homeViewModel.setupCustomListeners(homeViewModel.deviceList.value?.firstOrNull {it.id == deviceName})
-                            showToast(applicationContext, "Device successfully opened")
-                        }
-                        DeviceStatus.CLOSED -> {
-                            showToast(applicationContext, "Device closed")
-                            homeViewModel.clearConfig()
-                            homeViewModel.setSelectedLabelIDControl(LabelIDControl.DISABLE)
-                            homeViewModel.setSelectedLabelCodeType(LabelCodeType.NONE)
-                        }
-                        else -> {}
-                    }
-                }
-            }
-
-            override fun onError(errorStatus: Int) {
-                runOnUiThread {
-                    when (errorStatus) {
-                        OPEN_FAILURE -> showToast(applicationContext, "Failed to open device")
-                        CLAIM_FAILURE -> showToast(applicationContext, "Failed to claim interface")
-                        ENABLE_FAILURE -> showToast(applicationContext, "Failed to enable scanner")
-                        else -> showToast(applicationContext, "Error: $errorStatus")
-                    }
-                }
-            }
-        }
-        usbDeviceManager.registerStatusListener(statusListener)
-
         setContent {
             AladdinUSBAppTheme {
                 Surface(

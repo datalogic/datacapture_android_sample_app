@@ -82,11 +82,18 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
     private val _deviceList = MutableLiveData<ArrayList<DatalogicDevice>>(ArrayList())
     val deviceList: LiveData<ArrayList<DatalogicDevice>> = _deviceList
 
+    val openUsbDeviceList = deviceList.value?.filter { it.status.value == DeviceStatus.OPENED }
+            as ArrayList<DatalogicDevice>
+
     private val _usbDeviceList = MutableLiveData<ArrayList<UsbDevice>>(ArrayList())
     val usbDeviceList: LiveData<ArrayList<UsbDevice>> = _usbDeviceList
 
     private val _allBluetoothDevices = MutableLiveData<ArrayList<DatalogicBluetoothDevice>>(ArrayList())
     val allBluetoothDevices: LiveData<ArrayList<DatalogicBluetoothDevice>> = _allBluetoothDevices
+
+    val openBTDeviceList = allBluetoothDevices.value?.filter { it.status.value == DeviceStatus.OPENED }
+            as ArrayList<DatalogicBluetoothDevice>
+
     private var bluetoothPollingJob: Job? = null
 
     private val _scanLabel = MutableLiveData("")
@@ -329,15 +336,45 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
             usbDeviceManager.detectDevice(context) { devices ->
                 _deviceList.postValue(ArrayList(devices))
                 _isLoading.postValue(false)
+                handleSelectDevice()
             }
             usbDeviceManager.getAllBluetoothDevice(activity!!) { devices ->
                 _allBluetoothDevices.postValue(ArrayList(devices))
                 _isLoading.postValue(false)
+                handleSelectDevice()
             }
         }
         usbDeviceManager.getAllUsbDevice(context) { devices ->
             _usbDeviceList.postValue(ArrayList(devices))
             _isLoading.postValue(false)
+            handleSelectDevice()
+
+            if (_autoDetectChecked.value == false) {
+                val connectedIds = devices.map { it.deviceId }.toSet()
+                val list = _deviceList.value ?: arrayListOf()
+                var mutated = false
+                list.forEach { dev ->
+                    if (dev.usbDevice.deviceId !in connectedIds && dev.status.value == DeviceStatus.OPENED) {
+                        dev.status.value = DeviceStatus.CLOSED
+                        mutated = true
+                    }
+                }
+                if (mutated) _deviceList.postValue(ArrayList(list))
+            }
+        }
+    }
+
+    private fun handleSelectDevice() {
+        if (openUsbDeviceList.isNotEmpty()) {
+            // Only override if nothing is selected (don’t fight user choice)
+            if (selectedDevice.value == null) setSelectedDevice(openUsbDeviceList.first())
+        } else {
+            if(openBTDeviceList.isNotEmpty()){
+                if (selectedBluetoothDevice.value == null) setSelectedBluetoothDevice(openBTDeviceList.first())
+            } else {
+                setSelectedDevice(null)
+                setSelectedBluetoothDevice(null)
+            }
         }
     }
 
@@ -642,6 +679,10 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                                     Log.e(tag, "Error unregistering scale listener", e)
                                 }
                             }
+                            if (selectedDevice.value?.usbDevice?.deviceName == device.usbDevice.deviceName) {
+                                setSelectedDevice(null)
+                                setDefaultDevice()
+                            }
                             updateDeviceStatusInList(device, DeviceStatus.CLOSED)
                         }
 
@@ -700,9 +741,10 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
      * @return true if the selection was processed, false otherwise
      */
     fun setDropdownSelectedDevice(newDevice: DatalogicDevice?): Boolean {
-        selectedDevice.value?.let {
-            if (it.status.value == DeviceStatus.OPENED) {
-                closeUsbDevice(newDevice)
+        selectedDevice.value?.let { current ->
+            if (current.status.value == DeviceStatus.OPENED && current != newDevice) {
+                // FIX: close the CURRENT device, not the new one
+                closeUsbDevice(current)
             }
         }
         setSelectedDevice(newDevice)
