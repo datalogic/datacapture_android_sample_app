@@ -1,8 +1,7 @@
 package com.datalogic.aladdin.aladdinusbapp.views.activity.homeScreen
 
+//import com.datalogic.aladdin.aladdinusbapp.utils.CommonUtils.rememberEnsureBluetoothEnabled
 import android.app.Activity
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -11,27 +10,26 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import com.datalogic.aladdin.aladdinusbapp.R
-//import com.datalogic.aladdin.aladdinusbapp.utils.CommonUtils.rememberEnsureBluetoothEnabled
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
-import com.datalogic.aladdin.aladdinusbapp.views.compose.LoggingDropdown
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.foundation.lazy.itemsIndexed
-import com.datalogic.aladdin.aladdinusbapp.utils.CommonUtils
 import com.datalogic.aladdin.aladdinusbapp.views.activity.devicesScreen.BluetoothDeviceItem
 import com.datalogic.aladdin.aladdinusbapp.views.activity.devicesScreen.DeviceRow
+import com.datalogic.aladdin.aladdinusbapp.views.compose.LoggingDropdown
 
 @Composable
 fun HomeTabPortrait() {
@@ -47,6 +45,10 @@ fun HomeTabPortrait() {
     val context = LocalContext.current
     val activity = context as? Activity
 //    val ensureBluetoothEnabled = rememberEnsureBluetoothEnabled(context)
+
+    LaunchedEffect(Unit) {
+        homeViewModel.detectDevice()
+    }
 
     LazyColumn(
         modifier = Modifier
