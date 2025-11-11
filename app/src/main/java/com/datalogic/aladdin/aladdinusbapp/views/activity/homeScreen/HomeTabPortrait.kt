@@ -46,10 +46,6 @@ fun HomeTabPortrait() {
     val activity = context as? Activity
 //    val ensureBluetoothEnabled = rememberEnsureBluetoothEnabled(context)
 
-    LaunchedEffect(Unit) {
-        homeViewModel.detectDevice()
-    }
-
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
