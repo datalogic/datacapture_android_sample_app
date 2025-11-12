@@ -160,7 +160,7 @@ class HomeActivity : AppCompatActivity() {
                         DeviceStatus.OPENED -> {
                             homeViewModel.onOpenDeviceSuccessResultAction(productId)
                             //Setup listener
-                            homeViewModel.setupCustomListeners(homeViewModel.deviceList.value?.firstOrNull {it.id == deviceName})
+                            homeViewModel.setupCustomListeners(homeViewModel.deviceList.value?.firstOrNull {it.usbDevice.deviceName == deviceName})
                             showToast(applicationContext, "Device successfully opened")
                         }
                         DeviceStatus.CLOSED -> {

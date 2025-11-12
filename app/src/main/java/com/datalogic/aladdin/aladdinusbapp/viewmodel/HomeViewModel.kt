@@ -1190,6 +1190,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
 
         // Unregister receivers
         usbDeviceManager.unregisterReceiver(context)
+        closeAllDevices()
     }
 
     // Function to show Toast on the main thread
@@ -1826,6 +1827,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
     fun coroutineOpenBluetoothDevice(device: DatalogicBluetoothDevice, context: Activity) {
         bluetoothScanEvent = object : UsbScanListener {
             override fun onScan(scanData: UsbScanData) {
+                Log.d(tag, "[bluetoothScanEvent] onScan data: ${scanData.barcodeData}")
                 setScannedData(scanData)
             }
         }
@@ -1917,6 +1919,41 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
             }
         }
     }
+
+    // In HomeViewModel.kt
+
+    /**
+     * Iterates through all known devices (USB and Bluetooth) and ensures they are closed.
+     * This is intended to be called when the application is shutting down.
+     */
+    fun closeAllDevices() {
+        Log.d(tag, "Closing all connected devices...")
+
+        // Close all USB devices
+        _deviceList.value?.forEach { device ->
+            if (device.status.value == DeviceStatus.OPENED) {
+                Log.d(tag, "Closing USB device: ${device.displayName}")
+                // Use your existing closeDevice logic if it handles all cleanup.
+                // Assuming 'closeDevice' in DatalogicDevice handles listeners and connections.
+                closeUsbDevice(device)
+            }
+        }
+
+        // Close all Bluetooth devices
+        _allBluetoothDevices.value?.forEach { device ->
+            if (device.status.value == DeviceStatus.OPENED) {
+                Log.d(tag, "Closing Bluetooth device: ${device.name}")
+                closeBluetoothDevice(device) // Assuming DatalogicBluetoothDevice has a close() method.
+            }
+        }
+
+        // Clear the lists after closing
+        _deviceList.postValue(ArrayList())
+        _allBluetoothDevices.postValue(ArrayList())
+
+        Log.d(tag, "All devices have been instructed to close.")
+    }
+
 
     fun setSelectedBluetoothProfile(profile: PairingBarcodeType) {
         selectedBluetoothProfile.value = profile
