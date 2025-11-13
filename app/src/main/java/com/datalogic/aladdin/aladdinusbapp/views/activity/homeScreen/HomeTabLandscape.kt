@@ -29,6 +29,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.runtime.LaunchedEffect
 import com.datalogic.aladdin.aladdinusbapp.utils.CommonUtils
 import com.datalogic.aladdin.aladdinusbapp.views.activity.devicesScreen.BluetoothDeviceItem
 import com.datalogic.aladdin.aladdinusbapp.views.activity.devicesScreen.DeviceRow
@@ -47,7 +48,6 @@ fun HomeTabLandscape() {
     val context = LocalContext.current
     val activity = context as? Activity
 //    val ensureBluetoothEnabled = rememberEnsureBluetoothEnabled(context)
-
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()

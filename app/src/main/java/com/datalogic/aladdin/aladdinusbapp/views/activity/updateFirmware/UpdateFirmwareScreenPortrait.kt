@@ -152,7 +152,8 @@ fun UpdateFirmwareScreen() {
                             homeViewModel._isBulkTransferSupported.postValue(false)
                     },
                     isFRS = homeViewModel.isFRS(),
-                    isS37 = (fileType.uppercase() == FileConstants.S37_FILE_TYPE)
+                    isS37 = (fileType.uppercase() == FileConstants.S37_FILE_TYPE),
+                    isDFW = fileType.uppercase() == FileConstants.DFW_FILE_TYPE
                 )
             }
             // Progress Section
@@ -205,14 +206,20 @@ fun UpdateFirmwareScreen() {
                                     handleBulkTransferAndUpgrade(it, isBulkTransferToggle, homeViewModel, context, fileType)
                                 }, context)
                                 return@let
-                            } else if (isCheckPidToggle && fileType == FileConstants.DFW_FILE_TYPE) {
-                                homeViewModel.setPidDWF(it, fileType) { isValid ->
-                                    if (isCheckPidToggle != isValid) {
-                                        Toast.makeText(context,context.getString(R.string.pid_is_not_valid),Toast.LENGTH_LONG).show()
-                                        return@setPidDWF
+                            } else if (fileType == FileConstants.DFW_FILE_TYPE) {
+                                if (isCheckPidToggle) {
+                                    homeViewModel.setPidDWF(it, fileType) { isValid ->
+                                        if (isCheckPidToggle != isValid) {
+                                            Toast.makeText(
+                                                context,
+                                                context.getString(R.string.pid_is_not_valid),
+                                                Toast.LENGTH_LONG
+                                            ).show()
+                                            return@setPidDWF
+                                        }
                                     }
-                                    handleBulkTransferAndUpgrade(it, isBulkTransferToggle, homeViewModel, context, fileType)
                                 }
+                                handleBulkTransferAndUpgrade(it, isBulkTransferToggle, homeViewModel, context, fileType)
                                 return@let
                             } else if (fileType == FileConstants.SWU_FILE_TYPE) {
                                 handleBulkTransferAndUpgrade(it, isBulkTransferToggle, homeViewModel, context, fileType)

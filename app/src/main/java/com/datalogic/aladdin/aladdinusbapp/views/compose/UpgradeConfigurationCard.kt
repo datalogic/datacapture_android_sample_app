@@ -34,7 +34,8 @@ fun UpgradeConfigurationCard(
     onCheckPidToggle: (Boolean) -> Unit,
     onBulkTransferToggle: (Boolean) -> Unit,
     isFRS: Boolean = false,
-    isS37: Boolean = true
+    isS37: Boolean = true,
+    isDFW: Boolean = false
 ) {
     Card(
         shape = RoundedCornerShape(8.dp),
@@ -67,7 +68,7 @@ fun UpgradeConfigurationCard(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            if(isS37) {
+            if(isS37 || isDFW) {
                 ToggleRow(
                     label = stringResource(id = R.string.check_pid_label),
                     checked = checkPidEnabled,
