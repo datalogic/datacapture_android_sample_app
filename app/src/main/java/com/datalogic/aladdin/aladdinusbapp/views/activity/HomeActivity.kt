@@ -176,18 +176,6 @@ class HomeActivity : AppCompatActivity() {
                             homeViewModel.setSelectedLabelIDControl(LabelIDControl.DISABLE)
                             homeViewModel.setSelectedLabelCodeType(LabelCodeType.NONE)
                         }
-                        DeviceStatus.DOCKING -> {
-                            homeViewModel.setDeviceStatus("Device Docking")
-                        }
-                        DeviceStatus.UNDOCKING -> {
-                            homeViewModel.setDeviceStatus("Device Undocking")
-                        }
-                        DeviceStatus.LINKED -> {
-                            homeViewModel.setDeviceStatus("Device Linked")
-                        }
-                        DeviceStatus.UNLINKED -> {
-                            homeViewModel.setDeviceStatus("Device Unlinked")
-                        }
                         else -> {}
                     }
                 }
