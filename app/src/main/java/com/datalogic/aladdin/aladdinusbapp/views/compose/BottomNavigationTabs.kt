@@ -1,5 +1,6 @@
 package com.datalogic.aladdin.aladdinusbapp.views.compose
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -53,7 +54,8 @@ fun BottomNavigationRow(modifier: Modifier, homeViewModel: HomeViewModel) {
         stringResource(id = R.string.btn_upgrade_firmware),
         stringResource(id = R.string.bluetooth),
         stringResource(R.string.settings),
-        stringResource(id = R.string.scanner_data)
+        stringResource(id = R.string.scanner_data),
+        stringResource(id = R.string.cradle_state)
     )
     val selectedTab by homeViewModel.selectedTabIndex.observeAsState(0)
     val status = homeViewModel.status.observeAsState(DeviceStatus.CLOSED).value
@@ -202,14 +204,13 @@ fun calculateVisibleItemCount(
     )
     val moreWidthDp = resultMore.size.width / density.density
 
-
     items.forEach { item ->
         val result = textMeasurer.measure(
             text = AnnotatedString(item),
             style = TextStyle(fontSize = fontSize)
         )
 
-        val itemWidthDp = result.size.width / density.density
+        val itemWidthDp = result.size.width / density.density + 10
         if (totalWidth + itemWidthDp <= availableWidth) {
             totalWidth += itemWidthDp
             count++
@@ -223,5 +224,6 @@ fun calculateVisibleItemCount(
             return count
         }
     }
+    Log.d("BottomNavigationRow","[calculateVisibleItemCount] moreWidthDp: $moreWidthDp")
     return count
 }

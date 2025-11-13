@@ -97,20 +97,33 @@ class HomeActivity : AppCompatActivity() {
             override fun onStatus(productId: String, status: DeviceStatus, deviceName: String) {
                 runOnUiThread {
                     homeViewModel.setStatus(productId, status)
-
                     // Update UI based on new status
+                    Log.d(TAG, "[onCreate] ${status.name}")
                     when (status) {
                         DeviceStatus.OPENED -> {
                             homeViewModel.onOpenDeviceSuccessResultAction(productId)
                             //Setup listener
                             homeViewModel.setupCustomListeners(homeViewModel.deviceList.value?.firstOrNull {it.id == deviceName})
                             showToast(applicationContext, "Device successfully opened")
+                            homeViewModel.setAutoCheckDocking(homeViewModel.isCheckDockingEnabled.value == true)
                         }
                         DeviceStatus.CLOSED -> {
                             showToast(applicationContext, "Device closed")
                             homeViewModel.clearConfig()
                             homeViewModel.setSelectedLabelIDControl(LabelIDControl.DISABLE)
                             homeViewModel.setSelectedLabelCodeType(LabelCodeType.NONE)
+                        }
+                        DeviceStatus.DOCKING -> {
+                            homeViewModel.setDeviceStatus("Device Docking")
+                        }
+                        DeviceStatus.UNDOCKING -> {
+                            homeViewModel.setDeviceStatus("Device Undocking")
+                        }
+                        DeviceStatus.LINKED -> {
+                            homeViewModel.setDeviceStatus("Device Linked")
+                        }
+                        DeviceStatus.UNLINKED -> {
+                            homeViewModel.setDeviceStatus("Device Unlinked")
                         }
                         else -> {}
                     }
@@ -214,6 +227,7 @@ class HomeActivity : AppCompatActivity() {
             override fun onStatus(productId: String, status: DeviceStatus, deviceName: String) {
                 runOnUiThread {
                     homeViewModel.setStatus(productId, status)
+                    Log.d(TAG, "[handlerUsbListener] ${status.name}")
 
                     // Update UI based on new status
                     when (status) {
@@ -222,12 +236,25 @@ class HomeActivity : AppCompatActivity() {
                             //Setup listener
                             homeViewModel.setupCustomListeners(homeViewModel.deviceList.value?.firstOrNull {it.id == deviceName})
                             showToast(applicationContext, "Device successfully opened")
+                            homeViewModel.setAutoCheckDocking(homeViewModel.isCheckDockingEnabled.value == true)
                         }
                         DeviceStatus.CLOSED -> {
                             showToast(applicationContext, "Device closed")
                             homeViewModel.clearConfig()
                             homeViewModel.setSelectedLabelIDControl(LabelIDControl.DISABLE)
                             homeViewModel.setSelectedLabelCodeType(LabelCodeType.NONE)
+                        }
+                        DeviceStatus.DOCKING -> {
+                            homeViewModel.setDeviceStatus("Device Docking")
+                        }
+                        DeviceStatus.UNDOCKING -> {
+                            homeViewModel.setDeviceStatus("Device Undocking")
+                        }
+                        DeviceStatus.LINKED -> {
+                            homeViewModel.setDeviceStatus("Device Linked")
+                        }
+                        DeviceStatus.UNLINKED -> {
+                            homeViewModel.setDeviceStatus("Device Unlinked")
                         }
                         else -> {}
                     }
