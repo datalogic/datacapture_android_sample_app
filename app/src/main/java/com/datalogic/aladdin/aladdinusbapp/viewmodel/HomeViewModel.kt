@@ -86,17 +86,14 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
     private val _deviceList = MutableLiveData<ArrayList<DatalogicDevice>>(ArrayList())
     val deviceList: LiveData<ArrayList<DatalogicDevice>> = _deviceList
 
-    val openUsbDeviceList = deviceList.value?.filter { it.status.value == DeviceStatus.OPENED }
-            as ArrayList<DatalogicDevice>
-
     private val _usbDeviceList = MutableLiveData<ArrayList<UsbDevice>>(ArrayList())
     val usbDeviceList: LiveData<ArrayList<UsbDevice>> = _usbDeviceList
 
     private val _allBluetoothDevices = MutableLiveData<ArrayList<DatalogicBluetoothDevice>>(ArrayList())
     val allBluetoothDevices: LiveData<ArrayList<DatalogicBluetoothDevice>> = _allBluetoothDevices
 
-    val openBTDeviceList = allBluetoothDevices.value?.filter { it.status.value == DeviceStatus.OPENED }
-            as ArrayList<DatalogicBluetoothDevice>
+    private fun currentOpenBtDevices(): List<DatalogicBluetoothDevice> =
+        _allBluetoothDevices.value?.filter { it.status.value == DeviceStatus.OPENED } ?: emptyList()
 
     private var bluetoothPollingJob: Job? = null
 
@@ -306,6 +303,68 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
         )
     }
 
+    // -------- Per-device Scale stream --------
+    data class ScaleUi(
+        val status: String = "",
+        val weight: String = "",
+        val unit: ScaleUnit = ScaleUnit.NONE,
+        val seq: Long = 0L, // bump to force recomposition when values repeat
+    )
+
+
+    class MultiScaleRegistry {
+        private val flows = LinkedHashMap<String, MutableStateFlow<ScaleUi>>()
+        private val enabled = LinkedHashMap<String, MutableStateFlow<Boolean>>() // <- observable
+
+        fun flowFor(deviceId: String): StateFlow<ScaleUi> =
+            flows.getOrPut(deviceId) { MutableStateFlow(ScaleUi()) }
+
+        fun enabledFlowFor(deviceId: String): StateFlow<Boolean> =
+            enabled.getOrPut(deviceId) { MutableStateFlow(false) }
+
+        fun emit(deviceId: String, next: ScaleUi) {
+            flows.getOrPut(deviceId) { MutableStateFlow(ScaleUi()) }.value = next
+        }
+
+        fun setEnabled(deviceId: String, isEnabled: Boolean) {
+            enabled.getOrPut(deviceId) { MutableStateFlow(false) }.value = isEnabled
+        }
+
+        fun clear(deviceId: String) {
+            flows[deviceId]?.value = ScaleUi()
+            enabled[deviceId]?.value = false
+        }
+    }
+
+    fun scaleEnabledFlowFor(deviceId: String): StateFlow<Boolean> = perDeviceScale.enabledFlowFor(deviceId)
+
+    private val perDeviceScale = MultiScaleRegistry()
+
+    fun scaleFlowFor(deviceId: String): StateFlow<ScaleUi> = perDeviceScale.flowFor(deviceId)
+
+    fun emitScaleFrom(deviceId: String, sd: ScaleData) {
+        perDeviceScale.emit(
+            deviceId,
+            ScaleUi(
+                status = sd.status,
+                weight = sd.weight,
+                unit = sd.unit,
+                seq = SystemClock.uptimeMillis()
+            )
+        )
+        // (Optional) Keep legacy globals in sync for old screens:
+        _scaleStatus.postValue(sd.status)
+        _scaleWeight.postValue(sd.weight)
+        _scaleUnit.postValue(sd.unit)
+    }
+
+    fun perDeviceScaleClear(deviceId: String) { perDeviceScale.clear(deviceId) }
+
+    // Convenience overloads
+    fun perDeviceScaleClear(device: DatalogicDevice?) {
+        device?.let { perDeviceScale.clear(it.usbDevice.deviceId.toString()) }
+    }
+
     init {
         this.usbDeviceManager = usbDeviceManager
         _status.postValue(DeviceStatus.CLOSED)
@@ -411,13 +470,15 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
     }
 
     private fun handleSelectDevice() {
-        if (openUsbDeviceList.isNotEmpty()) {
-            // Only override if nothing is selected (don’t fight user choice)
-            if (selectedDevice.value == null) setSelectedDevice(openUsbDeviceList.first())
-        } else {
-            if(openBTDeviceList.isNotEmpty()){
-                if (selectedBluetoothDevice.value == null) setSelectedBluetoothDevice(openBTDeviceList.first())
-            } else {
+        val openUsb = _deviceList.value?.filter { it.status.value == DeviceStatus.OPENED }.orEmpty()
+        val openBt  = _allBluetoothDevices.value?.filter { it.status.value == DeviceStatus.OPENED }.orEmpty()
+
+        if (selectedDevice.value != null || selectedBluetoothDevice.value != null) return
+
+        when {
+            openUsb.isNotEmpty() -> setSelectedDevice(openUsb.first())
+            openBt.isNotEmpty()  -> setSelectedBluetoothDevice(openBt.first())
+            else -> {
                 setSelectedDevice(null)
                 setSelectedBluetoothDevice(null)
             }
@@ -430,8 +491,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
     fun handleDeviceDisconnection(device: UsbDevice) {
         perDeviceClear(device.deviceId.toString())
         clearDIOStatus()
-        clearScaleData()
-        stopScaleHandler()
+        clearScaleData(device.deviceId.toString())
+        stopScaleHandler(device.deviceId.toString())
         //Disable scale section
         _isScaleAvailable.postValue(false)
 
@@ -673,11 +734,16 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
             scaleListener = object : UsbScaleListener {
                 override fun onScale(scaleData: ScaleData) {
                     // Update UI with scale data on main thread
-                    Handler(Looper.getMainLooper()).post {
-                        _scaleStatus.postValue(scaleData.status)
-                        _scaleWeight.postValue(scaleData.weight)
-                        _scaleUnit.postValue(scaleData.unit)
-                    }
+                    val id = device.usbDevice.deviceId.toString()
+                    perDeviceScale.emit(
+                        id,
+                        ScaleUi(
+                            status = scaleData.status,
+                            weight = scaleData.weight,
+                            unit = scaleData.unit,
+                            seq = SystemClock.uptimeMillis()
+                        )
+                    )
                 }
             }
             scaleListener?.let {
@@ -705,6 +771,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                             _status.postValue(DeviceStatus.CLOSED)
                             device.status.value = DeviceStatus.CLOSED
                             perDeviceClear(device.usbDevice.deviceId.toString())
+                            perDeviceScaleClear(device.usbDevice.deviceId.toString())
+                            clearScaleData(device.usbDevice.deviceId.toString())
                             clearConfig()
 
                             _isScaleAvailable.postValue(false)
@@ -1485,7 +1553,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                 return true
             }
 
-            7, 8 -> {
+            7, 8, 9 -> {
                 openAlert = false
                 setSelectedTabIndex(tabIndex)
                 return true
@@ -1566,31 +1634,74 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
         } ?: showToast(context, "No device selected")
     }*/
 
-    fun startScaleHandler() {
-        if (selectedDevice.value?.startScale() ?: false) {
-            _isEnableScale.postValue(true)
-        } else {
-            _scaleStatus.postValue("Failed to start scale")
+    // Utility to find a device (USB or BT) by our deviceId key
+    // Find a USB device by our id key
+    private fun findUsbById(deviceId: String): DatalogicDevice? =
+        _deviceList.value?.firstOrNull { it.usbDevice.deviceId.toString() == deviceId }
+
+    // Start scale for a specific USB deviceId
+    fun startScaleHandler(deviceId: String) {
+        val dev = findUsbById(deviceId) ?: run {
+            // reflect failure to UI
+            val cur = perDeviceScale.flowFor(deviceId).value
+            perDeviceScale.emit(deviceId, cur.copy(status = "Device not found", seq = SystemClock.uptimeMillis()))
+            return
         }
 
-    }
-
-    fun stopScaleHandler() {
-        if (selectedDevice.value?.stopScale() ?: false) {
-            _isEnableScale.postValue(false)
-        } else {
-            _scaleStatus.postValue("Failed to stop scale")
+        viewModelScope.launch(Dispatchers.IO) {
+            val ok = runCatching { dev.startScale() }.getOrDefault(false)
+            withContext(Dispatchers.Main) {
+                perDeviceScale.setEnabled(deviceId, ok)
+                val cur = perDeviceScale.flowFor(deviceId).value
+                perDeviceScale.emit(
+                    deviceId,
+                    cur.copy(status = if (ok) "ENABLED" else "Failed to start scale", seq = SystemClock.uptimeMillis())
+                )
+                if (selectedDevice.value?.usbDevice?.deviceId.toString() == deviceId) {
+                    _isEnableScale.postValue(ok)
+                }
+            }
         }
     }
 
-    /**
-     * Clear scale data
-     */
-    fun clearScaleData() {
-        _scaleStatus.postValue("")
-        _scaleWeight.postValue("")
-        _scaleUnit.postValue(ScaleUnit.NONE)
+    // Stop scale for a specific USB deviceId
+    fun stopScaleHandler(deviceId: String) {
+        val dev = findUsbById(deviceId) ?: run {
+            val cur = perDeviceScale.flowFor(deviceId).value
+            perDeviceScale.emit(deviceId, cur.copy(status = "Device not found", seq = SystemClock.uptimeMillis()))
+            return
+        }
+
+        viewModelScope.launch(Dispatchers.IO) {
+            val ok = runCatching { dev.stopScale() }.getOrDefault(false)
+            withContext(Dispatchers.Main) {
+                perDeviceScale.setEnabled(deviceId, if (ok) false else perDeviceScale.enabledFlowFor(deviceId).value)
+                val cur = perDeviceScale.flowFor(deviceId).value
+                perDeviceScale.emit(
+                    deviceId,
+                    cur.copy(status = if (ok) "DISABLED" else "Failed to stop scale", seq = SystemClock.uptimeMillis())
+                )
+                if (selectedDevice.value?.usbDevice?.deviceId.toString() == deviceId) {
+                    _isEnableScale.postValue(false)
+                }
+            }
+        }
     }
+
+    // Clear only the displayed scale data for a specific USB deviceId
+    fun clearScaleData(deviceId: String) {
+        perDeviceScale.clear(deviceId)
+        if (selectedDevice.value?.usbDevice?.deviceId.toString() == deviceId) {
+            _scaleStatus.postValue("")
+            _scaleWeight.postValue("")
+            _scaleUnit.postValue(ScaleUnit.NONE)
+        }
+    }
+
+    // Convenient overloads when you already have the USB device object:
+    fun startScaleHandler(device: DatalogicDevice) = startScaleHandler(device.usbDevice.deviceId.toString())
+    fun stopScaleHandler(device: DatalogicDevice)  = stopScaleHandler(device.usbDevice.deviceId.toString())
+    fun clearScaleData(device: DatalogicDevice)   = clearScaleData(device.usbDevice.deviceId.toString())
 
     fun saveConfigData(fileName: String) {
         if (!TextUtils.isEmpty(customConfiguration.value.toString()))
@@ -1889,6 +2000,19 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
     }
 
     fun coroutineOpenBluetoothDevice(device: DatalogicBluetoothDevice, context: Activity) {
+        // A) Avoid duplicate opens
+        if (device.status.value == DeviceStatus.OPENED) {
+            showToast(context, "Device already opened")
+            return
+        }
+
+        // B) Stop discovery before connecting (HID/SPP stacks can be touchy)
+        usbDeviceManager.stopScanBluetoothDevices(context)
+
+        // C) Select the *same instance* you are opening
+        setSelectedBluetoothDevice(device)
+
+        // Fresh scan listener every time
         bluetoothScanEvent = object : UsbScanListener {
             override fun onScan(scanData: UsbScanData) {
                 Log.d(tag, "[bluetoothScanEvent] onScan data: ${scanData.barcodeData}")
@@ -1896,51 +2020,78 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
             }
         }
 
-        CoroutineScope(Dispatchers.IO).launch {
+        viewModelScope.launch(Dispatchers.IO) {
             Log.d(tag, "[coroutineOpenBluetoothDevice] connectDevice")
-            bluetoothScanEvent?.let {
-                device.connectDevice(it, context) { status ->
-                    CoroutineScope(Dispatchers.Main).launch {
-                        if (status == BluetoothPairingStatus.Successful) {
-                            bluetoothErrorListener = object : UsbDioListener {
-                                override fun fireDioErrorEvent(
-                                    errorCode: Int,
-                                    message: String
-                                ) {
-                                    showToast(context, message + errorCode)
-                                }
+            val listener = bluetoothScanEvent ?: return@launch
+
+            // D) Give the OS a beat in case we just closed the link (prevents busy GATT/RFCOMM)
+            delay(150)
+
+            device.connectDevice(listener, context) { status ->
+                viewModelScope.launch(Dispatchers.Main) {
+                    if (status == BluetoothPairingStatus.Successful) {
+                        bluetoothErrorListener = object : UsbDioListener {
+                            override fun fireDioErrorEvent(errorCode: Int, message: String) {
+                                showToast(context, message + errorCode)
                             }
-                            bluetoothErrorListener?.let { listener ->
-                                device.registerBluetoothDioListener(listener)
-                            }
-                            Log.d(tag, "[coroutineOpenBluetoothDevice] connectDevice Successful")
-                            _status.postValue(DeviceStatus.OPENED)
-                            device.status.value = DeviceStatus.OPENED
-                            _deviceStatus.postValue("Device opened")
-                            showToast(context, "Device successfully opened")
-                        } else {
-                            Log.d(tag, "[coroutineOpenBluetoothDevice] connectDevice Failure")
-                            _status.postValue(DeviceStatus.CLOSED)
-                            device.status.value = DeviceStatus.CLOSED
-                            _deviceStatus.postValue("No device selected")
                         }
+                        bluetoothErrorListener?.let { device.registerBluetoothDioListener(it) }
+
+                        _status.postValue(DeviceStatus.OPENED)
+                        device.status.value = DeviceStatus.OPENED
+                        _deviceStatus.postValue("Device opened status ${device.status.value}")
+                        updateBluetoothStatusInList(device, DeviceStatus.OPENED)
+                        selectedScannerBluetoothDevice.postValue(device)
+                        val cmd = DIOCmdValue.ENABLE_SCANNER
+                        device.dioCommand(cmd, cmd.value, context)
+                        showToast(context, "Device successfully opened")
+                    } else {
+                        _status.postValue(DeviceStatus.CLOSED)
+                        device.status.value = DeviceStatus.CLOSED
+                        _deviceStatus.postValue("No device selected")
+                        updateBluetoothStatusInList(device, DeviceStatus.CLOSED)
                     }
                 }
             }
         }
     }
 
-    fun closeBluetoothDevice(dlBluetoothDevice: DatalogicBluetoothDevice?) {
-        bluetoothErrorListener?.let {
-            dlBluetoothDevice?.unregisterBluetoothDioListener(it)
+    fun updateBluetoothStatusInList(target: DatalogicBluetoothDevice, newStatus: DeviceStatus) {
+        val list = _allBluetoothDevices.value ?: return
+
+        val idx = list.indexOfFirst { dev ->
+            dev.bluetoothDevice.address == target.bluetoothDevice.address
         }
-        dlBluetoothDevice?.clearConnection(context)
-        dlBluetoothDevice?.let { device ->
-            _status.postValue(dlBluetoothDevice.status.value)
-            _deviceStatus.postValue("No device selected")
+        if (idx >= 0) {
+            val dev = list[idx]
+            // update the device’s own status LiveData
+            dev.status.value = newStatus
+            // re-post a new list instance to trigger observers
+            _allBluetoothDevices.postValue(ArrayList(list))
         }
-        perDeviceClear(dlBluetoothDevice)
     }
+
+    fun closeBluetoothDevice(dlBluetoothDevice: DatalogicBluetoothDevice?) {
+        val dev = dlBluetoothDevice ?: return
+        usbDeviceManager.stopScanBluetoothDevices(context)
+        // detach listeners
+        bluetoothErrorListener?.let { dev.unregisterBluetoothDioListener(it) }
+        dev.clearConnection(context)
+        viewModelScope.launch(Dispatchers.IO) { delay(150) }
+        // status → CLOSED
+        dev.status.value = DeviceStatus.CLOSED
+        _status.postValue(DeviceStatus.CLOSED)
+        _deviceStatus.postValue("No device selected")
+        updateBluetoothStatusInList(dev, DeviceStatus.CLOSED)
+
+        // clear per-device UI
+        perDeviceClear(dev)
+        selectedScannerBluetoothDevice.postValue(null)
+        // avoid reusing stale listeners on next open
+        bluetoothScanEvent = null
+        bluetoothErrorListener = null
+    }
+
 
     fun setSelectedBluetoothDevice(device: DatalogicBluetoothDevice?) {
         device?.let {

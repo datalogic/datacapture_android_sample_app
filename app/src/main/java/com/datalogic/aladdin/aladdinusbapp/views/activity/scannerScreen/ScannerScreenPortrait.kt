@@ -5,8 +5,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -46,7 +44,6 @@ import com.datalogic.aladdin.aladdinusbapp.viewmodel.HomeViewModel.ScanUi
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.compose.LabelCodeTypeDropdown
 import com.datalogic.aladdin.aladdinusbapp.views.compose.LabelIDControlDropdown
-import com.datalogic.aladdin.aladdinusbapp.views.compose.RestartDeviceDialog
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 
 /**
@@ -99,8 +96,7 @@ fun ScannerScreenPortrait(modifier: Modifier = Modifier) {
     } else {
         LazyColumn(
             modifier = modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(devices, key = { it.id }) { dev ->
                 val scan: ScanUi by homeViewModel
