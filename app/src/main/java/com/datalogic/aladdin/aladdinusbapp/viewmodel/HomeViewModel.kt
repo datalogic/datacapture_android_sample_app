@@ -2006,9 +2006,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
             return
         }
 
-        // B) Stop discovery before connecting (HID/SPP stacks can be touchy)
-        usbDeviceManager.stopScanBluetoothDevices(context)
-
         // C) Select the *same instance* you are opening
         setSelectedBluetoothDevice(device)
 
@@ -2073,7 +2070,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
 
     fun closeBluetoothDevice(dlBluetoothDevice: DatalogicBluetoothDevice?) {
         val dev = dlBluetoothDevice ?: return
-        usbDeviceManager.stopScanBluetoothDevices(context)
         // detach listeners
         bluetoothErrorListener?.let { dev.unregisterBluetoothDioListener(it) }
         dev.clearConnection(context)
@@ -2091,7 +2087,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
         bluetoothScanEvent = null
         bluetoothErrorListener = null
     }
-
 
     fun setSelectedBluetoothDevice(device: DatalogicBluetoothDevice?) {
         device?.let {
