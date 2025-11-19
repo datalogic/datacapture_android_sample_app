@@ -111,30 +111,30 @@ fun HomeScreenLayoutPortrait() {
             }
         }
 
-        if (selectedTab != 6) {
-            Card(
-                shape = RoundedCornerShape(dimensionResource(id = R.dimen._10sdp)),
-                colors = CardDefaults.cardColors(colorResource(id = R.color.bottom_nav_selected_background)),
-                elevation = CardDefaults.cardElevation(defaultElevation = dimensionResource(id = R.dimen._10sdp)),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight()
-                    .padding(horizontal = dimensionResource(id = R.dimen._20sdp))
-            ) {
-                Text(
-                    modifier = Modifier
-                        .semantics { contentDescription = "status_msg" }
-                        .fillMaxWidth()
-                        .height(dimensionResource(id = R.dimen._35sdp))
-                        .padding(
-                            vertical = dimensionResource(id = R.dimen._5sdp),
-                            horizontal = dimensionResource(id = R.dimen._15sdp)
-                        ),
-                    text = stringResource(id = R.string.status_label) + deviceStatus,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        }
+//        if (selectedTab != 6) {
+//            Card(
+//                shape = RoundedCornerShape(dimensionResource(id = R.dimen._10sdp)),
+//                colors = CardDefaults.cardColors(colorResource(id = R.color.bottom_nav_selected_background)),
+//                elevation = CardDefaults.cardElevation(defaultElevation = dimensionResource(id = R.dimen._10sdp)),
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .wrapContentHeight()
+//                    .padding(horizontal = dimensionResource(id = R.dimen._20sdp))
+//            ) {
+//                Text(
+//                    modifier = Modifier
+//                        .semantics { contentDescription = "status_msg" }
+//                        .fillMaxWidth()
+//                        .height(dimensionResource(id = R.dimen._35sdp))
+//                        .padding(
+//                            vertical = dimensionResource(id = R.dimen._5sdp),
+//                            horizontal = dimensionResource(id = R.dimen._15sdp)
+//                        ),
+//                    text = stringResource(id = R.string.status_label) + deviceStatus,
+//                    overflow = TextOverflow.Ellipsis
+//                )
+//            }
+//        }
 
         FooterImageView(
             modifier = Modifier
