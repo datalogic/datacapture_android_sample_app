@@ -285,6 +285,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
 
         // Update UI with selected device info
         device?.let {
+            Log.d(tag,"[setSelectedDevice] Selected: ${it.displayName}")
             _deviceStatus.postValue("Selected: ${it.displayName}")
             _status.postValue(it.status.value)
         } ?: run {
@@ -762,7 +763,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
     }
 
     fun updateCustomerName(name: String) {
-        _customerName.postValue(name)
+        _customerName.postValue(name.trim())
     }
 
     fun updateCurrentConfigName(name: String) {
@@ -1081,6 +1082,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
     fun getDeviceConfigName() {
         selectedDevice.value?.let { device ->
             val name = device.getConfigName(context)
+            Log.d(tag,"[getDeviceConfigName] ${device.displayName} config name $name")
             updateCurrentConfigName(name)
         }
     }
@@ -1427,9 +1429,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                 }
                 setSelectedTabIndex(tabIndex)
 
-                if (tabIndex == 4) {
-                    getDeviceConfigName()
-                }
                 if(tabIndex == 3) {
                     val command = DIOCmdValue.ENABLE_SCANNER
                     Log.d("HomeViewModel", "Enable scanner ...")
