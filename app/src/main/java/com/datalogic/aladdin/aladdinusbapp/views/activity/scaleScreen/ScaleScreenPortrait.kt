@@ -81,7 +81,7 @@ fun ScaleScreenPortrait(modifier: Modifier = Modifier) {
                 ScaleDeviceSection(
                     title = stringResource(R.string.usb_device),
                     deviceName = dev.name,
-                    scale = scale,                           // <-- pass ScaleUi
+                    // <-- pass ScaleUi
                     homeViewModel = homeViewModel,
                     deviceId = dev.id
                 )
@@ -94,7 +94,6 @@ fun ScaleScreenPortrait(modifier: Modifier = Modifier) {
 fun ScaleDeviceSection(
     title: String,
     deviceName: String,
-    scale: HomeViewModel.ScaleUi, // <-- instead of reading global LiveData
     homeViewModel: HomeViewModel,
     deviceId: String
 ) {
@@ -115,10 +114,22 @@ fun ScaleDeviceSection(
                         start = dimensionResource(id = R.dimen._10sdp),
                         bottom = dimensionResource(id = R.dimen._5sdp)
                     ),
-                text = "Scale - $deviceName",
+                text = deviceName,
                 style = MaterialTheme.typography.headlineLarge
             )
-
+            Spacer(Modifier.width(4.dp))
+            Text(
+                modifier = Modifier
+                    .semantics { contentDescription = "lbl_title_scale_data" }
+                    .fillMaxWidth()
+                    .padding(
+                        start = dimensionResource(id = R.dimen._10sdp),
+                        bottom = dimensionResource(id = R.dimen._5sdp)
+                    ),
+                text = title, style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.width(4.dp))
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
