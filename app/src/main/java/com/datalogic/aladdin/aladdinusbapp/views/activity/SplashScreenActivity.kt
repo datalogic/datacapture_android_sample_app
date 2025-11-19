@@ -27,6 +27,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.sp
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.utils.CommonUtils
+import com.datalogic.aladdin.aladdinusbscannersdk.BuildConfig
 import kotlinx.coroutines.delay
 
 class SplashScreenActivity : ComponentActivity() {
@@ -102,10 +103,10 @@ class SplashScreenActivity : ComponentActivity() {
         }
     }
 
-    private fun getAppVersion(): String {
+    fun getAppVersion(): String {
         return try {
-            val pInfo = packageManager.getPackageInfo(packageName, 0)
-            pInfo.versionName
+            val versionSDK = BuildConfig.LIBRARY_VERSION_NAME
+            versionSDK.removePrefix("AndroidSDK_")
         } catch (exp: PackageManager.NameNotFoundException) {
             Log.d("SplashScreenActivity", "Failed to get version number: ${exp.printStackTrace()}")
             "N/A"
