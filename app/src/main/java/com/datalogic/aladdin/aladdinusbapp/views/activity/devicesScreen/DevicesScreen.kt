@@ -126,8 +126,8 @@ fun DeviceRow(
                         text = dlDevice?.displayName ?: usbDeviceName,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        maxLines = 2,
+                        overflow = TextOverflow.Clip
                     )
                     Text(
                         text = stringResource(R.string.usb_device),
@@ -356,19 +356,5 @@ private fun BluetoothDeviceRow(
     }
 }
 
-@Composable
-private fun ErrorState(message: String, onRetry: () -> Unit) {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(Icons.Default.Clear, contentDescription = null, tint = MaterialTheme.colorScheme.error)
-        Spacer(Modifier.height(8.dp))
-        Text(message, color = MaterialTheme.colorScheme.error)
-        Spacer(Modifier.height(12.dp))
-        Button(onClick = onRetry) { Text("Retry") }
-    }
-}
 
 

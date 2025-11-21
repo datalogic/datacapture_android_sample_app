@@ -53,7 +53,8 @@ fun BottomNavigationRow(modifier: Modifier, homeViewModel: HomeViewModel) {
         stringResource(id = R.string.btn_upgrade_firmware),
         stringResource(id = R.string.bluetooth),
         stringResource(R.string.settings),
-        stringResource(id = R.string.scanner_data)
+        stringResource(id = R.string.scanner_data),
+        stringResource(id = R.string.scale_data)
     )
     val selectedTab by homeViewModel.selectedTabIndex.observeAsState(0)
     val status = homeViewModel.status.observeAsState(DeviceStatus.CLOSED).value
