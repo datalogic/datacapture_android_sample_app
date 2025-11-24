@@ -140,6 +140,7 @@ fun CustomConfigurationPortrait() {
                     bluetoothDevices = null,
                     onUsbDeviceSelected = { device ->
                         homeViewModel.setSelectedDevice(device)
+                        homeViewModel.getDeviceConfigName()
                     },
                     selectedBluetoothDevice = null,
                     selectedUsbDevice = selectedUsbDevice,
@@ -147,6 +148,9 @@ fun CustomConfigurationPortrait() {
                         homeViewModel.setSelectedBluetoothDevice(device)
                     }
                 )
+                if (selectedUsbDevice != null && configName.isEmpty()) {
+                    homeViewModel.getDeviceConfigName()
+                }
                 Text(
                     modifier = Modifier
                         .semantics { contentDescription = "lbl_customer" }

@@ -140,6 +140,7 @@ fun CustomConfigurationLandscape() {
                     bluetoothDevices = null,
                     onUsbDeviceSelected = { device ->
                         homeViewModel.setSelectedDevice(device)
+                        homeViewModel.getDeviceConfigName()
                     },
                     selectedBluetoothDevice = null,
                     selectedUsbDevice = selectedUsbDevice,
@@ -158,6 +159,9 @@ fun CustomConfigurationLandscape() {
                     text = "Customer Name",
                     style = MaterialTheme.typography.headlineLarge
                 )
+                if (selectedUsbDevice != null && configName.isEmpty()) {
+                    homeViewModel.getDeviceConfigName()
+                }
                 BasicTextField(
                     value = customerName,
                     onValueChange = { homeViewModel.updateCustomerName(it) },

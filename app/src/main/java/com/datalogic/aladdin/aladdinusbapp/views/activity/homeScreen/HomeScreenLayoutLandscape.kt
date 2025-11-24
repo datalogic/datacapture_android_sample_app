@@ -28,6 +28,7 @@ import com.datalogic.aladdin.aladdinusbapp.views.activity.checkDockScreen.CheckD
 import com.datalogic.aladdin.aladdinusbapp.views.activity.checkDockScreen.CheckDockScreenPortrait
 import com.datalogic.aladdin.aladdinusbapp.views.activity.customConfigurationScreen.CustomConfigurationPortrait
 import com.datalogic.aladdin.aladdinusbapp.views.activity.imageCapture.ImageCaptureTabPortrait
+import com.datalogic.aladdin.aladdinusbapp.views.activity.scaleScreen.ScaleScreenPortrait
 import com.datalogic.aladdin.aladdinusbapp.views.activity.scannerScreen.ScannerScreenPortrait
 import com.datalogic.aladdin.aladdinusbapp.views.activity.updateFirmware.UpdateFirmwareScreen
 import com.datalogic.aladdin.aladdinusbapp.views.compose.BottomNavigationRow
@@ -110,34 +111,35 @@ fun HomeScreenLayoutLandscape() {
                 6 -> BluetoothTabPortrait()
                 7 -> SettingsTabPortrait()
                 8 -> ScannerScreenPortrait()
-                9 -> CheckDockScreenLandscape()
+                9 -> ScaleScreenPortrait()
+                10 -> CheckDockScreenLandscape()
             }
         }
 
-        if (selectedTab != 6) {
-            Card(
-                shape = RoundedCornerShape(dimensionResource(id = R.dimen._10sdp)),
-                colors = CardDefaults.cardColors(colorResource(id = R.color.bottom_nav_selected_background)),
-                elevation = CardDefaults.cardElevation(defaultElevation = dimensionResource(id = R.dimen._10sdp)),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight()
-                    .padding(horizontal = dimensionResource(id = R.dimen._20sdp))
-            ) {
-                Text(
-                    modifier = Modifier
-                        .semantics { contentDescription = "status_msg" }
-                        .fillMaxWidth()
-                        .height(dimensionResource(id = R.dimen._35sdp))
-                        .padding(
-                            vertical = dimensionResource(id = R.dimen._5sdp),
-                            horizontal = dimensionResource(id = R.dimen._15sdp)
-                        ),
-                    text = stringResource(id = R.string.status_label) + deviceStatus,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        }
+//        if (selectedTab != 6) {
+//            Card(
+//                shape = RoundedCornerShape(dimensionResource(id = R.dimen._10sdp)),
+//                colors = CardDefaults.cardColors(colorResource(id = R.color.bottom_nav_selected_background)),
+//                elevation = CardDefaults.cardElevation(defaultElevation = dimensionResource(id = R.dimen._10sdp)),
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .wrapContentHeight()
+//                    .padding(horizontal = dimensionResource(id = R.dimen._20sdp))
+//            ) {
+//                Text(
+//                    modifier = Modifier
+//                        .semantics { contentDescription = "status_msg" }
+//                        .fillMaxWidth()
+//                        .height(dimensionResource(id = R.dimen._35sdp))
+//                        .padding(
+//                            vertical = dimensionResource(id = R.dimen._5sdp),
+//                            horizontal = dimensionResource(id = R.dimen._15sdp)
+//                        ),
+//                    text = stringResource(id = R.string.status_label) + deviceStatus,
+//                    overflow = TextOverflow.Ellipsis
+//                )
+//            }
+//        }
 
         FooterImageView(
             modifier = Modifier
