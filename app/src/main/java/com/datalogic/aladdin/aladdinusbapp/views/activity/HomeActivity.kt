@@ -159,6 +159,7 @@ class HomeActivity : AppCompatActivity() {
             override fun onStatus(productId: String, status: DeviceStatus, deviceName: String) {
                 runOnUiThread {
                     homeViewModel.setStatus(productId, status)
+                    Log.d(TAG, "[handlerUsbListener] ${status.name}")
 
                     // Update UI based on new status
                     when (status) {
@@ -167,6 +168,7 @@ class HomeActivity : AppCompatActivity() {
                             //Setup listener
                             homeViewModel.setupCustomListeners(homeViewModel.deviceList.value?.firstOrNull {it.usbDevice.deviceName == deviceName})
                             showToast(applicationContext, "Device successfully opened")
+                            homeViewModel.setAutoCheckDocking(homeViewModel.isCheckDockingEnabled.value == true)
                         }
                         DeviceStatus.CLOSED -> {
                             showToast(applicationContext, "Device closed")

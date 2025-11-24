@@ -3,7 +3,6 @@ package com.datalogic.aladdin.aladdinusbapp.viewmodel
 import DatalogicBluetoothDevice
 import android.Manifest
 import android.app.Activity
-import android.bluetooth.BluetoothClass
 import android.bluetooth.BluetoothDevice
 import android.content.ContentValues
 import android.content.Context
@@ -26,7 +25,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat.getString
 import androidx.core.graphics.scale
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -34,6 +32,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.utils.AboutModel
+import com.datalogic.aladdin.aladdinusbapp.utils.CradleState
 import com.datalogic.aladdin.aladdinusbapp.utils.FileUtils
 import com.datalogic.aladdin.aladdinusbapp.utils.PairingBarcodeType
 import com.datalogic.aladdin.aladdinusbapp.utils.PairingStatus
@@ -46,7 +45,6 @@ import com.datalogic.aladdin.aladdinusbscannersdk.model.LabelCodeType
 import com.datalogic.aladdin.aladdinusbscannersdk.model.LabelIDControl
 import com.datalogic.aladdin.aladdinusbscannersdk.model.ScaleData
 import com.datalogic.aladdin.aladdinusbscannersdk.model.UsbScanData
-import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.FileConstants
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.AladdinConstants.CONFIG_ERR_FAILURE
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.BluetoothPairingStatus
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.BluetoothProfile
@@ -56,6 +54,7 @@ import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DIOCmdValue
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceType
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ScaleUnit
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.CradleListener
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbDioListener
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbScaleListener
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.listeners.UsbScanListener
@@ -154,6 +153,11 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
     // Connect type toggle state
     private val _isBluetoothEnabled = MutableLiveData(false)
     val isBluetoothEnabled: LiveData<Boolean> = _isBluetoothEnabled
+    private val _isCheckDockingEnabled = MutableLiveData(false)
+    val isCheckDockingEnabled: LiveData<Boolean> = _isCheckDockingEnabled
+    private val _deviceCradleStates = MutableStateFlow<List<CradleState>>(emptyList())
+    val deviceCradleStates = _deviceCradleStates.asStateFlow()
+    private val activeCradleListeners = mutableMapOf<DatalogicDevice, CradleListener>()
 
     // Label parsing settings
     private val _selectedLabelCodeType = MutableLiveData(LabelCodeType.NONE)
@@ -508,6 +512,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
         }
 
         detectDevice()
+        Log.d("HomeViewModel", "[handleDeviceDisconnection] removeDeviceCradleState")
+        removeDeviceCradleState(device)
     }
 
     fun handleBluetoothDeviceDisconnection(device: BluetoothDevice) {
@@ -1701,6 +1707,92 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
     fun startScaleHandler(device: DatalogicDevice) = startScaleHandler(device.usbDevice.deviceId.toString())
     fun stopScaleHandler(device: DatalogicDevice)  = stopScaleHandler(device.usbDevice.deviceId.toString())
     fun clearScaleData(device: DatalogicDevice)   = clearScaleData(device.usbDevice.deviceId.toString())
+
+    fun toggleCheckDocking() {
+        var enable = false
+        if (isCheckDockingEnabled.value == true) {
+            _isCheckDockingEnabled.postValue(enable)
+        } else {
+            enable = true
+            _isCheckDockingEnabled.postValue(enable)
+        }
+        setAutoCheckDocking(enable)
+    }
+    fun setAutoCheckDocking(enable: Boolean) {
+        Log.d("HomeViewModel", "[setAutoCheckDocking] enable: $enable")
+        deviceList.value?.let {
+            removeInvalidDeviceStates()
+            for (device in deviceList.value!!) {
+                if (!device.isDeviceSupportCheckDocking()) {
+                    continue
+                }
+                if (enable == true) {
+                    Log.d("HomeViewModel", "device ${device.displayName} startAutoCheckDocking")
+                    val cradleEvent = object : CradleListener {
+                        override fun onDockListener(docked: Boolean) {
+                            updateDockStatus(device, docked)
+                        }
+
+                        override fun onLinkListener(linked: Boolean) {
+                            updateLinkStatus(device, linked)
+                        }
+                    }
+                    activeCradleListeners[device] = cradleEvent
+                    device.registerCradleListener(cradleEvent)
+                    device.startAutoCheckDocking()
+                } else {
+                    Log.d("HomeViewModel", "device ${device.displayName} stopAutoCheckDocking")
+                    device.stopAutoCheckDocking()
+                }
+            }
+        }
+    }
+    private fun updateDockStatus(device: DatalogicDevice, docked: Boolean) {
+        _deviceCradleStates.update { list ->
+            val existing = list.find { it.device == device }
+            if (existing != null)
+                list.map { if (it.device == device) it.copy(docked = docked) else it }
+            else
+                list + CradleState(device, docked = docked)
+        }
+    }
+    private fun updateLinkStatus(device: DatalogicDevice, linked: Boolean) {
+        _deviceCradleStates.update { list ->
+            val existing = list.find { it.device == device }
+            if (existing != null)
+                list.map { if (it.device == device) it.copy(linked = linked) else it }
+            else
+                list + CradleState(device, linked = linked)
+        }
+    }
+    fun removeInvalidDeviceStates() {
+        val validDevices = deviceList.value ?: return
+        val invalidDevices = _deviceCradleStates.value
+            .map { it.device }
+            .filter { device -> validDevices.none { it == device } }
+        invalidDevices.forEach { device ->
+            Log.d("HomeViewModel", "removeInvalidDeviceStates -> remove listener for ${device.displayName}")
+            activeCradleListeners[device]?.let {
+                device.unregisterCradleListener(it)
+                activeCradleListeners.remove(device)
+            }
+        }
+        _deviceCradleStates.update { list ->
+            list.filter { state -> validDevices.any { it == state.device } }
+        }
+    }
+    fun removeDeviceCradleState(usbDevice: UsbDevice) {
+        val targetState = _deviceCradleStates.value.find { it.device.usbDevice == usbDevice } ?: return
+        val targetDevice = targetState.device
+        activeCradleListeners[targetDevice]?.let { listener ->
+            targetDevice.unregisterCradleListener(listener)
+            activeCradleListeners.remove(targetDevice)
+            Log.d("HomeViewModel", "removeDeviceByUsb -> removed listener for ${targetDevice.displayName}")
+        }
+        _deviceCradleStates.update { list ->
+            list.filter { it.device != targetDevice }
+        }
+    }
 
     fun saveConfigData(fileName: String) {
         if (!TextUtils.isEmpty(customConfiguration.value.toString()))

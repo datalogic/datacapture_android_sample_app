@@ -13,6 +13,7 @@
     <string name="auto_detect_device">Auto Detect Device</string>
     <string name="device_settings">Device Settings</string>
     <string name="scanner_data">Scanner Data</string>
+    <string name="cradle_state">Cradle State</string>
     <string name="scale_data">Scale Data</string>
     <string name="scan_data">Scan Data</string>
     <string name="scan_raw_data">Scan Raw Data</string>

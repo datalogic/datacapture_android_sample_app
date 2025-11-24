@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
+import com.datalogic.aladdin.aladdinusbapp.views.activity.checkDockScreen.CheckDockScreenPortrait
 import com.datalogic.aladdin.aladdinusbapp.views.activity.customConfigurationScreen.CustomConfigurationPortrait
 import com.datalogic.aladdin.aladdinusbapp.views.activity.imageCapture.ImageCaptureTabPortrait
 import com.datalogic.aladdin.aladdinusbapp.views.activity.scaleScreen.ScaleScreenPortrait
@@ -110,6 +111,7 @@ fun HomeScreenLayoutPortrait() {
                 7 -> SettingsTabPortrait()
                 8 -> ScannerScreenPortrait()
                 9 -> ScaleScreenPortrait()
+                10 -> CheckDockScreenPortrait()
             }
         }
 
