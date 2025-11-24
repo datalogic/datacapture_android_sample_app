@@ -1,6 +1,5 @@
 package com.datalogic.aladdin.aladdinusbapp.views.activity.updateFirmware
 
-import DatalogicBluetoothDevice
 import android.content.Context
 import android.net.Uri
 import android.widget.Toast
@@ -196,36 +195,70 @@ fun UpdateFirmwareScreen() {
                         .weight(1f)
                         .fillMaxHeight(), // <-- makes this button match height
                     onClick = {
-                        file?.let {
-                            if (isCheckPidToggle && fileType == FileConstants.S37_FILE_TYPE) {
-                                homeViewModel.setPid(it, fileType, { isValid ->
-                                    if (isCheckPidToggle != isValid) {
-                                        Toast.makeText(context,context.getString(R.string.pid_is_not_valid),Toast.LENGTH_LONG).show()
-                                        return@setPid
-                                    }
-                                    handleBulkTransferAndUpgrade(it, isBulkTransferToggle, homeViewModel, context, fileType)
-                                }, context)
-                                return@let
-                            } else if (fileType == FileConstants.DFW_FILE_TYPE) {
-                                if (isCheckPidToggle) {
-                                    homeViewModel.setPidDWF(it, fileType) { isValid ->
+                        try {
+                            file?.let {
+                                if (isCheckPidToggle && fileType == FileConstants.S37_FILE_TYPE) {
+                                    homeViewModel.setPid(it, fileType, { isValid ->
                                         if (isCheckPidToggle != isValid) {
                                             Toast.makeText(
                                                 context,
                                                 context.getString(R.string.pid_is_not_valid),
                                                 Toast.LENGTH_LONG
                                             ).show()
-                                            return@setPidDWF
+                                            return@setPid
+                                        }
+                                        handleBulkTransferAndUpgrade(
+                                            it,
+                                            isBulkTransferToggle,
+                                            homeViewModel,
+                                            context,
+                                            fileType
+                                        )
+                                    }, context)
+                                    return@let
+                                } else if (fileType == FileConstants.DFW_FILE_TYPE) {
+                                    if (isCheckPidToggle) {
+                                        homeViewModel.setPidDWF(it, fileType) { isValid ->
+                                            if (isCheckPidToggle != isValid) {
+                                                Toast.makeText(
+                                                    context,
+                                                    context.getString(R.string.pid_is_not_valid),
+                                                    Toast.LENGTH_LONG
+                                                ).show()
+                                                return@setPidDWF
+                                            }
                                         }
                                     }
+                                    handleBulkTransferAndUpgrade(
+                                        it,
+                                        isBulkTransferToggle,
+                                        homeViewModel,
+                                        context,
+                                        fileType
+                                    )
+                                    return@let
+                                } else if (fileType == FileConstants.SWU_FILE_TYPE) {
+                                    handleBulkTransferAndUpgrade(
+                                        it,
+                                        isBulkTransferToggle,
+                                        homeViewModel,
+                                        context,
+                                        fileType
+                                    )
+                                } else {
+                                    Toast.makeText(
+                                        context,
+                                        "This file is not supported",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                 }
-                                handleBulkTransferAndUpgrade(it, isBulkTransferToggle, homeViewModel, context, fileType)
-                                return@let
-                            } else if (fileType == FileConstants.SWU_FILE_TYPE) {
-                                handleBulkTransferAndUpgrade(it, isBulkTransferToggle, homeViewModel, context, fileType)
-                            } else {
-                                Toast.makeText(context, "This file is not supported", Toast.LENGTH_SHORT).show()
                             }
+                        } catch (_: Exception){
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.common_error_message),
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     },
                     enabled = isLoadFile.value,

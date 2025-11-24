@@ -88,4 +88,6 @@
     <string name="device_list">Device List</string>
     <string name="usb_device">USB Device</string>
     <string name="bluetooth_device">Bluetooth Device</string>
+    <string name="common_error_message">Oops! Something went wrong.
+    Please try again later or contact support if the issue persists.</string>
 </resources>
