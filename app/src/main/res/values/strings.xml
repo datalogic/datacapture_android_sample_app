@@ -75,7 +75,7 @@
     <string name="upgrade_configuration_title">Upgrade Configuration</string>
     <string name="check_pid_label">Check PID</string>
     <string name="bulk_transfer_label">Bulk Transfer (MG 9600i/9900i, 900i, 9550i)</string>
-    <string name="pid_is_not_valid">PID is not valid</string>
+    <string name="pid_is_not_valid">This firmware file is not compatible with this device. Please select another firmware file.</string>
     <string name="bulk_transfer_is_not_valid">Bulk Transfer is not valid</string>
     <string name="swu_is_not_valid">SWU firmware is invalid.</string>
     <string name="ok">OK</string>
