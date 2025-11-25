@@ -39,6 +39,7 @@ import com.datalogic.aladdin.aladdinusbapp.utils.PairingStatus
 import com.datalogic.aladdin.aladdinusbapp.utils.ResultContants
 import com.datalogic.aladdin.aladdinusbapp.utils.USBConstants
 import com.datalogic.aladdin.aladdinusbscannersdk.BuildConfig
+import com.datalogic.aladdin.aladdinusbscannersdk.feature.upgradefirmware.dfw.UpgradeDFW
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDeviceManager
 import com.datalogic.aladdin.aladdinusbscannersdk.model.LabelCodeType
@@ -857,7 +858,9 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
      * Function to update the selected tab index
      */
     fun setSelectedTabIndex(index: Int) {
-        _selectedTabIndex.value = index
+        if(!UpgradeDFW.isUpgradeDFW) {
+            _selectedTabIndex.value = index
+        }
     }
 
     /**
