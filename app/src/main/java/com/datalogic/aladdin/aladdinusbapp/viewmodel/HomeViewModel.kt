@@ -1561,7 +1561,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                 return true
             }
 
-            7, 8, 9 -> {
+            7, 8, 9, 10 -> {
                 openAlert = false
                 setSelectedTabIndex(tabIndex)
                 return true
