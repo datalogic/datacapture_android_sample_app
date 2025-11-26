@@ -50,13 +50,13 @@ import com.datalogic.aladdin.aladdinusbapp.viewmodel.HomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.compose.UsbBTDeviceDropdown
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ConnectionType
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 
 
 @Composable
 fun ImageCaptureTabPortrait() {
     val imageCaptureModel = LocalHomeViewModel.current
-
     // Initialize sliders with the current values from the ViewModel
     var brightness by remember {
         mutableStateOf(imageCaptureModel.getBrightnessPercentage().toFloat())
@@ -137,7 +137,9 @@ fun ImageCaptureTabPortrait() {
         }
 
         // You can similarly implement Image Format if needed.
-        CaptureButtons(imageCaptureModel, onBeforeCapture = { previewImage = null })
+        if (!imageCaptureModel.oemInterface) {
+            CaptureButtons(imageCaptureModel, onBeforeCapture = { previewImage = null })
+        }
 
         Card(
             modifier = Modifier.fillMaxWidth(),

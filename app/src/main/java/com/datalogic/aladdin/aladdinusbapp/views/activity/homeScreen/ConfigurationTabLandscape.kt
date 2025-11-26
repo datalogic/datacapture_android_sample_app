@@ -40,6 +40,7 @@ import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ConfigurationFeatu
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ResetDeviceAlertDialog
 import com.datalogic.aladdin.aladdinusbapp.views.compose.UsbBTDeviceDropdown
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ConnectionType
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 
 @Composable
@@ -72,7 +73,7 @@ fun ConfigurationTabLandscape() {
     val isButtonClicked = remember { mutableStateOf(false) }
 
     LaunchedEffect(configData, selectedUsbDevice) {
-        if (selectedUsbDevice != null) homeViewModel.readConfigData()
+        if (selectedUsbDevice != null && selectedUsbDevice.connectionType != ConnectionType.USB_OEM) homeViewModel.readConfigData()
         checkedStates.clear()
         checkedStates.putAll(configData)
     }
@@ -113,6 +114,7 @@ fun ConfigurationTabLandscape() {
                 usbDevices = openUsbDeviceList,
                 bluetoothDevices = null,
                 onUsbDeviceSelected = { device ->
+                    homeViewModel.clearConfig()
                     homeViewModel.setSelectedDevice(device)
                     homeViewModel.readConfigData()
                 },

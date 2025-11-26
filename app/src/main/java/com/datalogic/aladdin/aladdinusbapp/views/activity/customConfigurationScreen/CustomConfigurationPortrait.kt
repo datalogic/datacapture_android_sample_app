@@ -50,6 +50,7 @@ import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ResetDeviceAlertDialog
 import com.datalogic.aladdin.aladdinusbapp.views.compose.UsbBTDeviceDropdown
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ConnectionType
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 import java.util.Locale
 
@@ -244,6 +245,7 @@ fun CustomConfigurationPortrait() {
                         homeViewModel.readCustomConfig()
                     },
                     colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary)),
+                    enabled = !homeViewModel.oemInterface
                 ) {
                     Text(
                         text = stringResource(id = R.string.btn_read),
@@ -259,6 +261,7 @@ fun CustomConfigurationPortrait() {
                         .wrapContentSize(),
                     onClick = { homeViewModel.writeCustomConfig(configurationData = textState.value) },
                     colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary)),
+                    enabled = !homeViewModel.oemInterface
                 ) {
                     Text(
                         text = stringResource(id = R.string.btn_write),
@@ -282,6 +285,7 @@ fun CustomConfigurationPortrait() {
                         pickFileLauncher.launch("text/*")
                     },
                     colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary)),
+                    enabled = !homeViewModel.oemInterface
                 ) {
                     Text(
                         text = stringResource(id = R.string.btn_load),
@@ -297,6 +301,7 @@ fun CustomConfigurationPortrait() {
                         .wrapContentSize(),
                     onClick = { showDialog.value = true },
                     colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary)),
+                    enabled = !homeViewModel.oemInterface
                 ) {
                     Text(
                         text = stringResource(id = R.string.btn_save),

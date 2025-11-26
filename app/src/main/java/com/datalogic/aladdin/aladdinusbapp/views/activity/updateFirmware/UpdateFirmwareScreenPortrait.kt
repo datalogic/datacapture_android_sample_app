@@ -50,6 +50,7 @@ import com.datalogic.aladdin.aladdinusbapp.views.compose.UpgradeConfigurationCar
 import com.datalogic.aladdin.aladdinusbapp.views.compose.UsbBTDeviceDropdown
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.FileConstants
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ConnectionType
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 import java.io.File
 
@@ -173,11 +174,11 @@ fun UpdateFirmwareScreen() {
                     onClick = {
                         filePickerLauncher.launch("application/octet-stream")
                     },
-                    enabled = true,
+                    enabled = !homeViewModel.oemInterface,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = colorResource(id = R.color.colorPrimary),
                         disabledContainerColor = colorResource(id = R.color.colorPrimary).copy(alpha = 0.5f)
-                    )
+                    ),
                 ) {
                     Text(
                         stringResource(R.string.btn_load_file),

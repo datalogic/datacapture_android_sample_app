@@ -178,6 +178,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
     // UI alert states
     var openAlert by mutableStateOf(false)
     var oemAlert by mutableStateOf(false)
+    var oemInterface by mutableStateOf(false)
     var bluetoothAlert by mutableStateOf(false)
     var connectDeviceAlert by mutableStateOf(false)
     var magellanConfigAlert by mutableStateOf(false)
@@ -395,6 +396,11 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
             Log.d(tag,"[setSelectedDevice] Selected: ${it.displayName}")
             _deviceStatus.postValue("Selected: ${it.displayName}")
             _status.postValue(it.status.value)
+
+
+            oemAlert = it.connectionType == ConnectionType.USB_OEM
+            oemInterface = it.connectionType == ConnectionType.USB_OEM
+            magellanConfigAlert = it.usbDevice.productId.toString() == "16386"
         } ?: run {
             _deviceStatus.postValue("No device selected")
             _status.postValue(DeviceStatus.NONE)
@@ -1510,12 +1516,24 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
             openAlert = true
             return false
         }
-
+        var moreThanOneOpened = false
+        deviceList.value?.let {
+            var countOpened = 0
+            for (device in it) {
+                if (device.status.value == DeviceStatus.OPENED)
+                    countOpened++
+            }
+            moreThanOneOpened = countOpened > 1
+        }
         // Tab-specific logic
         when (tabIndex) {
             1 -> { // Configuration tab
                 if (selectedDevice.value?.connectionType == ConnectionType.USB_OEM) {
                     oemAlert = true
+                    if (moreThanOneOpened) {
+                        setSelectedTabIndex(tabIndex)
+                        return true
+                    }
                     return false
                 }
 
@@ -1526,9 +1544,13 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
 
                 if (selectedDevice.value?.usbDevice?.productId.toString() == "16386") {
                     magellanConfigAlert = true
+                    if (moreThanOneOpened) {
+                        setSelectedTabIndex(tabIndex)
+                        return true
+                    }
                 } else {
                     setSelectedTabIndex(tabIndex)
-                    readConfigData()
+//                  readConfigData()
                 }
                 return true
             }
@@ -1541,6 +1563,10 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
             3, 4, 5 -> { // Image capture tab, custom configuration, update firmware
                 if (selectedDevice.value?.connectionType == ConnectionType.USB_OEM) {
                     oemAlert = true
+                    if (moreThanOneOpened) {
+                        setSelectedTabIndex(tabIndex)
+                        return true
+                    }
                     return false
                 }
                 if (isBluetoothEnabled.value == true) {
@@ -1549,6 +1575,10 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                 }
                 if (selectedDevice.value?.usbDevice?.productId.toString() == "16386") {
                     magellanConfigAlert = true
+                    if (moreThanOneOpened) {
+                        setSelectedTabIndex(tabIndex)
+                        return true
+                    }
                     return false
                 }
                 setSelectedTabIndex(tabIndex)
@@ -1832,6 +1862,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
     fun clearConfig() {
         if (selectedDevice.value?.status?.value == DeviceStatus.CLOSED) {
             _customConfiguration.value = ""
+            _readConfigData.postValue(hashMapOf())
         }
     }
 
@@ -2199,11 +2230,9 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                 Log.d(tag, "[setSelectedBluetoothDevice] do not have permission")
                 _status.postValue(DeviceStatus.NONE)
             }
-            //_status.postValue(DeviceStatus.CLOSED)
             _deviceStatus.postValue("Selected: ${device.name}")
         } ?: run {
             _deviceStatus.postValue("No device selected")
-            //_status.postValue(DeviceStatus.NONE)
         }
         selectedBluetoothDevice.value = device
         selectedDevice.value = null
