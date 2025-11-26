@@ -1835,6 +1835,14 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
         }
     }
 
+    fun clearSelectedDevice(productId: String) {
+        selectedDevice.value?.let {
+            if (it.usbDevice.productId.toString() == productId) {
+                selectedDevice.value = null
+            }
+        }
+    }
+
     fun upgradeFirmware(isBulkTransfer: Boolean = false) {
         _progressUpgrade.postValue(0)
         _isLoadingPercent.postValue(true)

@@ -175,6 +175,7 @@ class HomeActivity : AppCompatActivity() {
                             homeViewModel.clearConfig()
                             homeViewModel.setSelectedLabelIDControl(LabelIDControl.DISABLE)
                             homeViewModel.setSelectedLabelCodeType(LabelCodeType.NONE)
+                            homeViewModel.clearSelectedDevice(productId)
                         }
                         else -> {}
                     }
