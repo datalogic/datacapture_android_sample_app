@@ -397,8 +397,9 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
             _deviceStatus.postValue("Selected: ${it.displayName}")
             _status.postValue(it.status.value)
 
-
-            oemAlert = it.connectionType == ConnectionType.USB_OEM
+            if (_selectedTabIndex.value != 0) {
+                oemAlert = it.connectionType == ConnectionType.USB_OEM
+            }
             oemInterface = it.connectionType == ConnectionType.USB_OEM
             magellanConfigAlert = it.usbDevice.productId.toString() == "16386"
         } ?: run {
@@ -1866,9 +1867,9 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
         }
     }
 
-    fun clearSelectedDevice(productId: String) {
+    fun clearSelectedDevice(deviceName: String) {
         selectedDevice.value?.let {
-            if (it.usbDevice.productId.toString() == productId) {
+            if (it.usbDevice.deviceName.toString() == deviceName) {
                 selectedDevice.value = null
             }
         }
