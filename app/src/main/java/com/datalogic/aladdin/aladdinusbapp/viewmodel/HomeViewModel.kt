@@ -397,11 +397,11 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
             _deviceStatus.postValue("Selected: ${it.displayName}")
             _status.postValue(it.status.value)
 
-            if (_selectedTabIndex.value != 0) {
+            if (_selectedTabIndex.value != 0 && _selectedTabIndex.value != 2) {
                 oemAlert = it.connectionType == ConnectionType.USB_OEM
+                magellanConfigAlert = it.usbDevice.productId.toString() == "16386"
             }
             oemInterface = it.connectionType == ConnectionType.USB_OEM
-            magellanConfigAlert = it.usbDevice.productId.toString() == "16386"
         } ?: run {
             _deviceStatus.postValue("No device selected")
             _status.postValue(DeviceStatus.NONE)
