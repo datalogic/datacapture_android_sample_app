@@ -1663,7 +1663,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                 val cur = perDeviceScale.flowFor(deviceId).value
                 perDeviceScale.emit(
                     deviceId,
-                    cur.copy(status = if (ok) "ENABLED" else "Failed to start scale", seq = SystemClock.uptimeMillis())
+                    cur.copy(status = if (ok) "" else "Failed to start scale", seq = SystemClock.uptimeMillis())
                 )
                 if (selectedDevice.value?.usbDevice?.deviceId.toString() == deviceId) {
                     _isEnableScale.postValue(ok)
@@ -1687,7 +1687,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                 val cur = perDeviceScale.flowFor(deviceId).value
                 perDeviceScale.emit(
                     deviceId,
-                    cur.copy(status = if (ok) "DISABLED" else "Failed to stop scale", seq = SystemClock.uptimeMillis())
+                    cur.copy(status = if (ok) "" else "Failed to stop scale", seq = SystemClock.uptimeMillis())
                 )
                 if (selectedDevice.value?.usbDevice?.deviceId.toString() == deviceId) {
                     _isEnableScale.postValue(false)
