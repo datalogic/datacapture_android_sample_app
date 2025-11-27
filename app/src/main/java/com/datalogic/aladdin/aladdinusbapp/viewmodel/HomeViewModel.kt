@@ -337,7 +337,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
 
         fun clear(deviceId: String) {
             flows[deviceId]?.value = ScaleUi()
-            enabled[deviceId]?.value = false
         }
     }
 
