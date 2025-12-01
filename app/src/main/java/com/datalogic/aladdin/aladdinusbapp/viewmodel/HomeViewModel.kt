@@ -23,6 +23,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.core.app.ActivityCompat
 import androidx.core.graphics.scale
@@ -257,7 +258,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
 
     //Reset device notify pop-up
     var showResetDeviceDialog by mutableStateOf(false)
-
+    var showErrorMessageUpgradeFw by mutableStateOf(false)
+    var errorMessageUpgradeFw by  mutableStateOf("")
     private val _qrBitmap = MutableLiveData<Bitmap>()
     val qrBitmap: LiveData<Bitmap> get() = _qrBitmap
 
@@ -1045,6 +1047,11 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
      */
     fun dismissResetDialog() {
         showResetDeviceDialog = false
+    }
+
+    fun dismissUpgradeFwErrorDialog() {
+        showErrorMessageUpgradeFw = false
+        errorMessageUpgradeFw = ""
     }
 
     /**
