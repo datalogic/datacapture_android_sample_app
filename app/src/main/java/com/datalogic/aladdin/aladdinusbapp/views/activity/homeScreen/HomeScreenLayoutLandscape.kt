@@ -53,6 +53,7 @@ fun HomeScreenLayoutLandscape() {
     ShowPopup((homeViewModel.bluetoothAlert && ignoreAlerts), onDismiss = { homeViewModel.bluetoothAlert = false }, stringResource(R.string.not_support_ble_device))
     ShowPopup((homeViewModel.connectDeviceAlert && ignoreAlerts), onDismiss = { homeViewModel.connectDeviceAlert = false }, stringResource(id = R.string.alert_message_for_connect_device))
     ShowPopup((homeViewModel.magellanConfigAlert  && ignoreAlerts), onDismiss = { homeViewModel.magellanConfigAlert = false }, stringResource(id = R.string.alert_message_for_magellan_config))
+    ShowPopup((homeViewModel.noDeviceSupportAlert  && ignoreAlerts), onDismiss = { homeViewModel.noDeviceSupportAlert = false }, stringResource(id = R.string.alert_message_for_no_device_support))
 
     if (isLoading!!) {
         ShowLoading(onDismiss = { isLoading = false })
@@ -89,7 +90,6 @@ fun HomeScreenLayoutLandscape() {
             when (selectedTab) {
                 0 -> HomeTabPortrait()
                 1 ->{
-                    homeViewModel.setDefaultDevice()
                     ConfigurationTabPortrait()
                 }
                 2 -> {
@@ -97,15 +97,12 @@ fun HomeScreenLayoutLandscape() {
                     DirectIOTabPortrait()
                 }
                 3 ->{
-                    homeViewModel.setDefaultDevice()
                     ImageCaptureTabPortrait()
                 }
                 4 -> {
-                    homeViewModel.setDefaultDevice()
                     CustomConfigurationPortrait()
                 }
                 5 ->{
-                    homeViewModel.setDefaultDevice()
                     UpdateFirmwareScreen()
                 }
                 6 -> BluetoothTabPortrait()

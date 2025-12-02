@@ -178,11 +178,10 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
     // UI alert states
     var openAlert by mutableStateOf(false)
     var oemAlert by mutableStateOf(false)
-    var oemInterface by mutableStateOf(false)
     var bluetoothAlert by mutableStateOf(false)
     var connectDeviceAlert by mutableStateOf(false)
     var magellanConfigAlert by mutableStateOf(false)
-
+    var noDeviceSupportAlert by mutableStateOf(false)
     // Image capture parameters
     private val _brightness = MutableLiveData("32") // Default 50% (hex "32")
     val brightness: LiveData<String> = _brightness
@@ -396,12 +395,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
             Log.d(tag,"[setSelectedDevice] Selected: ${it.displayName}")
             _deviceStatus.postValue("Selected: ${it.displayName}")
             _status.postValue(it.status.value)
-
-            if (_selectedTabIndex.value != 0 && _selectedTabIndex.value != 2) {
-                oemAlert = it.connectionType == ConnectionType.USB_OEM
-                magellanConfigAlert = it.usbDevice.productId.toString() == "16386"
-            }
-            oemInterface = it.connectionType == ConnectionType.USB_OEM
         } ?: run {
             _deviceStatus.postValue("No device selected")
             _status.postValue(DeviceStatus.NONE)
@@ -489,10 +482,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
         if (selectedDevice.value != null || selectedBluetoothDevice.value != null) return
 
         when {
-            openUsb.isNotEmpty() -> setSelectedDevice(openUsb.first())
             openBt.isNotEmpty()  -> setSelectedBluetoothDevice(openBt.first())
             else -> {
-                setSelectedDevice(null)
                 setSelectedBluetoothDevice(null)
             }
         }
@@ -501,27 +492,30 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
     /**
      * Handle device disconnection
      */
-    fun handleDeviceDisconnection(device: UsbDevice) {
-        perDeviceClear(device.deviceId.toString())
+    fun handleDeviceDisconnection(disconnectDevice: UsbDevice) {
+        perDeviceClear(disconnectDevice.deviceId.toString())
         clearDIOStatus()
-        clearScaleData(device.deviceId.toString())
-        stopScaleHandler(device.deviceId.toString())
+        clearScaleData(disconnectDevice.deviceId.toString())
+        stopScaleHandler(disconnectDevice.deviceId.toString())
         //Disable scale section
         _isScaleAvailable.postValue(false)
-
-        // Check if this is our selected device
-        selectedDevice.value?.let {
-            if (it.usbDevice.productId == device.productId) {
-                _status.postValue(DeviceStatus.CLOSED)
-                _deviceStatus.postValue("Device disconnected: ${it.displayName}")
-                _dioData.postValue("")
+        if (!deviceList.value.isNullOrEmpty()) {
+            for (device in deviceList.value!!) {
+                if (device.usbDevice.deviceName == disconnectDevice.deviceName) {
+                    if (selectedDevice.value?.usbDevice?.deviceName == disconnectDevice.deviceName) {
+                        _status.postValue(DeviceStatus.CLOSED)
+                        _deviceStatus.postValue("Device disconnected: ${device.displayName}")
+                        _dioData.postValue("")
+                    }
+                    device.handleDeviceDisconnection(disconnectDevice)
+                    break
+                }
             }
-            it.handleDeviceDisconnection(device)
         }
 
         detectDevice()
         Log.d("HomeViewModel", "[handleDeviceDisconnection] removeDeviceCradleState")
-        removeDeviceCradleState(device)
+        removeDeviceCradleState(disconnectDevice)
     }
 
     fun handleBluetoothDeviceDisconnection(device: BluetoothDevice) {
@@ -619,8 +613,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
             selectedUsbDevice.value?.let { usbDevice ->
                 _isLoading.postValue(true)
                 val usbManager = context.getSystemService(Context.USB_SERVICE) as UsbManager
-                selectedDevice.value =
-                    DatalogicDevice(usbManager, usbDevice, currentDeviceType, currentConnectionType)
+//                selectedDevice.value =
+//                    DatalogicDevice(usbManager, usbDevice, currentDeviceType, currentConnectionType)
 
                 selectedDevice.value?.let { device ->
                     coroutineOpenDevice(device)
@@ -814,7 +808,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                             }
                             if (selectedDevice.value?.usbDevice?.deviceName == device.usbDevice.deviceName) {
                                 setSelectedDevice(null)
-                                setDefaultDevice()
                             }
                             updateDeviceStatusInList(device, DeviceStatus.CLOSED)
                         }
@@ -1517,78 +1510,45 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
             openAlert = true
             return false
         }
-        var moreThanOneOpened = false
-        deviceList.value?.let {
-            var countOpened = 0
-            for (device in it) {
-                if (device.status.value == DeviceStatus.OPENED)
-                    countOpened++
-            }
-            moreThanOneOpened = countOpened > 1
+        val listUsbOpened = deviceList.value?.filter { it.status.value == DeviceStatus.OPENED}
+        val listDeviceSupport = listUsbOpened?.filter { //Device USB-COM or COM-SC with Service port
+            it.usbDevice.productId.toString() != "16386" && it.connectionType != ConnectionType.USB_OEM
         }
+        val listUsbOem = listUsbOpened?.filter { it.connectionType == ConnectionType.USB_OEM }
+        val listMagellanConfig = listUsbOpened?.filter { it.usbDevice.productId.toString() == "16386" }
+
+        val deviceSupportExist = listDeviceSupport?.isNotEmpty()
+        val usbOemExist = listUsbOem?.isNotEmpty()
+        val onlyUsbOemOpened = (usbOemExist == true && listUsbOpened.size == listUsbOem.size)
+        val onlyMagellanConfig = (listMagellanConfig?.isNotEmpty() == true && listUsbOpened.size == listMagellanConfig.size)
+
         // Tab-specific logic
         when (tabIndex) {
-            1 -> { // Configuration tab
-                if (selectedDevice.value?.connectionType == ConnectionType.USB_OEM) {
+            1, 3, 4, 5 -> { // Configuration tab, Image capture tab, custom configuration, update firmware
+                if (onlyUsbOemOpened) {
                     oemAlert = true
-                    if (moreThanOneOpened) {
-                        setSelectedTabIndex(tabIndex)
-                        return true
-                    }
                     return false
                 }
-
                 if (isBluetoothEnabled.value == true) {
                     bluetoothAlert = true
                     return false
                 }
-
-                if (selectedDevice.value?.usbDevice?.productId.toString() == "16386") {
+                if (onlyMagellanConfig) {
                     magellanConfigAlert = true
-                    if (moreThanOneOpened) {
-                        setSelectedTabIndex(tabIndex)
-                        return true
-                    }
-                } else {
-                    setSelectedTabIndex(tabIndex)
-//                  readConfigData()
+                    return false
                 }
+
+                if (deviceSupportExist == false && listUsbOpened.isNotEmpty()) {
+                    noDeviceSupportAlert = true
+                    return false
+                }
+
+                setSelectedTabIndex(tabIndex)
                 return true
             }
 
             2 -> { // DirectIO tab
                 setSelectedTabIndex(tabIndex)
-                return true
-            }
-
-            3, 4, 5 -> { // Image capture tab, custom configuration, update firmware
-                if (selectedDevice.value?.connectionType == ConnectionType.USB_OEM) {
-                    oemAlert = true
-                    if (moreThanOneOpened) {
-                        setSelectedTabIndex(tabIndex)
-                        return true
-                    }
-                    return false
-                }
-                if (isBluetoothEnabled.value == true) {
-                    bluetoothAlert = true
-                    return false
-                }
-                if (selectedDevice.value?.usbDevice?.productId.toString() == "16386") {
-                    magellanConfigAlert = true
-                    if (moreThanOneOpened) {
-                        setSelectedTabIndex(tabIndex)
-                        return true
-                    }
-                    return false
-                }
-                setSelectedTabIndex(tabIndex)
-
-                if(tabIndex == 3) {
-                    val command = DIOCmdValue.ENABLE_SCANNER
-                    Log.d("HomeViewModel", "Enable scanner ...")
-                    selectedDevice.value?.dioCommand(command, command.value, context)
-                }
                 return true
             }
 
@@ -1870,7 +1830,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
     fun clearSelectedDevice(deviceName: String) {
         selectedDevice.value?.let {
             if (it.usbDevice.deviceName.toString() == deviceName) {
-                selectedDevice.value = null
+                setSelectedDevice(null)
             }
         }
     }
@@ -2236,7 +2196,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
             _deviceStatus.postValue("No device selected")
         }
         selectedBluetoothDevice.value = device
-        selectedDevice.value = null
+//        selectedDevice.value = null
         selectedUsbDevice.value = null
     }
 
@@ -2406,6 +2366,12 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
 
     fun setMsgConfigError(message: String) {
         _msgConfigError.postValue(message)
+    }
+
+    fun enableScannerBeforeCapturing(device: DatalogicDevice?) {
+        val command = DIOCmdValue.ENABLE_SCANNER
+        Log.d("HomeViewModel", "Enable scanner ...")
+        device?.dioCommand(command, command.value, context)
     }
 }
 

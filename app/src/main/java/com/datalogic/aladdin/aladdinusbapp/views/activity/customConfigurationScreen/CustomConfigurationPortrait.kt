@@ -30,9 +30,11 @@ import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -67,14 +69,27 @@ fun CustomConfigurationPortrait() {
     val customerName = homeViewModel.customerName.observeAsState("").value
     val errorMessage = homeViewModel.msgConfigError.observeAsState("").value
     val allUsbDevices = homeViewModel.deviceList.observeAsState(ArrayList()).value
-    val openUsbDeviceList = allUsbDevices.filter { it.status.value == DeviceStatus.OPENED } as ArrayList<DatalogicDevice>
+    val openUsbDeviceList = allUsbDevices.filter {
+        it.status.value == DeviceStatus.OPENED && it.connectionType != ConnectionType.USB_OEM && it.usbDevice.productId.toString() != "16386"
+    } as ArrayList<DatalogicDevice>
     val selectedUsbDevice = homeViewModel.selectedDevice.observeAsState(null).value
+    DisposableEffect(Unit) {
+        val target = selectedUsbDevice?.takeIf {
+            it.connectionType != ConnectionType.USB_OEM || openUsbDeviceList.isEmpty()
+        } ?: openUsbDeviceList.firstOrNull()
+        target?.let {
+            if (it != selectedUsbDevice) {
+                homeViewModel.setSelectedDevice(it)
+            }
+            homeViewModel.getDeviceConfigName()
+        }
+        onDispose {}
+    }
+
     // Configuration result dialog state
     val showConfigResultDialog = remember { mutableStateOf(false) }
     val configResultTitle = remember { mutableStateOf("") }
     val configResultMessage = remember { mutableStateOf("") }
-
-
     // Set up callback for configuration results
     LaunchedEffect(Unit) {
         homeViewModel.setConfigurationResultCallback(object :
@@ -245,7 +260,6 @@ fun CustomConfigurationPortrait() {
                         homeViewModel.readCustomConfig()
                     },
                     colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary)),
-                    enabled = !homeViewModel.oemInterface
                 ) {
                     Text(
                         text = stringResource(id = R.string.btn_read),
@@ -261,7 +275,6 @@ fun CustomConfigurationPortrait() {
                         .wrapContentSize(),
                     onClick = { homeViewModel.writeCustomConfig(configurationData = textState.value) },
                     colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary)),
-                    enabled = !homeViewModel.oemInterface
                 ) {
                     Text(
                         text = stringResource(id = R.string.btn_write),
@@ -285,7 +298,6 @@ fun CustomConfigurationPortrait() {
                         pickFileLauncher.launch("text/*")
                     },
                     colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary)),
-                    enabled = !homeViewModel.oemInterface
                 ) {
                     Text(
                         text = stringResource(id = R.string.btn_load),
@@ -301,7 +313,6 @@ fun CustomConfigurationPortrait() {
                         .wrapContentSize(),
                     onClick = { showDialog.value = true },
                     colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary)),
-                    enabled = !homeViewModel.oemInterface
                 ) {
                     Text(
                         text = stringResource(id = R.string.btn_save),
