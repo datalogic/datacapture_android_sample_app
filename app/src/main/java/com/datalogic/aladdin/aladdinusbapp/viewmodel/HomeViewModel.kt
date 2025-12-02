@@ -1493,17 +1493,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
             return true
         }
 
-        if (tabIndex == 6) {
-            setSelectedTabIndex(tabIndex)
-            setPairingStatus(PairingStatus.Idle)
-            return true
-        }
-
-        if (tabIndex == 7) {
-            setSelectedTabIndex(tabIndex)
-            return true
-        }
-
         // For tabs other than Home, we need a device
         if (deviceList.value?.isEmpty() == true && usbDeviceList.value?.isEmpty() == true && allBluetoothDevices.value?.isEmpty() == true) {
             connectDeviceAlert = true
@@ -1558,7 +1547,10 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                 return true
             }
 
-            7, 8, 9, 10 -> {
+            6, 7, 8, 9, 10 -> {
+                if (tabIndex == 6) {
+                    setPairingStatus(PairingStatus.Idle)
+                }
                 openAlert = false
                 setSelectedTabIndex(tabIndex)
                 return true
