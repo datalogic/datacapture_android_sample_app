@@ -521,13 +521,10 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
     fun handleBluetoothDeviceDisconnection(device: BluetoothDevice) {
         perDeviceClear(device.address)
         clearDIOStatus()
-        selectedScannerBluetoothDevice.value?.let {
-            if (it.bluetoothDevice.address == device.address) {
-                _status.postValue(DeviceStatus.CLOSED)
-                _deviceStatus.postValue("Device disconnected: ${selectedScannerBluetoothDevice.value?.name}")
-                _dioData.postValue("")
-            }
-        }
+        val device =
+            _allBluetoothDevices.value?.firstOrNull { it.bluetoothDevice.address == device.address }
+        closeBluetoothDevice(device)
+        detectDevice()
     }
 
     /**
