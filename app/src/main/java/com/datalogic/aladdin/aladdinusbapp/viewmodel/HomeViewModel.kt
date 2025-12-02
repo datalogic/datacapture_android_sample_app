@@ -23,6 +23,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.core.app.ActivityCompat
 import androidx.core.graphics.scale
@@ -257,7 +258,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
 
     //Reset device notify pop-up
     var showResetDeviceDialog by mutableStateOf(false)
-
+    var showErrorMessageUpgradeFw by mutableStateOf(false)
+    var errorMessageUpgradeFw by  mutableStateOf("")
     private val _qrBitmap = MutableLiveData<Bitmap>()
     val qrBitmap: LiveData<Bitmap> get() = _qrBitmap
 
@@ -337,7 +339,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
 
         fun clear(deviceId: String) {
             flows[deviceId]?.value = ScaleUi()
-            enabled[deviceId]?.value = false
         }
     }
 
@@ -1048,6 +1049,11 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
         showResetDeviceDialog = false
     }
 
+    fun dismissUpgradeFwErrorDialog() {
+        showErrorMessageUpgradeFw = false
+        errorMessageUpgradeFw = ""
+    }
+
     /**
      * Resets the device and dismisses the dialog.
      * This method is called when the user confirms the reset operation.
@@ -1654,7 +1660,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                 val cur = perDeviceScale.flowFor(deviceId).value
                 perDeviceScale.emit(
                     deviceId,
-                    cur.copy(status = if (ok) "ENABLED" else "Failed to start scale", seq = SystemClock.uptimeMillis())
+                    cur.copy(status = if (ok) "" else "Failed to start scale", seq = SystemClock.uptimeMillis())
                 )
                 if (selectedDevice.value?.usbDevice?.deviceId.toString() == deviceId) {
                     _isEnableScale.postValue(ok)
@@ -1678,7 +1684,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                 val cur = perDeviceScale.flowFor(deviceId).value
                 perDeviceScale.emit(
                     deviceId,
-                    cur.copy(status = if (ok) "DISABLED" else "Failed to stop scale", seq = SystemClock.uptimeMillis())
+                    cur.copy(status = if (ok) "" else "Failed to stop scale", seq = SystemClock.uptimeMillis())
                 )
                 if (selectedDevice.value?.usbDevice?.deviceId.toString() == deviceId) {
                     _isEnableScale.postValue(false)
