@@ -1500,7 +1500,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
         }
 
         // For tabs other than Home, device needs to be open
-        if (!isOpenDevice()) {
+        if (!isOpenDevice() && tabIndex != 6 && tabIndex != 7) {
             Log.d(tag, "[handleTabSelection] status: ${status.value}")
             openAlert = true
             return false
