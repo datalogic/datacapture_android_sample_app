@@ -23,7 +23,6 @@ import android.util.Log
 import android.widget.Toast
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.core.app.ActivityCompat
 import androidx.core.graphics.scale
@@ -92,9 +91,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
 
     private val _allBluetoothDevices = MutableLiveData<ArrayList<DatalogicBluetoothDevice>>(ArrayList())
     val allBluetoothDevices: LiveData<ArrayList<DatalogicBluetoothDevice>> = _allBluetoothDevices
-
-    private fun currentOpenBtDevices(): List<DatalogicBluetoothDevice> =
-        _allBluetoothDevices.value?.filter { it.status.value == DeviceStatus.OPENED } ?: emptyList()
 
     private var bluetoothPollingJob: Job? = null
 
@@ -2269,50 +2265,26 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
      * Set the selected label code type and sync with the device
      * @param labelCodeType The label code type to set
      */
-    fun setSelectedLabelCodeType(labelCodeType: LabelCodeType) {
+    fun setSelectedLabelCodeType(labelCodeType: LabelCodeType, deviceId: String) {
         _selectedLabelCodeType.value = labelCodeType
-
-        // Sync with the device if it's available and opened
-        selectedDevice.value?.let { device ->
-            if (device.status.value == DeviceStatus.OPENED) {
-                device.setCurrentLabelCodeType(labelCodeType)
-                Log.d(tag, "Label code type synced with device: ${labelCodeType.code}")
-            }
-        }
+        getUsbDeviceById(deviceId)
+            ?.setCurrentLabelCodeType(labelCodeType)
+        getBTDeviceById(deviceId)
+            ?.setCurrentLabelCodeType(labelCodeType)
     }
 
     /**
      * Set the selected label ID control and sync with the device
      * @param labelIDControl The label ID control to set
      */
-    fun setSelectedLabelIDControl(labelIDControl: LabelIDControl) {
+    fun setSelectedLabelIDControl(labelIDControl: LabelIDControl, deviceId: String) {
         _selectedLabelIDControl.value = labelIDControl
+        getUsbDeviceById(deviceId)
+            ?.setCurrentLabelIDControl(labelIDControl)
+        getBTDeviceById(deviceId)
+            ?.setCurrentLabelIDControl(labelIDControl)
 
-        // Sync with the device if it's available and opened
-        selectedDevice.value?.let { device ->
-            if (device.status.value == DeviceStatus.OPENED) {
-                device.setCurrentLabelIDControl(labelIDControl)
-                Log.d(tag, "Label ID control synced with device: ${labelIDControl.code}")
-            }
-        }
     }
-
-    /**
-     * Get the current label code type setting from the device
-     * @return Current LabelCodeType value
-     */
-    fun getCurrentLabelCodeType(): LabelCodeType {
-        return selectedDevice.value?.getCurrentLabelCodeType() ?: LabelCodeType.NONE
-    }
-
-    /**
-     * Get the current label ID control setting from the device
-     * @return Current LabelIDControl value
-     */
-    fun getCurrentLabelIDControl(): LabelIDControl {
-        return selectedDevice.value?.getCurrentLabelIDControl() ?: LabelIDControl.DISABLE
-    }
-
     /**
      * Initialize label settings from the device when it's opened
      * This should be called when device is successfully opened
@@ -2367,6 +2339,16 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
         val command = DIOCmdValue.ENABLE_SCANNER
         Log.d("HomeViewModel", "Enable scanner ...")
         device?.dioCommand(command, command.value, context)
+    }
+
+    fun getUsbDeviceById(deviceId: String): DatalogicDevice?{
+        return _deviceList.value?.filter { it.status.value == DeviceStatus.OPENED }
+            ?.firstOrNull { it.usbDevice.deviceId.toString() == deviceId }
+    }
+
+    fun getBTDeviceById(deviceId: String): DatalogicBluetoothDevice?{
+        return _allBluetoothDevices.value?.filter { it.status.value == DeviceStatus.OPENED }
+            ?.firstOrNull { it.bluetoothDevice.address.toString() == deviceId }
     }
 }
 

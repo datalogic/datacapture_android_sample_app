@@ -260,7 +260,7 @@ private fun ScannerDeviceSection(
                                 .height(dimensionResource(id = R.dimen._55sdp)),
                             homeViewModel.selectedLabelIDControl.observeAsState().value,
                             onLabelIDControlSelected = {
-                                homeViewModel.setSelectedLabelIDControl(it)
+                                homeViewModel.setSelectedLabelIDControl(it, deviceId)
                             }
                         )
 
@@ -273,7 +273,7 @@ private fun ScannerDeviceSection(
                                 .height(dimensionResource(id = R.dimen._55sdp)),
                             homeViewModel.selectedLabelCodeType.observeAsState().value,
                             onLabelCodeTypeSelected = {
-                                homeViewModel.setSelectedLabelCodeType(it)
+                                homeViewModel.setSelectedLabelCodeType(it, deviceId)
                             }
                         )
 
