@@ -78,7 +78,7 @@ fun UpdateFirmwareScreen() {
     var fileType by remember { mutableStateOf("") }
     val allUsbDevices = homeViewModel.deviceList.observeAsState(ArrayList()).value
     val openUsbDeviceList = allUsbDevices.filter {
-        it.status.value == DeviceStatus.OPENED && it.connectionType != ConnectionType.USB_OEM && it.usbDevice.productId.toString() == "16386"
+        it.status.value == DeviceStatus.OPENED && it.connectionType != ConnectionType.USB_OEM && it.usbDevice.productId.toString() != "16386"
     } as ArrayList<DatalogicDevice>
     val selectedUsbDevice = homeViewModel.selectedDevice.observeAsState(null).value
     DisposableEffect(Unit) {
