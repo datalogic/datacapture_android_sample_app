@@ -190,7 +190,7 @@ object ComposableUtils {
                 }
             }
             LaunchedEffect(Unit) {
-                delay(2000)
+                delay(5000)
                 onDismiss()
             }
         }

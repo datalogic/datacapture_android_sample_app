@@ -1,5 +1,6 @@
 package com.datalogic.aladdin.aladdinusbapp.views.activity.homeScreen
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -18,11 +19,14 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -40,6 +44,7 @@ import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ConfigurationFeatu
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ResetDeviceAlertDialog
 import com.datalogic.aladdin.aladdinusbapp.views.compose.UsbBTDeviceDropdown
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ConnectionType
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 
 @Composable
@@ -50,8 +55,21 @@ fun ConfigurationTabPortrait() {
     val writeResult = homeViewModel.resultLiveData.observeAsState("").value
     val checkedStates = remember { mutableStateMapOf<ConfigurationFeature, Boolean>() }
     val allUsbDevices = homeViewModel.deviceList.observeAsState(ArrayList()).value
-    val openUsbDeviceList = allUsbDevices.filter { it.status.value == DeviceStatus.OPENED } as ArrayList<DatalogicDevice>
+    val openUsbDeviceList = allUsbDevices.filter {
+        it.status.value == DeviceStatus.OPENED && it.connectionType != ConnectionType.USB_OEM && it.usbDevice.productId.toString() != "16386"
+    } as ArrayList<DatalogicDevice>
     val selectedUsbDevice = homeViewModel.selectedDevice.observeAsState(null).value
+    DisposableEffect(Unit) {
+        val target = selectedUsbDevice?.takeIf {
+            it.connectionType != ConnectionType.USB_OEM || openUsbDeviceList.isEmpty()
+        } ?: openUsbDeviceList.firstOrNull()
+        target?.let {
+            if (it != selectedUsbDevice) {
+                homeViewModel.setSelectedDevice(it)
+            }
+        }
+        onDispose {}
+    }
 
     configData.forEach { (feature, value) ->
         if (checkedStates[feature] == null) {
@@ -72,7 +90,7 @@ fun ConfigurationTabPortrait() {
     val isButtonClicked = remember { mutableStateOf(false) }
 
     LaunchedEffect(configData, selectedUsbDevice) {
-        if (selectedUsbDevice != null) homeViewModel.readConfigData()
+        if (selectedUsbDevice != null && selectedUsbDevice.connectionType != ConnectionType.USB_OEM) homeViewModel.readConfigData()
         checkedStates.clear()
         checkedStates.putAll(configData)
     }
@@ -113,6 +131,7 @@ fun ConfigurationTabPortrait() {
                 usbDevices = openUsbDeviceList,
                 bluetoothDevices = null,
                 onUsbDeviceSelected = { device ->
+                    homeViewModel.clearConfig()
                     homeViewModel.setSelectedDevice(device)
                     homeViewModel.readConfigData()
                 },

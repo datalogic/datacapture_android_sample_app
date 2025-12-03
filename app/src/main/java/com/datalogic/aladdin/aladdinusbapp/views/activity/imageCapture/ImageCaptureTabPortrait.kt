@@ -1,6 +1,7 @@
 package com.datalogic.aladdin.aladdinusbapp.views.activity.imageCapture
 
 import android.graphics.Bitmap
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -31,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Text
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
@@ -50,13 +52,14 @@ import com.datalogic.aladdin.aladdinusbapp.viewmodel.HomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.compose.UsbBTDeviceDropdown
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ConnectionType
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DIOCmdValue
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 
 
 @Composable
 fun ImageCaptureTabPortrait() {
     val imageCaptureModel = LocalHomeViewModel.current
-
     // Initialize sliders with the current values from the ViewModel
     var brightness by remember {
         mutableStateOf(imageCaptureModel.getBrightnessPercentage().toFloat())
@@ -67,8 +70,25 @@ fun ImageCaptureTabPortrait() {
     var previewImage by remember { mutableStateOf<Bitmap?>(null) }
 
     val allUsbDevices = imageCaptureModel.deviceList.observeAsState(ArrayList()).value
-    val openUsbDeviceList = allUsbDevices.filter { it.status.value == DeviceStatus.OPENED } as ArrayList<DatalogicDevice>
+    val openUsbDeviceList = allUsbDevices.filter {
+        it.status.value == DeviceStatus.OPENED && it.connectionType != ConnectionType.USB_OEM && it.usbDevice.productId.toString() != "16386"
+    } as ArrayList<DatalogicDevice>
     val selectedUsbDevice = imageCaptureModel.selectedDevice.observeAsState(null).value
+    DisposableEffect(Unit) {
+        Log.d("ImageCaptureTabPortrait", "DisposableEffect triggered: tab=${imageCaptureModel.selectedTabIndex.value}, device=${selectedUsbDevice?.usbDevice?.productName}")
+        val target = selectedUsbDevice?.takeIf {
+            it.connectionType != ConnectionType.USB_OEM || openUsbDeviceList.isEmpty()
+        } ?: openUsbDeviceList.firstOrNull()
+        target?.let {
+            if (it != selectedUsbDevice) {
+                imageCaptureModel.setSelectedDevice(it)
+            }
+            imageCaptureModel.enableScannerBeforeCapturing(it)
+        }
+        onDispose {
+
+        }
+    }
 
     DisposableEffect(imageCaptureModel) {
         imageCaptureModel.setImageCallback { bitmap ->

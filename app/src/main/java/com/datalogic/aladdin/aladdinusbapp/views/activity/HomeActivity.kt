@@ -171,10 +171,11 @@ class HomeActivity : AppCompatActivity() {
                             homeViewModel.setAutoCheckDocking(homeViewModel.isCheckDockingEnabled.value == true)
                         }
                         DeviceStatus.CLOSED -> {
-                            showToast(applicationContext, "Device closed")
+                            showToast(applicationContext, "Device closed (Path: $deviceName)")
                             homeViewModel.clearConfig()
                             homeViewModel.setSelectedLabelIDControl(LabelIDControl.DISABLE)
                             homeViewModel.setSelectedLabelCodeType(LabelCodeType.NONE)
+                            homeViewModel.clearSelectedDevice(deviceName)
                         }
                         else -> {}
                     }

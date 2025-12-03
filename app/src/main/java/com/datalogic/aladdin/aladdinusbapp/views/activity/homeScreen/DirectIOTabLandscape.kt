@@ -41,6 +41,7 @@ import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.compose.DIODropdown
 import com.datalogic.aladdin.aladdinusbapp.views.compose.UsbBTDeviceDropdown
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ConnectionType
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DIOCmdValue
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 
@@ -49,7 +50,7 @@ fun DirectIOTabLandscape() {
 
     val homeViewModel = LocalHomeViewModel.current
     val allUsbDevices = homeViewModel.deviceList.observeAsState(ArrayList()).value
-    val openUsbDeviceList = allUsbDevices.filter { it.status.value == DeviceStatus.OPENED } as ArrayList<DatalogicDevice>
+    val openUsbDeviceList = allUsbDevices.filter { it.status.value == DeviceStatus.OPENED} as ArrayList<DatalogicDevice>
     val selectedUsbDevice = homeViewModel.selectedDevice.observeAsState(null).value
     val dioStatus = homeViewModel.dioStatus.observeAsState("").value
     val status = homeViewModel.status.observeAsState().value

@@ -39,7 +39,8 @@
     <string name="oem_device_feature_restriction">This feature is not supported on OEM devices</string>
     <string name="alert_message_for_claim_device">Claim the device.</string>
     <string name="alert_message_for_connect_device">Connect a device.</string>
-    <string name="alert_message_for_magellan_config">Switch to Service Port Mode to access Configuration.</string>
+    <string name="alert_message_for_magellan_config">Switch to Service Port Mode to access this feature.</string>
+    <string name="alert_message_for_no_device_support">No compatible device opened. \nOnly USB-COM devices or COM Single Cable devices with a Service Port are supported.</string>
     <string name="command">Command</string>
     <string name="status_message">Status Message</string>
     <string name="confirm">Confirm</string>

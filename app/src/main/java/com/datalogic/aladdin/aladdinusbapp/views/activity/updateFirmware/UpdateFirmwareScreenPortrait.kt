@@ -2,6 +2,7 @@ package com.datalogic.aladdin.aladdinusbapp.views.activity.updateFirmware
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -28,6 +29,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
@@ -57,6 +59,7 @@ import com.datalogic.aladdin.aladdinusbapp.views.compose.UpgradeConfigurationCar
 import com.datalogic.aladdin.aladdinusbapp.views.compose.UsbBTDeviceDropdown
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.constants.FileConstants
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ConnectionType
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 import java.io.File
 
@@ -74,8 +77,22 @@ fun UpdateFirmwareScreen() {
     var pid by remember { mutableStateOf("") }
     var fileType by remember { mutableStateOf("") }
     val allUsbDevices = homeViewModel.deviceList.observeAsState(ArrayList()).value
-    val openUsbDeviceList = allUsbDevices.filter { it.status.value == DeviceStatus.OPENED } as ArrayList<DatalogicDevice>
+    val openUsbDeviceList = allUsbDevices.filter {
+        it.status.value == DeviceStatus.OPENED && it.connectionType != ConnectionType.USB_OEM && it.usbDevice.productId.toString() == "16386"
+    } as ArrayList<DatalogicDevice>
     val selectedUsbDevice = homeViewModel.selectedDevice.observeAsState(null).value
+    DisposableEffect(Unit) {
+        val target = selectedUsbDevice?.takeIf {
+            it.connectionType != ConnectionType.USB_OEM || openUsbDeviceList.isEmpty()
+        } ?: openUsbDeviceList.firstOrNull()
+        target?.let {
+            if (it != selectedUsbDevice) {
+                homeViewModel.setSelectedDevice(it)
+            }
+        }
+        onDispose {}
+    }
+
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri: Uri? ->
@@ -180,11 +197,10 @@ fun UpdateFirmwareScreen() {
                     onClick = {
                         filePickerLauncher.launch("application/octet-stream")
                     },
-                    enabled = true,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = colorResource(id = R.color.colorPrimary),
                         disabledContainerColor = colorResource(id = R.color.colorPrimary).copy(alpha = 0.5f)
-                    )
+                    ),
                 ) {
                     Text(
                         stringResource(R.string.btn_load_file),
