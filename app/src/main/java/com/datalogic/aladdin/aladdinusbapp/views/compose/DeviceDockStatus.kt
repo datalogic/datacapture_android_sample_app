@@ -77,7 +77,7 @@ fun DeviceDockStatus(
                     bottom = dimensionResource(id = R.dimen._5sdp)
                 )
             ComposableUtils.TextValueRow("Device Docking:", if (state.docked) "Yes" else "No",cusModifier)
-            ComposableUtils.TextValueRow("Device Linking:", if (state.linked) "Yes" else "No",cusModifier)
+//            ComposableUtils.TextValueRow("Device Linking:", if (state.linked) "Yes" else "No",cusModifier)
         }
     }
 }
