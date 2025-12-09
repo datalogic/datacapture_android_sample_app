@@ -173,9 +173,9 @@ class HomeActivity : AppCompatActivity() {
                         DeviceStatus.CLOSED -> {
                             showToast(applicationContext, "Device closed (Path: $deviceName)")
                             homeViewModel.clearConfig()
-                            homeViewModel.setSelectedLabelIDControl(LabelIDControl.DISABLE)
-                            homeViewModel.setSelectedLabelCodeType(LabelCodeType.NONE)
                             homeViewModel.clearSelectedDevice(deviceName)
+                            homeViewModel.setSelectedLabelIDControl(LabelIDControl.DISABLE, "")
+                            homeViewModel.setSelectedLabelCodeType(LabelCodeType.NONE, "")
                         }
                         else -> {}
                     }
