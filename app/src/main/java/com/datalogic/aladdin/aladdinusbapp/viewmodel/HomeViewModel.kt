@@ -1490,18 +1490,21 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
             return true
         }
 
-        // For tabs other than Home, we need a device
-        if (deviceList.value?.isEmpty() == true && usbDeviceList.value?.isEmpty() == true && allBluetoothDevices.value?.isEmpty() == true) {
-            connectDeviceAlert = true
-            return false
-        }
+        if (tabIndex != 6 && tabIndex != 7) {
+            if (deviceList.value?.isEmpty() == true && usbDeviceList.value?.isEmpty() == true && allBluetoothDevices.value?.isEmpty() == true) {
+                connectDeviceAlert = true
+                return false
+            }
 
-        // For tabs other than Home, device needs to be open
-        if (!isOpenDevice() && tabIndex != 6 && tabIndex != 7) {
-            Log.d(tag, "[handleTabSelection] status: ${status.value}")
-            openAlert = true
-            return false
+            // For tabs other than Home, device needs to be open
+            if (!isOpenDevice()) {
+                Log.d(tag, "[handleTabSelection] status: ${status.value}")
+                openAlert = true
+                return false
+            }
         }
+        // For tabs other than Home, we need a device
+
         val listUsbOpened = deviceList.value?.filter { it.status.value == DeviceStatus.OPENED}
         val listDeviceSupport = listUsbOpened?.filter { //Device USB-COM or COM-SC with Service port
             it.usbDevice.productId.toString() != "16386" && it.connectionType != ConnectionType.USB_OEM
@@ -2160,13 +2163,18 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
     fun closeBluetoothDevice(dlBluetoothDevice: DatalogicBluetoothDevice?) {
         val dev = dlBluetoothDevice ?: return
         // detach listeners
+        if (dev.status.value == DeviceStatus.OPENED) {
+            showToast(context, "Device closed (${dev.name})")
+        }
         bluetoothErrorListener?.let { dev.unregisterBluetoothDioListener(it) }
         dev.clearConnection(context)
         viewModelScope.launch(Dispatchers.IO) { delay(150) }
         // status → CLOSED
         dev.status.value = DeviceStatus.CLOSED
-        _status.postValue(DeviceStatus.CLOSED)
-        _deviceStatus.postValue("No device selected")
+        if (dev.bluetoothDevice.address == selectedBluetoothDevice.value?.bluetoothDevice?.address) {
+            _status.postValue(DeviceStatus.CLOSED)
+            _deviceStatus.postValue("No device selected")
+        }
         updateBluetoothStatusInList(dev, DeviceStatus.CLOSED)
 
         // clear per-device UI
@@ -2174,7 +2182,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
         selectedScannerBluetoothDevice.postValue(null)
         // avoid reusing stale listeners on next open
         bluetoothScanEvent = null
-        bluetoothErrorListener = null
+//        bluetoothErrorListener = null
     }
 
     fun setSelectedBluetoothDevice(device: DatalogicBluetoothDevice?) {
