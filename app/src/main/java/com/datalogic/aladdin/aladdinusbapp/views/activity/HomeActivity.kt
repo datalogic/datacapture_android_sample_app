@@ -133,6 +133,7 @@ class HomeActivity : AppCompatActivity() {
         Log.d(TAG, "Destroy called")
         homeViewModel.onCleared()
         usbListener?.let { usbDeviceManager.unregisterUsbListener(it) }
+        bluetoohListener?.let { usbDeviceManager.unregisterBluetoothListener(it) }
         statusListener?.let { usbDeviceManager.unregisterStatusListener(it) }
     }
 
@@ -206,7 +207,9 @@ class HomeActivity : AppCompatActivity() {
                 }
                 homeViewModel.getAllBluetoothDevice(activity)
             }
+            @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
             override fun onDeviceDetachedListener(device: BluetoothDevice) {
+                homeViewModel.deviceList
                 homeViewModel.handleBluetoothDeviceDisconnection(device)
             }
         }
