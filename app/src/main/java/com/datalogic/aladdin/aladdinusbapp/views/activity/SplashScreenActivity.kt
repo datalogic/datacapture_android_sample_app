@@ -106,7 +106,7 @@ class SplashScreenActivity : ComponentActivity() {
     fun getAppVersion(): String {
         return try {
             val versionSDK = BuildConfig.LIBRARY_VERSION_NAME
-            versionSDK.removePrefix("AndroidSDK_")
+            versionSDK.removePrefix("AladdinUsbSdk_")
         } catch (exp: PackageManager.NameNotFoundException) {
             Log.d("SplashScreenActivity", "Failed to get version number: ${exp.printStackTrace()}")
             "N/A"
