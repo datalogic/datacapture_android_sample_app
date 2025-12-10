@@ -2324,7 +2324,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
         val timeZone = java.util.TimeZone.getDefault().id
         val versionSDK = BuildConfig.LIBRARY_VERSION_NAME
         val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
-        val appVersion = versionSDK.removePrefix("AndroidSDK_")
+        val appVersion = versionSDK.removePrefix("AladdinUsbSdk_")
 
         Log.i("AppInfo", "App Version: $appVersion")
         Log.i("AppInfo", "Version SDK: $versionSDK")
