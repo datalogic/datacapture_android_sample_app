@@ -220,13 +220,63 @@ fun UpdateFirmwareScreen() {
                     onClick = {
                         try {
                             file?.let {
-                                if (isCheckPidToggle && fileType == FileConstants.S37_FILE_TYPE) {
-                                    homeViewModel.setPid(it, fileType, { isValid ->
-                                        if (isCheckPidToggle != isValid) {
-                                            homeViewModel.errorMessageUpgradeFw = context.getString(R.string.pid_is_not_valid)
-                                            homeViewModel.showErrorMessageUpgradeFw = true
-                                            return@setPid
+                                when (fileType) {
+                                    FileConstants.S37_FILE_TYPE -> {
+                                        homeViewModel.setPid(it, fileType, { isValid ->
+                                            if (isCheckPidToggle) {
+                                                if (isValid) {
+                                                    handleBulkTransferAndUpgrade(
+                                                        it,
+                                                        isBulkTransferToggle,
+                                                        homeViewModel,
+                                                        context,
+                                                        fileType
+                                                    )
+                                                } else {
+                                                    homeViewModel.errorMessageUpgradeFw =
+                                                        context.getString(R.string.pid_is_not_valid)
+                                                    homeViewModel.showErrorMessageUpgradeFw = true
+                                                }
+                                            } else {
+                                                handleBulkTransferAndUpgrade(
+                                                    it,
+                                                    isBulkTransferToggle,
+                                                    homeViewModel,
+                                                    context,
+                                                    fileType
+                                                )
+                                            }
+                                        }, context)
+                                    }
+
+                                    FileConstants.DFW_FILE_TYPE -> {
+                                        homeViewModel.setPidDWF(it, fileType) { isValid ->
+                                            if (isCheckPidToggle) {
+                                                if (isValid) {
+                                                    handleBulkTransferAndUpgrade(
+                                                        it,
+                                                        isBulkTransferToggle,
+                                                        homeViewModel,
+                                                        context,
+                                                        fileType
+                                                    )
+                                                } else {
+                                                    homeViewModel.errorMessageUpgradeFw =
+                                                        context.getString(R.string.pid_is_not_valid)
+                                                    homeViewModel.showErrorMessageUpgradeFw = true
+                                                }
+                                            } else {
+                                                handleBulkTransferAndUpgrade(
+                                                    it,
+                                                    isBulkTransferToggle,
+                                                    homeViewModel,
+                                                    context,
+                                                    fileType
+                                                )
+                                            }
                                         }
+                                    }
+                                    FileConstants.SWU_FILE_TYPE -> {
                                         handleBulkTransferAndUpgrade(
                                             it,
                                             isBulkTransferToggle,
@@ -234,37 +284,11 @@ fun UpdateFirmwareScreen() {
                                             context,
                                             fileType
                                         )
-                                    }, context)
-                                    return@let
-                                } else if (fileType == FileConstants.DFW_FILE_TYPE) {
-                                    if (isCheckPidToggle) {
-                                        homeViewModel.setPidDWF(it, fileType) { isValid ->
-                                            if (isCheckPidToggle != isValid) {
-                                                homeViewModel.errorMessageUpgradeFw = context.getString(R.string.pid_is_not_valid)
-                                                homeViewModel.showErrorMessageUpgradeFw = true
-                                                return@setPidDWF
-                                            }
-                                        }
                                     }
-                                    handleBulkTransferAndUpgrade(
-                                        it,
-                                        isBulkTransferToggle,
-                                        homeViewModel,
-                                        context,
-                                        fileType
-                                    )
-                                    return@let
-                                } else if (fileType == FileConstants.SWU_FILE_TYPE) {
-                                    handleBulkTransferAndUpgrade(
-                                        it,
-                                        isBulkTransferToggle,
-                                        homeViewModel,
-                                        context,
-                                        fileType
-                                    )
-                                } else {
-                                    homeViewModel.errorMessageUpgradeFw = "This file is not supported. Please select another firmware file."
-                                    homeViewModel.showErrorMessageUpgradeFw = true
+                                    else -> {
+                                        homeViewModel.errorMessageUpgradeFw = "This file is not supported. Please select another firmware file."
+                                        homeViewModel.showErrorMessageUpgradeFw = true
+                                    }
                                 }
                             }
                         } catch (_: Exception){
