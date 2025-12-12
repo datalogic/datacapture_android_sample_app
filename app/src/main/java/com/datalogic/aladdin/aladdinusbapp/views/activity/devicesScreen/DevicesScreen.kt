@@ -82,10 +82,14 @@ fun DeviceRow(
         Icons.Filled.KeyboardArrowDown
     val deviceList by homeViewModel.deviceList.observeAsState(emptyList()) // <-- the live list of DatalogicDevice
     // Find the concrete device instance that corresponds to THIS row
-    val boundDevice = dlDevice ?: deviceList.firstOrNull { dev ->
-        usbDevice != null &&
-                dev.usbDevice.deviceName == usbDevice.deviceName &&
-                dev.usbDevice.productId == usbDevice.productId
+    val boundDevice by remember(deviceList) {
+        mutableStateOf(
+            dlDevice ?: deviceList.firstOrNull { dev ->
+                usbDevice != null &&
+                        dev.usbDevice.deviceName == usbDevice.deviceName &&
+                        dev.usbDevice.productId == usbDevice.productId
+            }
+        )
     }
 
     val isOpen = boundDevice?.status?.value == DeviceStatus.OPENED

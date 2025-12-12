@@ -607,14 +607,9 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
             selectedUsbDevice.value?.let { usbDevice ->
                 _isLoading.postValue(true)
                 val usbManager = context.getSystemService(Context.USB_SERVICE) as UsbManager
-//                selectedDevice.value =
-//                    DatalogicDevice(usbManager, usbDevice, currentDeviceType, currentConnectionType)
-
-                selectedDevice.value?.let { device ->
+                val device = DatalogicDevice(usbManager, usbDevice, currentDeviceType, currentConnectionType)
+                device.let {
                     coroutineOpenDevice(device)
-                } ?: run {
-                    // No device selected
-                    connectDeviceAlert = true
                 }
             } ?: run {
                 // No device selected
@@ -638,6 +633,14 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                         // Initialize label settings from device
                         initializeLabelSettingsFromDevice()
                         device.status.value = DeviceStatus.OPENED
+//                        val list = _deviceList.value ?: arrayListOf()
+//                        val index = list.indexOfFirst { it.usbDevice.deviceName == device.usbDevice.deviceName }
+//                        if (index != -1) {
+//                            list[index] = device
+//                        } else {
+//                            list.add(device)
+//                        }
+//                        _deviceList.value = list
                         updateDeviceStatusInList(device, DeviceStatus.OPENED)
                     }
 
@@ -655,19 +658,19 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
     fun updateDeviceStatusInList(target: DatalogicDevice, newStatus: DeviceStatus) {
         val list = _deviceList.value ?: return
 
+        val newList = list.toMutableList()
+
         // Prefer a stable, session-level id. Fall back to VID:PID if needed.
-        val idx = list.indexOfFirst { dev ->
+        val idx = newList.indexOfFirst { dev ->
             dev.usbDevice.deviceId == target.usbDevice.deviceId &&
                     dev.usbDevice.deviceName == target.usbDevice.deviceName
         }
 
         if (idx >= 0) {
-            val device = list[idx]
             // Update the device’s own LiveData so rows bound to it recompose
-            device.status.value = newStatus
-
+            newList[idx] = target
             // Post a new list instance so collectors of deviceList see the change
-            _deviceList.postValue(ArrayList(list))
+            _deviceList.postValue(ArrayList(newList))
         }
     }
 
