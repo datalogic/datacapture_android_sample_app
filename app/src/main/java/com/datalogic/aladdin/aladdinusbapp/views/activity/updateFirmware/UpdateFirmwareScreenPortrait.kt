@@ -82,13 +82,20 @@ fun UpdateFirmwareScreen() {
     } as ArrayList<DatalogicDevice>
     val selectedUsbDevice = homeViewModel.selectedDevice.observeAsState(null).value
     DisposableEffect(Unit) {
-        val target = selectedUsbDevice?.takeIf {
-            it.connectionType != ConnectionType.USB_OEM || openUsbDeviceList.isEmpty()
-        } ?: openUsbDeviceList.firstOrNull()
-        target?.let {
-            if (it != selectedUsbDevice) {
-                homeViewModel.setSelectedDevice(it)
+        var useCurrentSelected = false
+        Log.d("UpdateFirmwareScreen", "[DisposableEffect] target: ${selectedUsbDevice?.displayName} -- ListSize[${openUsbDeviceList.size}]")
+        if (selectedUsbDevice != null && selectedUsbDevice.connectionType != ConnectionType.USB_OEM) {
+            for (device in openUsbDeviceList) {
+                if (device.usbDevice.deviceName == selectedUsbDevice.usbDevice.deviceName) {
+                    homeViewModel.setSelectedDevice(device)
+                    Log.d("UpdateFirmwareScreen", "[DisposableEffect] selected device: ${device.displayName}")
+                    useCurrentSelected = true
+                    break
+                }
             }
+        }
+        if (!useCurrentSelected) {
+            homeViewModel.setSelectedDevice(openUsbDeviceList.firstOrNull())
         }
         onDispose {}
     }

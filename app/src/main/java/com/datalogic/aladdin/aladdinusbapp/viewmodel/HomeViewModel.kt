@@ -499,17 +499,18 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
         if (!deviceList.value.isNullOrEmpty()) {
             for (device in deviceList.value!!) {
                 if (device.usbDevice.deviceName == disconnectDevice.deviceName) {
-                    if (selectedDevice.value?.usbDevice?.deviceName == disconnectDevice.deviceName) {
-                        _status.postValue(DeviceStatus.CLOSED)
-                        _deviceStatus.postValue("Device disconnected: ${device.displayName}")
-                        _dioData.postValue("")
-                    }
                     device.handleDeviceDisconnection(disconnectDevice)
                     break
                 }
             }
         }
-
+        if (selectedDevice.value?.usbDevice?.deviceName.toString() == disconnectDevice.deviceName) {
+            _status.postValue(DeviceStatus.CLOSED)
+            _deviceStatus.postValue("Device disconnected: ${disconnectDevice.deviceName}")
+            _dioData.postValue("")
+            Log.d("HomeViewModel", "[handleDeviceDisconnection] clearSelectedDevice  ${disconnectDevice.deviceName}")
+            clearSelectedDevice(disconnectDevice.deviceName.toString())
+        }
         detectDevice()
         Log.d("HomeViewModel", "[handleDeviceDisconnection] removeDeviceCradleState")
         removeDeviceCradleState(disconnectDevice)
@@ -534,13 +535,13 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
     /**
      * Set status from listener callbacks
      */
-    fun setStatus(productId: String, status: DeviceStatus) {
+    fun setStatus(deviceName: String, status: DeviceStatus) {
         // Only update UI if this status change is for our selected device
         if (isBluetoothEnabled.value == true) {
             _status.postValue(status)
         } else {
             selectedDevice.value?.let {
-                if (it.usbDevice.productId.toString() == productId) {
+                if (it.usbDevice.deviceName.toString() == deviceName) {
                     _status.postValue(status)
                 }
             }
@@ -1827,6 +1828,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
     fun clearSelectedDevice(deviceName: String) {
         selectedDevice.value?.let {
             if (it.usbDevice.deviceName.toString() == deviceName) {
+                Log.d("HomeViewModel", "[clearSelectedDevice] clear device ${it.displayName}")
                 setSelectedDevice(null)
             }
         }
