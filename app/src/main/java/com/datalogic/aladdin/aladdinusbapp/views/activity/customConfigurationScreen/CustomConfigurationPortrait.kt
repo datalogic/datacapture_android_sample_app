@@ -74,15 +74,20 @@ fun CustomConfigurationPortrait() {
     } as ArrayList<DatalogicDevice>
     val selectedUsbDevice = homeViewModel.selectedDevice.observeAsState(null).value
     DisposableEffect(Unit) {
-        val target = selectedUsbDevice?.takeIf {
-            it.connectionType != ConnectionType.USB_OEM || openUsbDeviceList.isEmpty()
-        } ?: openUsbDeviceList.firstOrNull()
-        target?.let {
-            if (it != selectedUsbDevice) {
-                homeViewModel.setSelectedDevice(it)
+        var useCurrentSelected = false
+        if (selectedUsbDevice != null && selectedUsbDevice.connectionType != ConnectionType.USB_OEM) {
+            for (device in openUsbDeviceList) {
+                if (device.usbDevice.deviceName == selectedUsbDevice.usbDevice.deviceName) {
+                    homeViewModel.setSelectedDevice(device)
+                    useCurrentSelected = true
+                    break
+                }
             }
-            homeViewModel.getDeviceConfigName()
         }
+        if (!useCurrentSelected) {
+            homeViewModel.setSelectedDevice(openUsbDeviceList.firstOrNull())
+        }
+        homeViewModel.getDeviceConfigName()
         onDispose {}
     }
 

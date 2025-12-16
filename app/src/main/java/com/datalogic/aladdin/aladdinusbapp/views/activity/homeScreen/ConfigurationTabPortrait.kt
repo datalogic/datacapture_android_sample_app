@@ -21,12 +21,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -40,10 +38,10 @@ import androidx.compose.ui.unit.sp
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.CustomSwitch
-import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ConfigurationFeature
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ResetDeviceAlertDialog
 import com.datalogic.aladdin.aladdinusbapp.views.compose.UsbBTDeviceDropdown
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ConfigurationFeature
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.ConnectionType
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 
@@ -60,13 +58,18 @@ fun ConfigurationTabPortrait() {
     } as ArrayList<DatalogicDevice>
     val selectedUsbDevice = homeViewModel.selectedDevice.observeAsState(null).value
     DisposableEffect(Unit) {
-        val target = selectedUsbDevice?.takeIf {
-            it.connectionType != ConnectionType.USB_OEM || openUsbDeviceList.isEmpty()
-        } ?: openUsbDeviceList.firstOrNull()
-        target?.let {
-            if (it != selectedUsbDevice) {
-                homeViewModel.setSelectedDevice(it)
+        var useCurrentSelected = false
+        if (selectedUsbDevice != null && selectedUsbDevice.connectionType != ConnectionType.USB_OEM) {
+            for (device in openUsbDeviceList) {
+                if (device.usbDevice.deviceName == selectedUsbDevice.usbDevice.deviceName) {
+                    homeViewModel.setSelectedDevice(device)
+                    useCurrentSelected = true
+                    break
+                }
             }
+        }
+        if (!useCurrentSelected) {
+            homeViewModel.setSelectedDevice(openUsbDeviceList.firstOrNull())
         }
         onDispose {}
     }

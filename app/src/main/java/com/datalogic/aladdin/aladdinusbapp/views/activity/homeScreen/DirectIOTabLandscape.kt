@@ -25,6 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
@@ -62,6 +63,21 @@ fun DirectIOTabLandscape() {
     val openBluetoothDevices = allBluetoothDevices.filter {
         it.status.value == DeviceStatus.OPENED } as ArrayList<DatalogicBluetoothDevice>
     val selectedBluetoothDevice = homeViewModel.selectedBluetoothDevice.observeAsState(null).value
+    DisposableEffect(Unit) {
+        if (selectedBluetoothDevice != null && openBluetoothDevices.isNotEmpty()) {
+            homeViewModel.setSelectedBluetoothDevice(selectedBluetoothDevice)
+        } else {
+            val targetUsb = selectedUsbDevice?.takeIf {openUsbDeviceList.isEmpty()} ?: openUsbDeviceList.firstOrNull()
+            targetUsb?.let {
+                for (device in openUsbDeviceList) {
+                    if (device.usbDevice.deviceName == it.usbDevice.deviceName) {
+                        homeViewModel.setSelectedDevice(device)
+                    }
+                }
+            }
+        }
+        onDispose {}
+    }
     /**
      * Define a threshold for vertical scrolling
      * */

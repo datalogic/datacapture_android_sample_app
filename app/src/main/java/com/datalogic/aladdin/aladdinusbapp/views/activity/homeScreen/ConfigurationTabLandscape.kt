@@ -1,6 +1,5 @@
 package com.datalogic.aladdin.aladdinusbapp.views.activity.homeScreen
 
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -58,13 +57,18 @@ fun ConfigurationTabLandscape() {
     } as ArrayList<DatalogicDevice>
     val selectedUsbDevice = homeViewModel.selectedDevice.observeAsState(null).value
     DisposableEffect(Unit) {
-        val target = selectedUsbDevice?.takeIf {
-            it.connectionType != ConnectionType.USB_OEM || openUsbDeviceList.isEmpty()
-        } ?: openUsbDeviceList.firstOrNull()
-        target?.let {
-            if (it != selectedUsbDevice) {
-                homeViewModel.setSelectedDevice(it)
+        var useCurrentSelected = false
+        if (selectedUsbDevice != null && selectedUsbDevice.connectionType != ConnectionType.USB_OEM) {
+            for (device in openUsbDeviceList) {
+                if (device.usbDevice.deviceName == selectedUsbDevice.usbDevice.deviceName) {
+                    homeViewModel.setSelectedDevice(device)
+                    useCurrentSelected = true
+                    break
+                }
             }
+        }
+        if (!useCurrentSelected) {
+            homeViewModel.setSelectedDevice(openUsbDeviceList.firstOrNull())
         }
         onDispose {}
     }
@@ -108,7 +112,7 @@ fun ConfigurationTabLandscape() {
             textAlign = TextAlign.Center
         )
 
-        Column (
+        Column(
             modifier = Modifier
                 .semantics { contentDescription = "symbology_list" }
                 .fillMaxSize()
@@ -120,7 +124,7 @@ fun ConfigurationTabLandscape() {
                 )
                 .padding(dimensionResource(id = R.dimen._8sdp)),
             verticalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen._30sdp))
-        ){
+        ) {
             UsbBTDeviceDropdown(
                 modifier = Modifier
                     .semantics { contentDescription = "device_dropdown" }
@@ -159,7 +163,11 @@ fun ConfigurationTabLandscape() {
                         onClick = { newState ->
                             if (checkedState != newState) {
                                 checkedStates[feature] = newState
-                                homeViewModel.updateWriteConfigData(feature, newState, oldState != newState)
+                                homeViewModel.updateWriteConfigData(
+                                    feature,
+                                    newState,
+                                    oldState != newState
+                                )
                             }
                             if (isButtonClicked.value) {
                                 isButtonClicked.value = false
@@ -190,7 +198,9 @@ fun ConfigurationTabLandscape() {
             Text(
                 text = stringResource(id = R.string.apply),
                 style = MaterialTheme.typography.headlineLarge,
-                color = if (homeViewModel.writeConfigData.isNotEmpty() && !isButtonClicked.value) colorResource(id = R.color.white)
+                color = if (homeViewModel.writeConfigData.isNotEmpty() && !isButtonClicked.value) colorResource(
+                    id = R.color.white
+                )
                 else colorResource(id = R.color.apply_text)
             )
         }

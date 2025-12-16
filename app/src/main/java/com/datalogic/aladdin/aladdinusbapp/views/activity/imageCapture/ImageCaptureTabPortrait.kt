@@ -75,19 +75,21 @@ fun ImageCaptureTabPortrait() {
     } as ArrayList<DatalogicDevice>
     val selectedUsbDevice = imageCaptureModel.selectedDevice.observeAsState(null).value
     DisposableEffect(Unit) {
-        Log.d("ImageCaptureTabPortrait", "DisposableEffect triggered: tab=${imageCaptureModel.selectedTabIndex.value}, device=${selectedUsbDevice?.usbDevice?.productName}")
-        val target = selectedUsbDevice?.takeIf {
-            it.connectionType != ConnectionType.USB_OEM || openUsbDeviceList.isEmpty()
-        } ?: openUsbDeviceList.firstOrNull()
-        target?.let {
-            if (it != selectedUsbDevice) {
-                imageCaptureModel.setSelectedDevice(it)
+        var useCurrentSelected = false
+        if (selectedUsbDevice != null && selectedUsbDevice.connectionType != ConnectionType.USB_OEM) {
+            for (device in openUsbDeviceList) {
+                if (device.usbDevice.deviceName == selectedUsbDevice.usbDevice.deviceName) {
+                    imageCaptureModel.setSelectedDevice(device)
+                    useCurrentSelected = true
+                    break
+                }
             }
-            imageCaptureModel.enableScannerBeforeCapturing(it)
         }
-        onDispose {
-
+        if (!useCurrentSelected) {
+            imageCaptureModel.setSelectedDevice(openUsbDeviceList.firstOrNull())
         }
+        imageCaptureModel.enableScannerBeforeCapturing(selectedUsbDevice)
+        onDispose {}
     }
 
     DisposableEffect(imageCaptureModel) {

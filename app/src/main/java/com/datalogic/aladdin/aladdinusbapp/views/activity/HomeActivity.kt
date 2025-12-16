@@ -159,7 +159,7 @@ class HomeActivity : AppCompatActivity() {
         val statusListener = object : StatusListener {
             override fun onStatus(productId: String, status: DeviceStatus, deviceName: String) {
                 runOnUiThread {
-                    homeViewModel.setStatus(productId, status)
+                    homeViewModel.setStatus(deviceName, status)
                     Log.d(TAG, "[handlerUsbListener] ${status.name}")
 
                     // Update UI based on new status
