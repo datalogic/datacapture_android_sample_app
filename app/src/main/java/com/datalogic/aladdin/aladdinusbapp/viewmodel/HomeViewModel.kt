@@ -527,16 +527,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                         setupCustomListeners(device)
                         // Initialize label settings from device
                         initializeLabelSettingsFromDevice()
-                        device.status.value = DeviceStatus.OPENED
-//                        val list = _deviceList.value ?: arrayListOf()
-//                        val index = list.indexOfFirst { it.usbDevice.deviceName == device.usbDevice.deviceName }
-//                        if (index != -1) {
-//                            list[index] = device
-//                        } else {
-//                            list.add(device)
-//                        }
-//                        _deviceList.value = list
-                        updateDeviceStatusInList(device, DeviceStatus.OPENED)
                     }
 
                     else -> {
@@ -546,25 +536,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
 
                 _isLoading.postValue(false)
             }
-        }
-    }
-
-    fun updateDeviceStatusInList(target: DatalogicDevice, newStatus: DeviceStatus) {
-        val list = _deviceList.value ?: return
-
-        val newList = list.toMutableList()
-
-        // Prefer a stable, session-level id. Fall back to VID:PID if needed.
-        val idx = newList.indexOfFirst { dev ->
-            dev.usbDevice.deviceId == target.usbDevice.deviceId &&
-                    dev.usbDevice.deviceName == target.usbDevice.deviceName
-        }
-
-        if (idx >= 0) {
-            // Update the device’s own LiveData so rows bound to it recompose
-            newList[idx] = target
-            // Post a new list instance so collectors of deviceList see the change
-            _deviceList.postValue(ArrayList(newList))
         }
     }
 
@@ -661,7 +632,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                     when (result) {
                         USBConstants.SUCCESS -> {
                             Log.d(tag, "Device closed successfully: ${device.displayName}")
-                            device.status.value = DeviceStatus.CLOSED
                             perDeviceClear(device.usbDevice.deviceId.toString())
                             perDeviceScaleClear(device.usbDevice.deviceId.toString())
                             clearScaleData(device.usbDevice.deviceId.toString())
@@ -690,7 +660,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                             if (selectedDevice.value?.usbDevice?.deviceName == device.usbDevice.deviceName) {
                                 setSelectedDevice(null)
                             }
-                            updateDeviceStatusInList(device, DeviceStatus.CLOSED)
                         }
 
                         else -> {
@@ -1933,51 +1902,30 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                         }
                         bluetoothErrorListener?.let { device.registerBluetoothDioListener(it) }
 
-                        device.status.value = DeviceStatus.OPENED
-                        updateBluetoothStatusInList(device, DeviceStatus.OPENED)
                         selectedScannerBluetoothDevice.postValue(device)
                         val cmd = DIOCmdValue.ENABLE_SCANNER
                         device.dioCommand(cmd, cmd.value, context)
                         showToast(context, "Device successfully opened")
-                    } else {
-                        device.status.value = DeviceStatus.CLOSED
-                        updateBluetoothStatusInList(device, DeviceStatus.CLOSED)
                     }
                 }
             }
         }
     }
 
-    fun updateBluetoothStatusInList(target: DatalogicBluetoothDevice, newStatus: DeviceStatus) {
-        val list = _allBluetoothDevices.value ?: return
-
-        val idx = list.indexOfFirst { dev ->
-            dev.bluetoothDevice.address == target.bluetoothDevice.address
-        }
-        if (idx >= 0) {
-            val dev = list[idx]
-            // update the device’s own status LiveData
-            dev.status.value = newStatus
-            // re-post a new list instance to trigger observers
-            _allBluetoothDevices.postValue(ArrayList(list))
-        }
-    }
-
     fun closeBluetoothDevice(dlBluetoothDevice: DatalogicBluetoothDevice?) {
-        val dev = dlBluetoothDevice ?: return
-        // detach listeners
-        if (dev.status.value == DeviceStatus.OPENED) {
-            showToast(context, "Device closed (${dev.name})")
+        if (dlBluetoothDevice == null) {
+            return
         }
-        bluetoothErrorListener?.let { dev.unregisterBluetoothDioListener(it) }
-        dev.clearConnection(context)
+        // detach listeners
+        if (dlBluetoothDevice.status.value == DeviceStatus.OPENED) {
+            showToast(context, "Device closed (${dlBluetoothDevice.name})")
+        }
+        bluetoothErrorListener?.let { dlBluetoothDevice.unregisterBluetoothDioListener(it) }
+        dlBluetoothDevice.clearConnection(context)
         viewModelScope.launch(Dispatchers.IO) { delay(150) }
-        // status → CLOSED
-        dev.status.value = DeviceStatus.CLOSED
-        updateBluetoothStatusInList(dev, DeviceStatus.CLOSED)
 
         // clear per-device UI
-        perDeviceClear(dev)
+        perDeviceClear(dlBluetoothDevice)
         selectedScannerBluetoothDevice.postValue(null)
         // avoid reusing stale listeners on next open
         bluetoothScanEvent = null
