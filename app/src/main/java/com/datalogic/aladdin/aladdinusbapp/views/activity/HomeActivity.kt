@@ -141,13 +141,11 @@ class HomeActivity : AppCompatActivity() {
         usbDeviceManager = DatalogicDeviceManager
         usbListener = object : UsbListener {
             override fun onDeviceAttachedListener(device: UsbDevice) {
-                homeViewModel.setDeviceStatus("Attached ${device.productName}")
                 homeViewModel.detectDevice()
                 homeViewModel.deviceReAttached(device)
             }
 
             override fun onDeviceDetachedListener(device: UsbDevice) {
-                homeViewModel.setDeviceStatus("Detached ${device.productName}")
                 homeViewModel.handleDeviceDisconnection(device)
             }
         }
@@ -159,7 +157,6 @@ class HomeActivity : AppCompatActivity() {
         val statusListener = object : StatusListener {
             override fun onStatus(productId: String, status: DeviceStatus, deviceName: String) {
                 runOnUiThread {
-                    homeViewModel.setStatus(deviceName, status)
                     Log.d(TAG, "[handlerUsbListener] ${status.name}")
 
                     // Update UI based on new status
@@ -202,9 +199,6 @@ class HomeActivity : AppCompatActivity() {
         bluetoohListener = object : BluetoothListener {
             @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
             override fun onDeviceAttachedListener(device: BluetoothDevice) {
-                if (homeViewModel.status.value != DeviceStatus.OPENED) {
-                    homeViewModel.setDeviceStatus("Attached ${device.name}")
-                }
                 homeViewModel.getAllBluetoothDevice(activity)
             }
             @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)

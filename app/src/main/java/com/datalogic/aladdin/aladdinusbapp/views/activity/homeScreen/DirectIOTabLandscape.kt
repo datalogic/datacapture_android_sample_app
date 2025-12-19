@@ -54,7 +54,6 @@ fun DirectIOTabLandscape() {
     val openUsbDeviceList = allUsbDevices.filter { it.status.value == DeviceStatus.OPENED} as ArrayList<DatalogicDevice>
     val selectedUsbDevice = homeViewModel.selectedDevice.observeAsState(null).value
     val dioStatus = homeViewModel.dioStatus.observeAsState("").value
-    val status = homeViewModel.status.observeAsState().value
     val selectedCommand = homeViewModel.selectedCommand.observeAsState(DIOCmdValue.IDENTIFICATION).value
     val dioData = homeViewModel.dioData.observeAsState("").value
     val configuration = LocalConfiguration.current

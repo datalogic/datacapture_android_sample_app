@@ -41,7 +41,6 @@ import com.datalogic.aladdin.aladdinusbapp.views.compose.ComposableUtils.ShowPop
 @Composable
 fun HomeScreenLayoutLandscape() {
     val homeViewModel = LocalHomeViewModel.current
-    val deviceStatus = homeViewModel.deviceStatus.observeAsState("").value
     val selectedTab by homeViewModel.selectedTabIndex.observeAsState(0)
     var isLoading = homeViewModel.isLoading.observeAsState().value
     var isLoadingPercent = homeViewModel.isLoadingPercent.observeAsState().value

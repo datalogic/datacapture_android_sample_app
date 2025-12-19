@@ -76,12 +76,6 @@ import java.io.File
 class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, activity: Activity) : ViewModel() {
     var usbDeviceManager: DatalogicDeviceManager
     val tag = HomeViewModel::class.java.simpleName
-    private val _status = MutableLiveData<DeviceStatus>()
-    val status: LiveData<DeviceStatus> = _status
-
-    // Device status message display on UI
-    private val _deviceStatus = MutableLiveData<String>()
-    val deviceStatus: LiveData<String> = _deviceStatus
 
     private val _deviceList = MutableLiveData<ArrayList<DatalogicDevice>>(ArrayList())
     val deviceList: LiveData<ArrayList<DatalogicDevice>> = _deviceList
@@ -369,7 +363,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
 
     init {
         this.usbDeviceManager = usbDeviceManager
-        _status.postValue(DeviceStatus.CLOSED)
         this.context = context
         this.activity = activity
 
@@ -390,11 +383,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
         // Update UI with selected device info
         device?.let {
             Log.d(tag,"[setSelectedDevice] Selected: ${it.displayName}")
-            _deviceStatus.postValue("Selected: ${it.displayName}")
-            _status.postValue(it.status.value)
-        } ?: run {
-            _deviceStatus.postValue("No device selected")
-            _status.postValue(DeviceStatus.NONE)
         }
 
         // Update command dropdown with appropriate command for the device
@@ -405,11 +393,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
 
     fun setSelectedUsbDevice(device: UsbDevice?) {
         selectedUsbDevice.value = device
-        device?.let {
-            _status.postValue(DeviceStatus.CLOSED)
-        } ?: run {
-            _status.postValue(DeviceStatus.NONE)
-        }
         selectedBluetoothDevice.value = null
     }
 
@@ -505,8 +488,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
             }
         }
         if (selectedDevice.value?.usbDevice?.deviceName.toString() == disconnectDevice.deviceName) {
-            _status.postValue(DeviceStatus.CLOSED)
-            _deviceStatus.postValue("Device disconnected: ${disconnectDevice.deviceName}")
             _dioData.postValue("")
             Log.d("HomeViewModel", "[handleDeviceDisconnection] clearSelectedDevice  ${disconnectDevice.deviceName}")
             clearSelectedDevice(disconnectDevice.deviceName.toString())
@@ -523,29 +504,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
             _allBluetoothDevices.value?.firstOrNull { it.bluetoothDevice.address == device.address }
         closeBluetoothDevice(device)
         detectDevice()
-    }
-
-    /**
-     * Set device status message
-     */
-    fun setDeviceStatus(status: String) {
-        _deviceStatus.postValue(status)
-    }
-
-    /**
-     * Set status from listener callbacks
-     */
-    fun setStatus(deviceName: String, status: DeviceStatus) {
-        // Only update UI if this status change is for our selected device
-        if (isBluetoothEnabled.value == true) {
-            _status.postValue(status)
-        } else {
-            selectedDevice.value?.let {
-                if (it.usbDevice.deviceName.toString() == deviceName) {
-                    _status.postValue(status)
-                }
-            }
-        }
     }
 
     @JvmOverloads
@@ -586,9 +544,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
     fun deviceReAttached(device: UsbDevice) {
         val deviceId = device.productId.toString()
         reattachedDevices.add(deviceId)
-
-        // Update UI
-        _deviceStatus.postValue("Device reattached: ${device.productName}")
     }
 
     /**
@@ -647,7 +602,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
 
                     else -> {
                         Log.e(tag, "Failed to open device: ${device.displayName}")
-                        _deviceStatus.postValue("Failed to open device")
                     }
                 }
 
@@ -696,13 +650,10 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
     fun onOpenDeviceSuccessResultAction(deviceId: String) {
         val device: DatalogicDevice = selectedDevice.value ?: run {
             Log.e(tag, "No device selected for opening")
-            _deviceStatus.postValue("No device selected")
             return
         }
 
         Log.d(tag, "Device opened successfully: ${device.displayName}")
-        _deviceStatus.postValue("Device opened")
-        _status.postValue(DeviceStatus.OPENED)
         if (device.isScaleAvailable()) {
             _isScaleAvailable.postValue(true)
         }
@@ -774,8 +725,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                     when (result) {
                         USBConstants.SUCCESS -> {
                             Log.d(tag, "Device closed successfully: ${device.displayName}")
-                            _deviceStatus.postValue("Device closed")
-                            _status.postValue(DeviceStatus.CLOSED)
                             device.status.value = DeviceStatus.CLOSED
                             perDeviceClear(device.usbDevice.deviceId.toString())
                             perDeviceScaleClear(device.usbDevice.deviceId.toString())
@@ -812,7 +761,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
 
                         else -> {
                             Log.e(tag, "Failed to close device: ${device.displayName}")
-                            _deviceStatus.postValue("Failed to close device")
                         }
                     }
 
@@ -1062,16 +1010,9 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                 val result = device.resetDevice()
 
                 withContext(Dispatchers.Main) {
-                    if (result.equals(USBConstants.SUCCESS)) {
-                        _deviceStatus.postValue(ResultContants.DEVICE_RESET_SUCCESS)
-                    } else {
-                        _deviceStatus.postValue(ResultContants.DEVICE_RESET_FAILED)
-                    }
                     _isLoading.postValue(false)
                 }
             }
-        } ?: run {
-            _deviceStatus.postValue("No device selected")
         }
     }
     fun resetDeviceExitedServiceMode() {
@@ -1081,16 +1022,9 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                 var result = device.enterServiceMode()
                 result = device.resetDevice()
                 withContext(Dispatchers.Main) {
-                    if (result.equals(USBConstants.SUCCESS)) {
-                        _deviceStatus.postValue(ResultContants.DEVICE_RESET_SUCCESS)
-                    } else {
-                        _deviceStatus.postValue(ResultContants.DEVICE_RESET_FAILED)
-                    }
                     _isLoading.postValue(false)
                 }
             }
-        } ?: run {
-            _deviceStatus.postValue("No device selected")
         }
     }
 
@@ -1498,7 +1432,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
 
             // For tabs other than Home, device needs to be open
             if (!isOpenDevice()) {
-                Log.d(tag, "[handleTabSelection] status: ${status.value}")
                 openAlert = true
                 return false
             }
@@ -1982,40 +1915,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
         _isBluetoothEnabled.value = false
     }
 
-    fun toggleConnectionType(activity: Activity) {
-        if (_isBluetoothEnabled.value == true) {
-            _isBluetoothEnabled.value = false
-            Log.d(tag, "[toggleConnectType] Show list USB device")
-            if (status.value == DeviceStatus.OPENED) {
-                //closeBluetoothDevice()
-            }
-            stopBluetoothPolling()
-        } else if (getAllBluetoothDevice(activity)) {
-            if (status.value == DeviceStatus.OPENED) {
-                closeUsbDevice(selectedDevice.value)
-            }
-            _isBluetoothEnabled.value = true
-            Log.d(tag, "[toggleConnectType] Show list Bluetooth device")
-            if (selectedBluetoothDevice.value != null && allBluetoothDevices.value?.contains(selectedScannerBluetoothDevice.value) == true) {
-                _status.postValue(DeviceStatus.CLOSED)
-            }
-//            startBluetoothPolling(activity)
-        } else {
-            Log.d(tag, "[toggleConnectType] getAllBluetoothDevice FAIL - Permission denied")
-        }
-    }
-
-    private fun startBluetoothPolling(activity: Activity) {
-        if (bluetoothPollingJob?.isActive == true) return
-        bluetoothPollingJob = viewModelScope.launch {
-            while (isActive) {
-                Log.d(tag, "[startBluetoothPolling] Get all Bluetooth devices each 30s")
-                delay(30_000)
-                getAllBluetoothDevice(activity)
-            }
-        }
-    }
-
     private fun stopBluetoothPolling() {
         Log.d(tag, "[stopBluetoothPolling] Stop getting all Bluetooth devices")
         bluetoothPollingJob?.cancel()
@@ -2127,18 +2026,14 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                         }
                         bluetoothErrorListener?.let { device.registerBluetoothDioListener(it) }
 
-                        _status.postValue(DeviceStatus.OPENED)
                         device.status.value = DeviceStatus.OPENED
-                        _deviceStatus.postValue("Device opened status ${device.status.value}")
                         updateBluetoothStatusInList(device, DeviceStatus.OPENED)
                         selectedScannerBluetoothDevice.postValue(device)
                         val cmd = DIOCmdValue.ENABLE_SCANNER
                         device.dioCommand(cmd, cmd.value, context)
                         showToast(context, "Device successfully opened")
                     } else {
-                        _status.postValue(DeviceStatus.CLOSED)
                         device.status.value = DeviceStatus.CLOSED
-                        _deviceStatus.postValue("No device selected")
                         updateBluetoothStatusInList(device, DeviceStatus.CLOSED)
                     }
                 }
@@ -2172,10 +2067,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
         viewModelScope.launch(Dispatchers.IO) { delay(150) }
         // status → CLOSED
         dev.status.value = DeviceStatus.CLOSED
-        if (dev.bluetoothDevice.address == selectedBluetoothDevice.value?.bluetoothDevice?.address) {
-            _status.postValue(DeviceStatus.CLOSED)
-            _deviceStatus.postValue("No device selected")
-        }
         updateBluetoothStatusInList(dev, DeviceStatus.CLOSED)
 
         // clear per-device UI
@@ -2193,11 +2084,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                 ) != PackageManager.PERMISSION_GRANTED
             ) {
                 Log.d(tag, "[setSelectedBluetoothDevice] do not have permission")
-                _status.postValue(DeviceStatus.NONE)
             }
-            _deviceStatus.postValue("Selected: ${device.name}")
-        } ?: run {
-            _deviceStatus.postValue("No device selected")
         }
         selectedBluetoothDevice.value = device
 //        selectedDevice.value = null
