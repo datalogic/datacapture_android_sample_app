@@ -133,10 +133,6 @@ fun UpdateFirmwareScreen() {
         }
     )
 
-    LaunchedEffect(Unit) {
-        homeViewModel._isBulkTransferSupported.value = false
-    }
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -178,8 +174,6 @@ fun UpdateFirmwareScreen() {
                     },
                     onBulkTransferToggle = {
                         isBulkTransferToggle = it
-                        if (!isBulkTransferToggle)
-                            homeViewModel._isBulkTransferSupported.postValue(false)
                     },
                     isFRS = homeViewModel.isFRS(),
                     isS37 = (fileType.uppercase() == FileConstants.S37_FILE_TYPE),

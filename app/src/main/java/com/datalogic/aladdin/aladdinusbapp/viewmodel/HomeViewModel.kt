@@ -88,15 +88,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
 
     private var bluetoothPollingJob: Job? = null
 
-    private val _scanLabel = MutableLiveData("")
-    val scanLabel: LiveData<String> = _scanLabel
-
-    private val _scanData = MutableLiveData("")
-    val scanData: LiveData<String> = _scanData
-
-    private val _scanRawData = MutableLiveData("")
-    val scanRawData: LiveData<String> = _scanRawData
-
     private val _customerName = MutableLiveData("")
     val customerName: LiveData<String> = _customerName
 
@@ -213,33 +204,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
     private var currentDeviceType: DeviceType = DeviceType.HHS
     private var currentConnectionType: ConnectionType = ConnectionType.USB_COM
 
-    // Scale related properties
-    private val _scaleStatus = MutableLiveData<String>("")
-    val scaleStatus: LiveData<String> = _scaleStatus
-
-    private val _scaleWeight = MutableLiveData<String>("")
-    val scaleWeight: LiveData<String> = _scaleWeight
-
-    private val _scaleUnit = MutableLiveData<ScaleUnit>(ScaleUnit.NONE)
-    val scaleUnit: LiveData<ScaleUnit> = _scaleUnit
-
-    /*private val _scaleProtocolStatus = MutableLiveData<Pair<Boolean, String>>(Pair(false, ""))
-    val scaleProtocolStatus: LiveData<Pair<Boolean, String>> = _scaleProtocolStatus*/
-
-    private val _isEnableScale = MutableLiveData<Boolean>(false)
-    val isEnableScale: LiveData<Boolean> = _isEnableScale
-
-    private val _isScaleAvailable = MutableLiveData<Boolean>(false)
-    val isScaleAvailable: LiveData<Boolean> = _isScaleAvailable
-
     private val _progressUpgrade = MutableLiveData(0)
     val progressUpgrade: LiveData<Int> = _progressUpgrade
-
-    val _isBulkTransferSupported = MutableLiveData(false)
-    val isBulkTransferSupported: LiveData<Boolean> = _isBulkTransferSupported
-
-    private var _isCheckPid = MutableStateFlow(false)
-    val isCheckPid: StateFlow<Boolean> = _isCheckPid.asStateFlow()
 
     //Custom configuration
     private val _customConfiguration =
@@ -348,18 +314,9 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                 seq = SystemClock.uptimeMillis()
             )
         )
-        // (Optional) Keep legacy globals in sync for old screens:
-        _scaleStatus.postValue(sd.status)
-        _scaleWeight.postValue(sd.weight)
-        _scaleUnit.postValue(sd.unit)
     }
 
     fun perDeviceScaleClear(deviceId: String) { perDeviceScale.clear(deviceId) }
-
-    // Convenience overloads
-    fun perDeviceScaleClear(device: DatalogicDevice?) {
-        device?.let { perDeviceScale.clear(it.usbDevice.deviceId.toString()) }
-    }
 
     init {
         this.usbDeviceManager = usbDeviceManager
@@ -478,7 +435,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
         clearScaleData(disconnectDevice.deviceId.toString())
         stopScaleHandler(disconnectDevice.deviceId.toString())
         //Disable scale section
-        _isScaleAvailable.postValue(false)
         if (!deviceList.value.isNullOrEmpty()) {
             for (device in deviceList.value!!) {
                 if (device.usbDevice.deviceName == disconnectDevice.deviceName) {
@@ -517,22 +473,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
         }
 
     /**
-     * Set scanned data from listener
-     */
-    fun setScannedData(scannedData: UsbScanData) {
-        _scanData.postValue(scannedData.barcodeData)
-        _scanLabel.postValue(scannedData.barcodeType)
-        _scanRawData.postValue(scannedData.rawData.toHexString())
-    }
-
-    /**
      * Clear scan data
      */
-    // Convenience: clear by USB device object
-    fun perDeviceClear(device: DatalogicDevice?) {
-        device?.let { perDeviceScan.clear(it.usbDevice.deviceId.toString()) }
-    }
-
     // Convenience: clear by Bluetooth device object
     fun perDeviceClear(device: DatalogicBluetoothDevice?) {
         device?.let { perDeviceScan.clear(it.bluetoothDevice.address) }
@@ -654,9 +596,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
         }
 
         Log.d(tag, "Device opened successfully: ${device.displayName}")
-        if (device.isScaleAvailable()) {
-            _isScaleAvailable.postValue(true)
-        }
         // Remove from reattached list since we've handled it
         reattachedDevices.remove(deviceId)
     }
@@ -730,8 +669,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                             perDeviceScaleClear(device.usbDevice.deviceId.toString())
                             clearScaleData(device.usbDevice.deviceId.toString())
                             clearConfig()
-
-                            _isScaleAvailable.postValue(false)
 
                             //Clear listeners
                             scanEvent?.let {
@@ -1587,9 +1524,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                     deviceId,
                     cur.copy(status = if (ok) "" else "Failed to start scale", seq = SystemClock.uptimeMillis())
                 )
-                if (selectedDevice.value?.usbDevice?.deviceId.toString() == deviceId) {
-                    _isEnableScale.postValue(ok)
-                }
             }
         }
     }
@@ -1611,9 +1545,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                     deviceId,
                     cur.copy(status = if (ok) "" else "Failed to stop scale", seq = SystemClock.uptimeMillis())
                 )
-                if (selectedDevice.value?.usbDevice?.deviceId.toString() == deviceId) {
-                    _isEnableScale.postValue(false)
-                }
             }
         }
     }
@@ -1621,17 +1552,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
     // Clear only the displayed scale data for a specific USB deviceId
     fun clearScaleData(deviceId: String) {
         perDeviceScale.clear(deviceId)
-        if (selectedDevice.value?.usbDevice?.deviceId.toString() == deviceId) {
-            _scaleStatus.postValue("")
-            _scaleWeight.postValue("")
-            _scaleUnit.postValue(ScaleUnit.NONE)
-        }
     }
-
-    // Convenient overloads when you already have the USB device object:
-    fun startScaleHandler(device: DatalogicDevice) = startScaleHandler(device.usbDevice.deviceId.toString())
-    fun stopScaleHandler(device: DatalogicDevice)  = stopScaleHandler(device.usbDevice.deviceId.toString())
-    fun clearScaleData(device: DatalogicDevice)   = clearScaleData(device.usbDevice.deviceId.toString())
 
     fun toggleCheckDocking() {
         var enable = false
@@ -1835,7 +1756,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
         viewModelScope.launch(Dispatchers.IO) {
             selectedDevice.value?.let {
                 val supported = it.isBulkTransferSupported()
-                _isBulkTransferSupported.postValue(supported)
                 withContext(Dispatchers.Main) {
                     supported?.let { supported -> onResult(supported) }
                     _isLoading.postValue(false)
@@ -1844,17 +1764,12 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
         }
     }
 
-    fun setBulkTransferSupported(value: Boolean) {
-        _isBulkTransferSupported.value = value
-    }
-
     fun isFRS(): Boolean {
         return selectedDevice.value?.deviceType == DeviceType.FRS
     }
 
     fun setPid(file: File?, fileType: String, onResult: (Boolean) -> Unit, context: Context) {
         val result = selectedDevice.value?.isCheckPid(file, fileType, context) ?: false
-        setCheckPid(result)
         onResult(result)
     }
 
@@ -1863,14 +1778,9 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
             val result = it.isCheckPidDFW(file, fileType, context)
             if (result != null) {
                 Log.d("HomeViewModel", "[setPidDWF] result: $result")
-                setCheckPid(result)
                 onResult(result)
             }
         }
-    }
-
-    private fun setCheckPid(value: Boolean) {
-        _isCheckPid.value = value
     }
 
     // Log control functions
