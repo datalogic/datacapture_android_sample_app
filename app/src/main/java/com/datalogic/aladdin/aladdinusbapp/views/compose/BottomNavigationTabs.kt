@@ -60,7 +60,8 @@ fun BottomNavigationRow(modifier: Modifier, homeViewModel: HomeViewModel) {
         stringResource(id = R.string.cradle_state)
     )
     val selectedTab by homeViewModel.selectedTabIndex.observeAsState(0)
-    val selectedDevice = homeViewModel.selectedDevice.observeAsState(null).value
+    val selectedUsbDevice = homeViewModel.selectedDevice.observeAsState(null).value
+    val selectedBluetoothDevice = homeViewModel.selectedBluetoothDevice.observeAsState(null).value
 
     // Screen configuration to calculate available width
     val configuration = LocalConfiguration.current
@@ -80,13 +81,21 @@ fun BottomNavigationRow(modifier: Modifier, homeViewModel: HomeViewModel) {
     // State for overflow menu
     val (overflowMenuExpanded, setOverflowMenuExpanded) = remember { mutableStateOf(false) }
 
-    LaunchedEffect(selectedDevice) {
-        if (selectedDevice == null) {
+    LaunchedEffect(selectedUsbDevice, selectedBluetoothDevice) {
+        if (selectedUsbDevice == null && selectedBluetoothDevice == null) {
             homeViewModel.setSelectedTabIndex(0)
-        }
-        when (selectedDevice?.status?.value) {
-            DeviceStatus.CLOSED, DeviceStatus.NONE -> homeViewModel.setSelectedTabIndex(0) // Switch to home tab
-            else -> {}
+        } else {
+            if (selectedUsbDevice != null) {
+                when (selectedUsbDevice.status.value) {
+                    DeviceStatus.CLOSED, DeviceStatus.NONE -> homeViewModel.setSelectedTabIndex(0) // Switch to home tab
+                    else -> {}
+                }
+            } else if (selectedBluetoothDevice != null) {
+                when (selectedBluetoothDevice.status.value) {
+                    DeviceStatus.CLOSED, DeviceStatus.NONE -> homeViewModel.setSelectedTabIndex(0) // Switch to home tab
+                    else -> {}
+                }
+            }
         }
     }
 
