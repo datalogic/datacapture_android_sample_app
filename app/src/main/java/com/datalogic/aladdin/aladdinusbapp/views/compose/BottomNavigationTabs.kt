@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.viewmodel.HomeViewModel
+import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
 import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 
 @Composable
@@ -59,7 +60,7 @@ fun BottomNavigationRow(modifier: Modifier, homeViewModel: HomeViewModel) {
         stringResource(id = R.string.cradle_state)
     )
     val selectedTab by homeViewModel.selectedTabIndex.observeAsState(0)
-    val status = homeViewModel.status.observeAsState(DeviceStatus.CLOSED).value
+    val selectedDevice = homeViewModel.selectedDevice.observeAsState(null).value
 
     // Screen configuration to calculate available width
     val configuration = LocalConfiguration.current
@@ -79,8 +80,11 @@ fun BottomNavigationRow(modifier: Modifier, homeViewModel: HomeViewModel) {
     // State for overflow menu
     val (overflowMenuExpanded, setOverflowMenuExpanded) = remember { mutableStateOf(false) }
 
-    LaunchedEffect(status) {
-        when (status) {
+    LaunchedEffect(selectedDevice) {
+        if (selectedDevice == null) {
+            homeViewModel.setSelectedTabIndex(0)
+        }
+        when (selectedDevice?.status?.value) {
             DeviceStatus.CLOSED, DeviceStatus.NONE -> homeViewModel.setSelectedTabIndex(0) // Switch to home tab
             else -> {}
         }
