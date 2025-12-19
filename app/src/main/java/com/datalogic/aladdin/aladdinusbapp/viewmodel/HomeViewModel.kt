@@ -222,9 +222,6 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
     private val _msgConfigError = MutableLiveData("")
     val msgConfigError: LiveData<String> = _msgConfigError
 
-    private val mainHandler = Handler(Looper.getMainLooper())
-    private val bufferBluetoothData = ArrayDeque<ByteArray>()
-
     data class ScanUi(
         val data: String = "",
         val label: String = "",
