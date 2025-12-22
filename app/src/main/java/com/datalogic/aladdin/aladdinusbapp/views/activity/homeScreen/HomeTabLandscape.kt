@@ -33,6 +33,8 @@ import androidx.compose.runtime.LaunchedEffect
 import com.datalogic.aladdin.aladdinusbapp.utils.CommonUtils
 import com.datalogic.aladdin.aladdinusbapp.views.activity.devicesScreen.BluetoothDeviceItem
 import com.datalogic.aladdin.aladdinusbapp.views.activity.devicesScreen.DeviceRow
+import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
+import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DeviceStatus
 
 @Composable
 fun HomeTabLandscape() {
@@ -92,8 +94,7 @@ fun HomeTabLandscape() {
                 items(dlDeviceList, key = { it.id }) { device ->
                     DeviceRow(
                         dlDevice = device,
-                        usbDevice = null,
-                        isManualDetection = false
+                        usbDevice = null
                     ) // from DevicesScreen.kt (below)
                 }
             }
@@ -101,7 +102,13 @@ fun HomeTabLandscape() {
             // USB devices section
             if (usbDeviceList.isNotEmpty()) {
                 itemsIndexed(usbDeviceList, key = { _, it -> it.deviceId }) { _, device ->
-                    DeviceRow(dlDevice = null, usbDevice = device, isManualDetection = true)
+                    var tempDlDevice: DatalogicDevice? = null
+                    if (dlDeviceList.isNotEmpty()) {
+                        tempDlDevice = dlDeviceList.firstOrNull { checkDlDevice -> checkDlDevice.usbDevice.deviceName == device.deviceName &&
+                                checkDlDevice.status.value == DeviceStatus.OPENED }
+                    }
+
+                    DeviceRow(dlDevice = tempDlDevice, usbDevice = device)
                 }
             }
         }
