@@ -380,46 +380,24 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
         if (_autoDetectChecked.value == true) {
             usbDeviceManager.detectDevice(context) { devices ->
                 _deviceList.postValue(ArrayList(devices))
+                _usbDeviceList.postValue(ArrayList())
                 _isLoading.postValue(false)
-                handleSelectDevice()
             }
-            usbDeviceManager.getAllBluetoothDevice(activity!!) { devices ->
-                _allBluetoothDevices.postValue(ArrayList(devices))
-                _isLoading.postValue(false)
-                handleSelectDevice()
-            }
-        }
-        usbDeviceManager.getAllUsbDevice(context) { devices ->
-            _usbDeviceList.postValue(ArrayList(devices))
-            _isLoading.postValue(false)
-            handleSelectDevice()
+        } else {
+            usbDeviceManager.detectDevice(context) { devices ->
+                val openedDevices = devices.filter { it.status.value == DeviceStatus.OPENED }
+                _deviceList.postValue(ArrayList(openedDevices))
 
-            if (_autoDetectChecked.value == false) {
-                val connectedIds = devices.map { it.deviceId }.toSet()
-                val list = _deviceList.value ?: arrayListOf()
-                var mutated = false
-                list.forEach { dev ->
-                    if (dev.usbDevice.deviceId !in connectedIds && dev.status.value == DeviceStatus.OPENED) {
-                        dev.status.value = DeviceStatus.CLOSED
-                        mutated = true
-                    }
+                usbDeviceManager.getAllUsbDevice(context) { usbDevices ->
+                    _usbDeviceList.postValue(ArrayList(usbDevices))
+                    _isLoading.postValue(false)
                 }
-                if (mutated) _deviceList.postValue(ArrayList(list))
             }
         }
-    }
 
-    private fun handleSelectDevice() {
-        val openUsb = _deviceList.value?.filter { it.status.value == DeviceStatus.OPENED }.orEmpty()
-        val openBt  = _allBluetoothDevices.value?.filter { it.status.value == DeviceStatus.OPENED }.orEmpty()
-
-        if (selectedDevice.value != null || selectedBluetoothDevice.value != null) return
-
-        when {
-            openBt.isNotEmpty()  -> setSelectedBluetoothDevice(openBt.first())
-            else -> {
-                setSelectedBluetoothDevice(null)
-            }
+        usbDeviceManager.getAllBluetoothDevice(activity!!) { devices ->
+            _allBluetoothDevices.postValue(ArrayList(devices))
+            _isLoading.postValue(false)
         }
     }
 
@@ -504,6 +482,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                 val usbManager = context.getSystemService(Context.USB_SERVICE) as UsbManager
                 val device = DatalogicDevice(usbManager, usbDevice, currentDeviceType, currentConnectionType)
                 device.let {
+                    usbDeviceManager.updateDeviceFromApp(device)
                     coroutineOpenDevice(device)
                 }
             } ?: run {

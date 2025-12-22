@@ -177,6 +177,8 @@ class HomeActivity : AppCompatActivity() {
                         }
                         else -> {}
                     }
+                    //detect device to get the new list
+                    homeViewModel.detectDevice()
                 }
             }
 

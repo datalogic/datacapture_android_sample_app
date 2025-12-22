@@ -70,7 +70,6 @@ fun DeviceRow(
     dlDevice: DatalogicDevice?,
     usbDevice: UsbDevice?,
     modifier: Modifier = Modifier,
-    isManualDetection: Boolean = false
 ) {
     val context = LocalContext.current
     val activity = context as? Activity
@@ -80,19 +79,10 @@ fun DeviceRow(
         Icons.Filled.KeyboardArrowUp
     else
         Icons.Filled.KeyboardArrowDown
-    val deviceList by homeViewModel.deviceList.observeAsState(emptyList()) // <-- the live list of DatalogicDevice
-    // Find the concrete device instance that corresponds to THIS row
-    val boundDevice by remember(deviceList) {
-        mutableStateOf(
-            dlDevice ?: deviceList.firstOrNull { dev ->
-                usbDevice != null &&
-                        dev.usbDevice.deviceName == usbDevice.deviceName &&
-                        dev.usbDevice.productId == usbDevice.productId
-            }
-        )
-    }
 
-    val isOpen = boundDevice?.status?.value == DeviceStatus.OPENED
+    val autoDetectChecked by homeViewModel.autoDetectChecked.observeAsState(true)
+    val isOpen: Boolean = dlDevice?.status?.value == DeviceStatus.OPENED
+
     val buttonText = if (isOpen) {
         stringResource(id = R.string.close)
     } else {
@@ -143,7 +133,7 @@ fun DeviceRow(
                 }
 
                 Spacer(Modifier.width(12.dp))
-                if (isManualDetection) {
+                if (!autoDetectChecked) {
                     IconButton(onClick = {
                         isManual = !isManual
                     }) {
@@ -166,7 +156,6 @@ fun DeviceRow(
                                     // If you keep a raw row “open” concept, close by usb id
                                     homeViewModel.closeUsbDevice(dlDevice)
                                 } else {
-                                    homeViewModel.setSelectedUsbDevice(usbDevice)
                                     homeViewModel.openUsbDevice(dlDevice)
                                     // After open, render it via the DatalogicDevice list row
                                 }
@@ -269,10 +258,11 @@ fun DeviceRow(
 
                             if (isOpen) {
                                 // Close the actual instance for this row
-                                boundDevice?.let { homeViewModel.closeUsbDevice(it) }
+                                dlDevice?.let { homeViewModel.closeUsbDevice(it) }
                             } else {
                                 // Open (VM will create/reuse the DatalogicDevice for this USB and add to deviceList)
-                                homeViewModel.openUsbDevice(datalogicDevice = boundDevice)
+                                homeViewModel.setSelectedUsbDevice(usbDevice)
+                                homeViewModel.openUsbDevice(dlDevice)
                             }
                         }
                     )
