@@ -54,7 +54,9 @@ import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.utils.FileUtils
 import com.datalogic.aladdin.aladdinusbapp.viewmodel.HomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
+import com.datalogic.aladdin.aladdinusbapp.views.compose.CompleteAlertDialog
 import com.datalogic.aladdin.aladdinusbapp.views.compose.ReleaseInformationCard
+import com.datalogic.aladdin.aladdinusbapp.views.compose.ResetDeviceAlertDialog
 import com.datalogic.aladdin.aladdinusbapp.views.compose.UpgradeConfigurationCard
 import com.datalogic.aladdin.aladdinusbapp.views.compose.UsbBTDeviceDropdown
 import com.datalogic.aladdin.aladdinusbscannersdk.model.DatalogicDevice
@@ -98,6 +100,10 @@ fun UpdateFirmwareScreen() {
             homeViewModel.setSelectedDevice(openUsbDeviceList.firstOrNull())
         }
         onDispose {}
+    }
+
+    if (homeViewModel.isShowCompleteUpgrade) {
+        CompleteAlertDialog(homeViewModel)
     }
 
     val filePickerLauncher = rememberLauncherForActivityResult(
