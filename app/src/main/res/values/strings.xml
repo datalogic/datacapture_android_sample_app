@@ -92,4 +92,5 @@
     <string name="bluetooth_device">Bluetooth Device</string>
     <string name="common_error_message">Oops! Something went wrong.
     Please try again later or contact support if the issue persists.</string>
+    <string name="msg_upgrade_complete">Your device has been successfully upgraded with the new firmware.</string>
 </resources>

@@ -214,6 +214,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
 
     //Reset device notify pop-up
     var showResetDeviceDialog by mutableStateOf(false)
+    var isShowCompleteUpgrade by mutableStateOf(false)
     var showErrorMessageUpgradeFw by mutableStateOf(false)
     var errorMessageUpgradeFw by  mutableStateOf("")
     private val _qrBitmap = MutableLiveData<Bitmap>()
@@ -874,6 +875,10 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
      */
     fun dismissResetDialog() {
         showResetDeviceDialog = false
+    }
+
+    fun dismissCompleteDialog() {
+        isShowCompleteUpgrade = false
     }
 
     fun dismissUpgradeFwErrorDialog() {
@@ -1648,7 +1653,11 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                         }
                     }, isBulkTransfer, onFailure = { message ->
                         showResetDeviceDialog = false
+                        isShowCompleteUpgrade = false
                         showToast(context, message)
+                    },
+                    onComplete = {
+                        isShowCompleteUpgrade = true
                     }
                 )
                 _isLoadingPercent.postValue(false)

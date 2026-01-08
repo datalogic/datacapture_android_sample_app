@@ -2,6 +2,7 @@ package com.datalogic.aladdin.aladdinusbapp.views.compose
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -13,11 +14,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.window.DialogProperties
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.viewmodel.HomeViewModel
-import com.datalogic.aladdin.aladdinusbscannersdk.utils.enums.DIOCmdValue
 
 @Composable
 fun ResetDeviceAlertDialog(homeViewModel: HomeViewModel, customConfig: Boolean = false) {
-    androidx.compose.material3.AlertDialog(
+    AlertDialog(
         onDismissRequest = {
             homeViewModel.dismissResetDialog()
         },
@@ -53,6 +53,34 @@ fun ResetDeviceAlertDialog(homeViewModel: HomeViewModel, customConfig: Boolean =
         text = {
             Text(
                 text = stringResource(id = R.string.reset_device_message),
+                style = MaterialTheme.typography.labelLarge
+            )
+        },
+        modifier = Modifier.padding(dimensionResource(id = R.dimen._16sdp)),
+        shape = RoundedCornerShape(dimensionResource(id = R.dimen._16sdp)),
+        containerColor = Color.White,
+        properties = DialogProperties(dismissOnBackPress = true, dismissOnClickOutside = false)
+    )
+}
+
+@Composable
+fun CompleteAlertDialog(homeViewModel: HomeViewModel) {
+    AlertDialog(
+        onDismissRequest = {
+            homeViewModel.dismissResetDialog()
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    homeViewModel.setSelectedTabIndex(0)
+                    homeViewModel.dismissCompleteDialog()
+                }) {
+                Text(stringResource(id = R.string.ok))
+            }
+        },
+        text = {
+            Text(
+                text = stringResource(id = R.string.msg_upgrade_complete),
                 style = MaterialTheme.typography.labelLarge
             )
         },
