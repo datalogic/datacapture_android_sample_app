@@ -84,6 +84,7 @@ fun UpdateFirmwareScreen() {
     } as ArrayList<DatalogicDevice>
     val selectedUsbDevice = homeViewModel.selectedDevice.observeAsState(null).value
     DisposableEffect(Unit) {
+        homeViewModel.isShowCompleteUpgrade = false
         var useCurrentSelected = false
         Log.d("UpdateFirmwareScreen", "[DisposableEffect] target: ${selectedUsbDevice?.displayName} -- ListSize[${openUsbDeviceList.size}]")
         if (selectedUsbDevice != null && selectedUsbDevice.connectionType != ConnectionType.USB_OEM) {
@@ -103,7 +104,8 @@ fun UpdateFirmwareScreen() {
     }
 
     if (homeViewModel.isShowCompleteUpgrade) {
-        CompleteAlertDialog(homeViewModel)
+        Toast.makeText(context, context.getString(R.string.msg_upgrade_complete), Toast.LENGTH_LONG).show()
+        homeViewModel.setSelectedTabIndex(0)
     }
 
     val filePickerLauncher = rememberLauncherForActivityResult(
