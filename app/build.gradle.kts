@@ -75,6 +75,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
 
     implementation(files("libs/AladdinUsbSdk.aar"))
+//    implementation("com.datalogic.aladdin:aladdin-sdk:2.4.3")
     implementation("androidx.compose.runtime:runtime-livedata:1.0.0-beta01")
 
     implementation("androidx.compose.animation:animation")
