@@ -283,29 +283,29 @@ Management class for the Datalogic Scanner device. Used to detect USB Scanner De
 
 Class represents for Datalogic Scanner. It contains the Datalogic Scanner details and all functions to interact with Datalogic Scanner
 
-| Public Methods | Description |
-|---|---|
-| `Int openDevice(context: Context)` | This method opens a connection to the specified DatalogicDevice, allowing for communication with the device’s endpoints. Return 0 if the interface was successfully opened, -1 otherwise. |
-| `Int closeDevice()` | Close the DatalogicDevice. |
-| `Int registerUsbScanListener(listener: UsbScanListener)` | Register listener for USB scan event to be notified when the Scanner scans the barcodes. |
-| `Int unregisterUsbScanListener(listener: UsbScanListener\)` | Unregister listeners for Scan event. |
-| `Int registerUsbDioListener(listener: UsbDioListener)` | Register listener for Usb dio event to be notified when the Dio Cammands get failed. |
-| `Int unregisterUsbDioListener(listener: UsbDioListener)` | Unregistered listeners for dio error event. |
-| `String dioCommand(commandType: DIOCmdValue, cmd: String, context: Context)` | Function to execute the DIO Commands and return _status value(Command type and valid command value should be correct for output)_ |
-| `HashMap<ConfigurationFeature, String> readConfig()` | Function to execute the read config Commands. |
-| `HashMap<ConfigurationFeature, String> writeConfig(data: HashMap<ConfigurationFeature, String>)` | Function to execute the write config Commands. |
-| `ByteArray imageCaptureAuto( currentBrightness,  currentContrast )` | Function to capture image. The parameter currentBrightness and currentContrast only is applied for HHS device |
-| `Boolean startScale()` | Start to receive scale data |
-| `Boolean stopScale()` | Stop to receive scale data |
-| `Boolean isScaleAvailable()` | Check if this device is supported scale or not |
-| `String getCustomConfiguration()` | Get all current configurations on device |
-| `ConfigurationResult writeCustomConfiguration(configStr: String)` | Write all configurations in configStr into device |
+| Public Methods                                                                                                                                                                                      | Description |
+|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---|
+| `Int openDevice(context: Context)`                                                                                                                                                                  | This method opens a connection to the specified DatalogicDevice, allowing for communication with the device’s endpoints. Return 0 if the interface was successfully opened, -1 otherwise. |
+| `Int closeDevice()`                                                                                                                                                                                 | Close the DatalogicDevice. |
+| `Int registerUsbScanListener(listener: UsbScanListener)`                                                                                                                                            | Register listener for USB scan event to be notified when the Scanner scans the barcodes. |
+| `Int unregisterUsbScanListener(listener: UsbScanListener\)`                                                                                                                                         | Unregister listeners for Scan event. |
+| `Int registerUsbDioListener(listener: UsbDioListener)`                                                                                                                                              | Register listener for Usb dio event to be notified when the Dio Cammands get failed. |
+| `Int unregisterUsbDioListener(listener: UsbDioListener)`                                                                                                                                            | Unregistered listeners for dio error event. |
+| `String dioCommand(commandType: DIOCmdValue, cmd: String, context: Context)`                                                                                                                        | Function to execute the DIO Commands and return _status value(Command type and valid command value should be correct for output)_ |
+| `HashMap<ConfigurationFeature, String> readConfig()`                                                                                                                                                | Function to execute the read config Commands. |
+| `HashMap<ConfigurationFeature, String> writeConfig(data: HashMap<ConfigurationFeature, String>)`                                                                                                    | Function to execute the write config Commands. |
+| `ByteArray imageCaptureAuto( currentBrightness,  currentContrast )`                                                                                                                                 | Function to capture image. The parameter currentBrightness and currentContrast only is applied for HHS device |
+| `Boolean startScale()`                                                                                                                                                                              | Start to receive scale data |
+| `Boolean stopScale()`                                                                                                                                                                               | Stop to receive scale data |
+| `Boolean isScaleAvailable()`                                                                                                                                                                        | Check if this device is supported scale or not |
+| `String getCustomConfiguration()`                                                                                                                                                                   | Get all current configurations on device |
+| `ConfigurationResult writeCustomConfiguration(configStr: String)`                                                                                                                                   | Write all configurations in configStr into device |
 | `Boolean upgradeFirmware( file: File,  fileType: String,  context: Context,  resetCallback: () -> Unit,  progressCallback: (Int) -> Unit,  isBulkTransfer: Boolean,  onFailure: (String) -> Unit )` | Function to upgrade firmware for device. `file`: Path to firmware file on local folder. `fileType`: can be “DFW”, “SWU”, “S37”. `isBulkTransfer`: set to “true” to use Bulk Transfer protocol to speed up firmware upgrade. Only support “S37” on Magellan 9600i, 900i, 9550i. The `upgradeFirmware()` function actually contains the `loadFirmwareFile()` and `upgradeLoadedFirmware()` function |
-| `Void loadFirmwareFile( file: File,  fileType: String,  context: Context,  onCompleteLoadFirmware: () -> Unit,  progressCallback: (Int) -> Unit )` | Function to load the firmware file into sdk. It is usually used with the firmware file .dfw because the big size .dfw file will spend a long time to be loaded into sdk. |
-| `Boolean upgradeLoadedFirmware( resetCallback: () -> Unit,  progressCallback: (Int) -> Unit,  isBulkTransfer: Boolean,  onFailure: (String) -> Unit )` | Function to upgrade the loaded firmware which had been loaded by the `loadFirmwareFile ()` function |
-| `Boolean isSupportCheckDocking()` | Check if this device can notify the docking status |
-| `Void startAutoCheckDocking()` | Start automatically checking the docking status and notify through the `onDockListener` function |
-| `Void stopAutoCheckDocking()` | Stop automatically checking the docking status and notify through the `onDockListener` function |
+| `Void loadFirmwareFile( file: File,  fileType: String,  context: Context,  onCompleteLoadFirmware: () -> Unit,  progressCallback: (Int) -> Unit )`                                                  | Function to load the firmware file into sdk. It is usually used with the firmware file .dfw because the big size .dfw file will spend a long time to be loaded into sdk. |
+| `Boolean upgradeLoadedFirmware( resetCallback: () -> Unit,  progressCallback: (Int) -> Unit,  isBulkTransfer: Boolean,  onFailure: (String) -> Unit ), onComplete: () -> Unit`                      | Function to upgrade the loaded firmware which had been loaded by the `loadFirmwareFile ()` function |
+| `Boolean isSupportCheckDocking()`                                                                                                                                                                   | Check if this device can notify the docking status |
+| `Void startAutoCheckDocking()`                                                                                                                                                                      | Start automatically checking the docking status and notify through the `onDockListener` function |
+| `Void stopAutoCheckDocking()`                                                                                                                                                                       | Stop automatically checking the docking status and notify through the `onDockListener` function |
 
 ### DatalogicBluetoothDevice
 
