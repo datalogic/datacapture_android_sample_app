@@ -73,6 +73,7 @@ fun UpdateFirmwareScreen() {
     val context = LocalContext.current
     var isCheckPidToggle by remember { mutableStateOf(true) }
     var isBulkTransferToggle by remember { mutableStateOf(false) }
+    var isUpgradeBootToggle by remember { mutableStateOf(false) }
     var file by remember { mutableStateOf<File?>(null) }
     var swName by remember { mutableStateOf("") }
     var filePath by remember { mutableStateOf("") }
@@ -126,11 +127,11 @@ fun UpdateFirmwareScreen() {
                     homeViewModel.loadFirmwareFile(file, fileType, context,
                         onCompleteLoadFirmware =  {
                         pid = if (fileType != FileConstants.DFW_FILE_TYPE) {
-                            homeViewModel.getPid(file, fileType, context).toString()
+                            homeViewModel.getPid(file, fileType, context, isUpgradeBootToggle).toString()
                         } else {
                             homeViewModel.getPidDWF(file, fileType)
                         }
-                    })
+                    }, isUpgradeBootToggle)
 
                     filePath = FileUtils.getDisplayPath(context, uri) ?: ""
                 } else {
@@ -177,6 +178,10 @@ fun UpdateFirmwareScreen() {
                 UpgradeConfigurationCard(
                     checkPidEnabled = isCheckPidToggle,
                     bulkTransferEnabled = isBulkTransferToggle,
+                    isUpgradeBoot = isUpgradeBootToggle,
+                    onUpgradeBootToggle = {
+                        isUpgradeBootToggle = it
+                    },
                     onCheckPidToggle = {
                         isCheckPidToggle = it
                     },
@@ -239,7 +244,8 @@ fun UpdateFirmwareScreen() {
                                                         isBulkTransferToggle,
                                                         homeViewModel,
                                                         context,
-                                                        fileType
+                                                        fileType,
+                                                        isUpgradeBootToggle
                                                     )
                                                 } else {
                                                     homeViewModel.errorMessageUpgradeFw =
@@ -252,14 +258,15 @@ fun UpdateFirmwareScreen() {
                                                     isBulkTransferToggle,
                                                     homeViewModel,
                                                     context,
-                                                    fileType
+                                                    fileType,
+                                                    isUpgradeBootToggle
                                                 )
                                             }
                                         }, context)
                                     }
 
                                     FileConstants.DFW_FILE_TYPE -> {
-                                        homeViewModel.setPidDWF(it, fileType) { isValid ->
+                                        homeViewModel.setPidDWF(it, fileType, { isValid ->
                                             if (isCheckPidToggle) {
                                                 if (isValid) {
                                                     handleBulkTransferAndUpgrade(
@@ -267,7 +274,8 @@ fun UpdateFirmwareScreen() {
                                                         isBulkTransferToggle,
                                                         homeViewModel,
                                                         context,
-                                                        fileType
+                                                        fileType,
+                                                        isUpgradeBootToggle
                                                     )
                                                 } else {
                                                     homeViewModel.errorMessageUpgradeFw =
@@ -280,10 +288,11 @@ fun UpdateFirmwareScreen() {
                                                     isBulkTransferToggle,
                                                     homeViewModel,
                                                     context,
-                                                    fileType
+                                                    fileType,
+                                                    isUpgradeBootToggle
                                                 )
                                             }
-                                        }
+                                        }, isUpgradeBootToggle)
                                     }
                                     FileConstants.SWU_FILE_TYPE -> {
                                         handleBulkTransferAndUpgrade(
@@ -291,7 +300,8 @@ fun UpdateFirmwareScreen() {
                                             isBulkTransferToggle,
                                             homeViewModel,
                                             context,
-                                            fileType
+                                            fileType,
+                                            isUpgradeBootToggle
                                         )
                                     }
                                     else -> {
@@ -363,7 +373,8 @@ fun handleBulkTransferAndUpgrade(
     isBulkTransferToggle: Boolean,
     homeViewModel: HomeViewModel,
     context: Context,
-    fileType: String
+    fileType: String,
+    isUpgradeBoot: Boolean
 ) {
     if (isBulkTransferToggle) {
         homeViewModel.getBulkTransferSupported({ supported ->
@@ -372,7 +383,7 @@ fun handleBulkTransferAndUpgrade(
                 homeViewModel.showErrorMessageUpgradeFw = true
                 return@getBulkTransferSupported
             } else {
-                homeViewModel.upgradeFirmware(true)
+                homeViewModel.upgradeFirmware(true, isUpgradeBoot = false)
                 return@getBulkTransferSupported
             }
         })
@@ -384,6 +395,6 @@ fun handleBulkTransferAndUpgrade(
                 return
             }
         }
-        homeViewModel.upgradeFirmware(false)
+        homeViewModel.upgradeFirmware(false, isUpgradeBoot)
     }
 }

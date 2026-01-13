@@ -1638,7 +1638,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
         }
     }
 
-    fun upgradeFirmware(isBulkTransfer: Boolean = false) {
+    fun upgradeFirmware(isBulkTransfer: Boolean = false, isUpgradeBoot: Boolean) {
         _progressUpgrade.postValue(0)
         _isLoadingPercent.postValue(true)
         viewModelScope.launch(Dispatchers.IO) {
@@ -1658,7 +1658,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                     },
                     onComplete = {
                         isShowCompleteUpgrade = true
-                    }
+                    }, isUpgradeBoot
                 )
                 _isLoadingPercent.postValue(false)
             }
@@ -1669,7 +1669,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
         file: File?,
         fileType: String,
         context: Context,
-        onCompleteLoadFirmware: () -> Unit
+        onCompleteLoadFirmware: () -> Unit,
+        isUpgradeBoot: Boolean
     ) {
         _isLoadingPercent.postValue(true)
         viewModelScope.launch(Dispatchers.IO) {
@@ -1683,14 +1684,14 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                         run {
                             _progressUpgrade.postValue(progress)
                         }
-                    })
+                    }, isUpgradeBoot)
             }
         }
     }
 
-    fun getPid(file: File?, fileType: String, context: Context): String? {
+    fun getPid(file: File?, fileType: String, context: Context, isUpgradeBoot: Boolean): String? {
         selectedDevice.value?.let {
-            return it.getPid(file, fileType, context)
+            return it.getPid(file, fileType, context, isUpgradeBoot)
         }
         return ""
     }
@@ -1727,9 +1728,9 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
         onResult(result)
     }
 
-    fun setPidDWF(file: File, fileType: String, onResult: (Boolean) -> Unit) {
+    fun setPidDWF(file: File, fileType: String, onResult: (Boolean) -> Unit, isUpgradeBoot: Boolean) {
         selectedDevice.value?.let {
-            val result = it.isCheckPidDFW(file, fileType, context)
+            val result = it.isCheckPidDFW(file, fileType, context, isUpgradeBoot)
             if (result != null) {
                 Log.d("HomeViewModel", "[setPidDWF] result: $result")
                 onResult(result)
