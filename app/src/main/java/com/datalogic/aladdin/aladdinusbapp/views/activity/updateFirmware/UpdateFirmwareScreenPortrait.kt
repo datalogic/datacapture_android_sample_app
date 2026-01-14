@@ -106,6 +106,7 @@ fun UpdateFirmwareScreen() {
     if (homeViewModel.isShowCompleteUpgrade) {
         Toast.makeText(context, context.getString(R.string.msg_upgrade_complete), Toast.LENGTH_LONG).show()
         homeViewModel.setSelectedTabIndex(0)
+        homeViewModel.isShowCompleteUpgrade = false
     }
 
     val filePickerLauncher = rememberLauncherForActivityResult(
