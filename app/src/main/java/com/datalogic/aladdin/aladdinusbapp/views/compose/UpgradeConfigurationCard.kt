@@ -31,8 +31,10 @@ import com.datalogic.aladdin.aladdinusbapp.R
 fun UpgradeConfigurationCard(
     checkPidEnabled: Boolean,
     bulkTransferEnabled: Boolean,
+    isUpgradeBoot: Boolean = false,
     onCheckPidToggle: (Boolean) -> Unit,
     onBulkTransferToggle: (Boolean) -> Unit,
+    onUpgradeBootToggle: (Boolean) -> Unit,
     isFRS: Boolean = false,
     isS37: Boolean = true,
     isDFW: Boolean = false
@@ -79,6 +81,13 @@ fun UpgradeConfigurationCard(
                         label = stringResource(id = R.string.bulk_transfer_label),
                         checked = bulkTransferEnabled,
                         onCheckedChange = onBulkTransferToggle
+                    )
+                }
+                if (isDFW) {
+                    ToggleRow(
+                        label = stringResource(id = R.string.msg_upgrade_boot),
+                        checked = isUpgradeBoot,
+                        onCheckedChange = onUpgradeBootToggle
                     )
                 }
             }
