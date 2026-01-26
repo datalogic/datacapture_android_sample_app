@@ -15,6 +15,7 @@
   - [3.5. Bluetooth (HID profile)](#bluetooth-hid-profile)
 - [4. Special setting and limitation](#special-setting-and-limitation)
   - [4.1. Dependencies setting to use Android SDK](#dependencies-setting-to-use-android-sdk)
+  - [4.2. Including the sdk dependencies by Maven repository on GitHub instead of using the local aar file](#including-the-sdk-dependencies-by-maven-repository-on-github-instead-of-using-the-local-aar-file)
   - [4.2. Special setting for Magellan](#special-setting-for-magellan)
   - [4.3. Firmware upgrade and Custom configuration for the old Magellan device](#firmware-upgrade-and-custom-configuration-for-the-old-magellan-device-magellan-1500i-magellan-9800i-magellan-34xx-magellan-35xx)
   - [4.4. Limitation of the reset command with Magellan 9600i and 9900i](#limitation-of-the-reset-command-with-magellan-9600i-and-9900i)
@@ -156,6 +157,34 @@ dependencyResolutionManagement {
     google()
     mavenCentral()
     maven { url = uri("https://jitpack.io") }
+  }
+}
+```
+
+### Including the sdk dependencies by Maven repository on GitHub instead of using the local aar file
+Modify `build.gradle.kts` (application gradle): Add the following lines to your app's dependencies block.
+
+```kotlin
+// ... other dependencies
+implementation("com.datalogic.aladdin:aladdin-sdk:2.4.6")
+```
+
+Modify `settings.gradle.kts`: Ensure the GitHub repository is included in both `pluginManagement` and `dependencyResolutionManagement` blocks.
+
+```kotlin
+pluginManagement {
+  repositories {
+    maven {
+      url = uri("https://datalogic.github.io/datacapture_sdk_repo/")
+    }
+  }
+}
+dependencyResolutionManagement {
+  repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+  repositories {
+    maven {
+      url = uri("https://datalogic.github.io/datacapture_sdk_repo/")
+    }
   }
 }
 ```
