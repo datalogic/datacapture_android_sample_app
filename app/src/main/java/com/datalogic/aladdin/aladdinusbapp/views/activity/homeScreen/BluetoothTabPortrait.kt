@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.sp
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.utils.PairingBarcodeType
 import com.datalogic.aladdin.aladdinusbapp.utils.PairingStatus
+import com.datalogic.aladdin.aladdinusbapp.utils.USBConstants
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.compose.BluetoothProfileDropdown
 import kotlinx.coroutines.CoroutineScope
@@ -82,7 +83,7 @@ fun BluetoothTabPortrait() {
             onButtonStartClicked = {
                 activity?.let { activity ->
                     if (it != null)
-                        homeViewModel.createQrCode(it, activity)
+                        homeViewModel.createQrCode(it, activity, USBConstants.SCAN_BL_TIMEOUT)
                 }
             }
         )
@@ -125,7 +126,7 @@ fun BluetoothTabPortrait() {
                                     homeViewModel.setSelectedBluetoothProfile(previousProfile)
                                     homeViewModel.setPairingStatus(PairingStatus.Idle)
                                     activity?.let { activity ->
-                                        homeViewModel.createQrCode(previousProfile, activity)
+                                        homeViewModel.createQrCode(previousProfile, activity, USBConstants.SCAN_BL_TIMEOUT)
                                     }
                                 },
                                 colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary))
@@ -275,7 +276,7 @@ fun BluetoothTabPortrait() {
                     CoroutineScope(Dispatchers.Main).launch {
                         delay(3000)
                         activity?.let { activity ->
-                            homeViewModel.scanBluetoothDevice( activity)
+                            homeViewModel.scanBluetoothDevice(activity, USBConstants.SCAN_BL_TIMEOUT)
                             homeViewModel.setPairingStatus(PairingStatus.Scanning)
                         }
                     }
