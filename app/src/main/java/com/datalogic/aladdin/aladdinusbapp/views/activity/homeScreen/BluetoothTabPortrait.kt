@@ -22,6 +22,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -62,6 +64,7 @@ fun BluetoothTabPortrait() {
     val previousProfile = homeViewModel.previousBluetoothProfile.observeAsState(null).value
     val currentConnectionStatus = homeViewModel.currentPairingStatus.observeAsState(null).value
     val currentBleName = homeViewModel.currentBleDeviceName.observeAsState(null).value
+    var timeout = remember { mutableLongStateOf(30) }
 
     /**
      * Define a threshold for vertical scrolling
@@ -80,10 +83,11 @@ fun BluetoothTabPortrait() {
                     homeViewModel.setPairingStatus(PairingStatus.Idle)
                 }
             },
-            onButtonStartClicked = {
+            onButtonStartClicked = { profile, timeoutSec ->
+                timeout.longValue = timeoutSec
                 activity?.let { activity ->
-                    if (it != null)
-                        homeViewModel.createQrCode(it, activity, USBConstants.SCAN_BL_TIMEOUT)
+                    if (profile != null)
+                        homeViewModel.createQrCode(profile, activity, timeoutSec)
                 }
             }
         )
@@ -126,7 +130,7 @@ fun BluetoothTabPortrait() {
                                     homeViewModel.setSelectedBluetoothProfile(previousProfile)
                                     homeViewModel.setPairingStatus(PairingStatus.Idle)
                                     activity?.let { activity ->
-                                        homeViewModel.createQrCode(previousProfile, activity, USBConstants.SCAN_BL_TIMEOUT)
+                                        homeViewModel.createQrCode(previousProfile, activity, timeout.longValue)
                                     }
                                 },
                                 colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary))
@@ -276,7 +280,7 @@ fun BluetoothTabPortrait() {
                     CoroutineScope(Dispatchers.Main).launch {
                         delay(3000)
                         activity?.let { activity ->
-                            homeViewModel.scanBluetoothDevice(activity, USBConstants.SCAN_BL_TIMEOUT)
+                            homeViewModel.scanBluetoothDevice(activity, timeout.longValue)
                             homeViewModel.setPairingStatus(PairingStatus.Scanning)
                         }
                     }

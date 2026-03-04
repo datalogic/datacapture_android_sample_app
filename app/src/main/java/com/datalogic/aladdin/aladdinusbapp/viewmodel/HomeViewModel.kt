@@ -1822,7 +1822,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
         _qrBitmap.value = scaledBitmap
         setPreviousBluetoothProfile(PairingBarcodeType.UNLINK)
         currentPairingStatus.value = PairingStatus.Scanning
-        scanBluetoothDevice(context, timeout)
+        scanBluetoothDevice(context, timeout * 1000)
     }
 
 
