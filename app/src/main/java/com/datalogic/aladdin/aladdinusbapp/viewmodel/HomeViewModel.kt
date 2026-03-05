@@ -825,6 +825,12 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
                 Log.d(tag, "[executeDIOCommand] output: $output")
 
                 _isLoading.postValue(false)
+                if(selectedCommand.value == DIOCmdValue.RESET_SCANNER){
+                    closeBluetoothDevice(device)
+                    launch(Dispatchers.Main) {
+                        setSelectedTabIndex(0)
+                    }
+                }
             }
         }
     }
