@@ -63,14 +63,19 @@ import com.dzungvu.packlog.LogcatHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
 
 class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, activity: Activity) : ViewModel() {
@@ -222,6 +227,10 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
 
     private val _msgConfigError = MutableLiveData("")
     val msgConfigError: LiveData<String> = _msgConfigError
+    // Keep a handle to avoid duplicate scans
+    private var scanRestartHandler: Handler? = null
+    private var scanTotalTimeoutRunnable: Runnable? = null
+    private var isScanning = false
 
     data class ScanUi(
         val data: String = "",
@@ -1144,6 +1153,8 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
         // Unregister receivers
         usbDeviceManager.unregisterReceiver(context)
         closeAllDevices()
+        scanRestartHandler?.removeCallbacks(scanTotalTimeoutRunnable ?: return)
+        isScanning = false
     }
 
     // Function to show Toast on the main thread
@@ -1804,7 +1815,7 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
         return result
     }
 
-    fun createQrCode(profile: PairingBarcodeType, context: Activity) {
+    fun createQrCode(profile: PairingBarcodeType, context: Activity, timeout: Long) {
         val bluetoothProfile: BluetoothProfile = when (profile) {
             PairingBarcodeType.SPP -> BluetoothProfile.SPP
             PairingBarcodeType.HID -> BluetoothProfile.HID
@@ -1815,45 +1826,101 @@ class HomeViewModel(usbDeviceManager: DatalogicDeviceManager, context: Context, 
         _qrBitmap.value = scaledBitmap
         setPreviousBluetoothProfile(PairingBarcodeType.UNLINK)
         currentPairingStatus.value = PairingStatus.Scanning
-        scanBluetoothDevice(context)
+        scanBluetoothDevice(context, timeout * 1000)
     }
 
-    fun scanBluetoothDevice(context: Activity) {
-        Log.d(tag, "[scanBluetoothDevice] stopScanBluetoothDevices")
-        usbDeviceManager.stopScanBluetoothDevices(context)
-        usbDeviceManager.scanBluetoothDevices(context) { pairingData ->
-            val status = pairingData.pairingStatus
-            val message = pairingData.message
-            val name = pairingData.deviceName
+    fun scanBluetoothDevice(context: Activity, timeoutMs: Long) {
+        // prevent multiple concurrent scans
+        if (isScanning) return
+        isScanning = true
 
-            when (status) {
-                BluetoothPairingStatus.Successful -> {
-                    if (message.contains("connected")) {
-                        setPairingStatus(PairingStatus.Connected)
-                    } else {
-                        setPairingStatus(PairingStatus.Paired)
+        val startAt = SystemClock.elapsedRealtime()
+        val deadline = startAt + timeoutMs
+        fun remainingMs(): Long = deadline - SystemClock.elapsedRealtime()
+
+        val handler = Handler(Looper.getMainLooper())
+        scanRestartHandler = handler
+
+        // Hard stop at the end of total timeout
+        val timeoutRunnable = Runnable {
+            Log.d(tag, "[scanBluetoothDevice] TOTAL TIMEOUT reached -> stop")
+            isScanning = false
+            try { usbDeviceManager.stopScanBluetoothDevices(context) } catch (_: Throwable) {}
+            setPairingStatus(PairingStatus.Timeout)
+        }
+        scanTotalTimeoutRunnable = timeoutRunnable
+        handler.postDelayed(timeoutRunnable, timeoutMs)
+
+        fun stopAll() {
+            if (!isScanning) return
+            isScanning = false
+            handler.removeCallbacks(timeoutRunnable)
+            try { usbDeviceManager.stopScanBluetoothDevices(context) } catch (_: Throwable) {}
+        }
+
+        fun startScanCycle() {
+            if (!isScanning) return
+
+            val rem = remainingMs()
+            if (rem <= 0L) {
+                timeoutRunnable.run()
+                return
+            }
+
+            Log.d(tag, "[scanBluetoothDevice] startScanCycle remMs=$rem")
+            try { usbDeviceManager.stopScanBluetoothDevices(context) } catch (_: Throwable) {}
+
+            usbDeviceManager.scanBluetoothDevices(context) { pairingData ->
+                if (!isScanning) return@scanBluetoothDevices
+
+                val status = pairingData.pairingStatus
+                val message = pairingData.message
+                val name = pairingData.deviceName
+
+                currentBleDeviceName.value = name
+                Log.d(tag, "[scanBluetoothDevice] $name $status : $message")
+
+                when (status) {
+                    BluetoothPairingStatus.Successful -> {
+                        stopAll()
+                        if (message.contains("connected", ignoreCase = true)) {
+                            setPairingStatus(PairingStatus.Connected)
+                        } else {
+                            setPairingStatus(PairingStatus.Paired)
+                        }
+                        getAllBluetoothDevice(context)
                     }
-                    getAllBluetoothDevice(context)
-                }
 
-                BluetoothPairingStatus.Unsuccessful -> {
-                    if (message == "Permission denied") {
-                        setPairingStatus(PairingStatus.PermissionDenied)
-                    } else {
-                        setPairingStatus(PairingStatus.Error)
+                    BluetoothPairingStatus.Unsuccessful -> {
+                        stopAll()
+                        if (message.contains("permission", ignoreCase = true)) {
+                            setPairingStatus(PairingStatus.PermissionDenied)
+                        } else {
+                            setPairingStatus(PairingStatus.Error)
+                        }
                     }
-                }
 
-                BluetoothPairingStatus.Timeout -> {
-                    setPairingStatus(PairingStatus.Timeout)
+                    BluetoothPairingStatus.Timeout -> {
+                        // IMPORTANT:
+                        // In your logs, Timeout is being used for "Discovery finished by bluetooth".
+                        // Treat that as "cycle ended", and restart until total timeout ends.
+                        val stillTime = remainingMs() > 0L
+                        if (stillTime) {
+                            setPairingStatus(PairingStatus.Scanning)
+
+                            // Small delay helps avoid startDiscovery() throttling/failure
+                            handler.postDelayed({ startScanCycle() }, 300L)
+                        } else {
+                            stopAll()
+                            setPairingStatus(PairingStatus.Timeout)
+                        }
+                    }
                 }
             }
-            currentBleDeviceName.value = pairingData.deviceName
-            Log.d(
-                tag,
-                "[scanBluetoothDevice] scan device ${pairingData.deviceName} ${pairingData.pairingStatus} : ${pairingData.message}"
-            )
         }
+
+        setPairingStatus(PairingStatus.Scanning)
+        startScanCycle()
     }
 
     fun coroutineOpenBluetoothDevice(device: DatalogicBluetoothDevice, context: Activity) {

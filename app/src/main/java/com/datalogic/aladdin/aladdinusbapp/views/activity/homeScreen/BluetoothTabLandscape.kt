@@ -25,6 +25,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,6 +47,7 @@ import androidx.compose.ui.unit.sp
 import com.datalogic.aladdin.aladdinusbapp.R
 import com.datalogic.aladdin.aladdinusbapp.utils.PairingBarcodeType
 import com.datalogic.aladdin.aladdinusbapp.utils.PairingStatus
+import com.datalogic.aladdin.aladdinusbapp.utils.USBConstants
 import com.datalogic.aladdin.aladdinusbapp.views.activity.LocalHomeViewModel
 import com.datalogic.aladdin.aladdinusbapp.views.compose.BluetoothProfileDropdown
 import kotlinx.coroutines.CoroutineScope
@@ -71,6 +73,7 @@ fun BluetoothTabLandscape() {
     val scrollState = rememberScrollState()
     val unlinkImageOffset = remember { mutableIntStateOf(0) }
     val qrImageOffset = remember { mutableIntStateOf(0) }
+    val timeout = remember { mutableLongStateOf(30) }
 
     /**
      * Define a threshold for vertical scrolling
@@ -89,11 +92,12 @@ fun BluetoothTabLandscape() {
                     homeViewModel.setPairingStatus(PairingStatus.Idle)
                 }
             },
-            onButtonStartClicked = {
-                Log.d("BluetoothTabLandscape", "onButtonStartClicked on profile: $it")
+            onButtonStartClicked = { profile, timeoutSec ->
+                Log.d("BluetoothTabLandscape", "onButtonStartClicked on profile: $timeoutSec")
                 activity?.let { activity ->
-                    if (it != null)
-                        homeViewModel.createQrCode(it, activity)
+                    timeout.longValue = timeoutSec
+                    if (profile != null)
+                        homeViewModel.createQrCode(profile, activity, timeoutSec)
                 }
             }
         )
@@ -152,7 +156,7 @@ fun BluetoothTabLandscape() {
                                     homeViewModel.setSelectedBluetoothProfile(previousProfile)
                                     homeViewModel.setPairingStatus(PairingStatus.Idle)
                                     activity?.let { activity ->
-                                        homeViewModel.createQrCode(previousProfile, activity)
+                                        homeViewModel.createQrCode(previousProfile, activity, timeout.longValue)
                                     }
                                 },
                                 colors = ButtonDefaults.buttonColors(colorResource(id = R.color.colorPrimary))
@@ -318,7 +322,7 @@ fun BluetoothTabLandscape() {
                     CoroutineScope(Dispatchers.Main).launch {
                         delay(3000)
                         activity?.let { activity ->
-                            homeViewModel.scanBluetoothDevice( activity)
+                            homeViewModel.scanBluetoothDevice(activity, timeout.longValue)
                             homeViewModel.setPairingStatus(PairingStatus.Scanning)
                         }
                     }
