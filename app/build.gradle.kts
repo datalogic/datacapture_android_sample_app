@@ -12,7 +12,7 @@ android {
         minSdk = 29
         targetSdk = 34
         versionCode = 1
-        versionName = "2.4.6"
+        versionName = "2.4.7"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -75,7 +75,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
 
     //implementation(files("libs/AladdinUsbSdk.aar"))
-    implementation("com.datalogic.aladdin:aladdin-sdk:2.4.6")
+    implementation("com.datalogic.aladdin:aladdin-sdk:2.4.7")
     implementation("androidx.compose.runtime:runtime-livedata:1.0.0-beta01")
 
     implementation("androidx.compose.animation:animation")
