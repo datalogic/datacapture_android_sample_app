@@ -19,6 +19,7 @@
   - [4.2. Special setting for Magellan](#special-setting-for-magellan)
   - [4.3. Firmware upgrade and Custom configuration for the old Magellan device](#firmware-upgrade-and-custom-configuration-for-the-old-magellan-device-magellan-1500i-magellan-9800i-magellan-34xx-magellan-35xx)
   - [4.4. Limitation of the reset command with Magellan 9600i and 9900i](#limitation-of-the-reset-command-with-magellan-9600i-and-9900i)
+  - [4.5. Product Details JSON — External File Override](#45-product-details-json--external-file-override)
 - [5. Interfaces](#interfaces)
   - [5.1. UsbListener](#usblistener)
   - [5.2. UsbScanListener](#usbscanlistener)
@@ -207,6 +208,105 @@ dependencyResolutionManagement {
 | Device | Setting |
 |---|---|
 | Magellan 9900i/9600i | The reset command of Magellan 9600i and 9900i can work properly on almost Android device. However, we observe the reset issue with Samsung Tablet, Memor 12/17/30/35, Joya Smart . After executing the reset command, Android SDK cannot open device again. The user needs to unplug and plug the USB cable again to recover USB connection |
+
+### 4.5. Product Details JSON — External File Override
+
+#### Overview
+
+The SDK bundles `productDetails.json` inside its AAR assets. This file maps USB Product IDs to
+supported scanner models and their connection interfaces. Integrators can place a custom version of
+this file in the public Downloads directory to:
+
+* inspect the currently active configuration,
+* override it with a custom version **without rebuilding the SDK**, and
+* update supported product entries in the field without an SDK release.
+
+---
+
+#### File Locations
+
+| Priority | Path | Permissions required |
+|----------|------|----------------------|
+| **1 (highest)** – public Downloads | `/storage/emulated/0/Download/productDetails.json` | `READ_EXTERNAL_STORAGE` < Android 10; `MANAGE_EXTERNAL_STORAGE` ≥ Android 10 |
+| **2 (fallback)** – bundled asset | Packed inside the AAR | None |
+
+The SDK always tries locations in the above order. If no external file is found, the bundled asset
+is used automatically.
+
+---
+
+#### SDK Initialisation Behaviour
+
+When `DatalogicDeviceManager.detectDevice(context, …)` is called the SDK will:
+
+1. Call `LocalJSONParser.inputStreamFromDownloads(context)` — tries to load an external override.
+2. If step 1 returns `null`, fall back to `LocalJSONParser.inputStreamToString(context)` which reads
+   the bundled asset.
+
+---
+
+#### Providing a Custom `productDetails.json`
+
+Place the file at `/storage/emulated/0/Download/productDetails.json`.
+
+> **Note:** Requires `READ_EXTERNAL_STORAGE` on Android < 10. On Android 10+ the
+> `MANAGE_EXTERNAL_STORAGE` permission is needed to access the public Downloads folder.
+
+---
+
+#### JSON Schema
+
+```jsonc
+{
+  "productEntries": [
+    {
+      "product": [
+        {
+          "vendorId": "1706",          // USB Vendor ID (decimal string)
+          "deviceType": "HHS",         // "HHS" or "FRS"
+          "model": ["Gryphon GD4500"], // human-readable model names
+          "deviceInterface": [
+            {
+              "productId": "4613",     // USB Product ID (decimal string)
+              "type": "USB_COM"        // connection interface type
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+#### API Reference
+
+##### `LocalJSONParser.inputStreamFromDownloads(context: Context): ProductResponse?`
+
+Reads and parses `productDetails.json` from the public Downloads directory
+(`/storage/emulated/0/Download/productDetails.json`). Returns `null` if the file is not found or
+cannot be read; the caller should fall back to `inputStreamToString(context)`.
+
+##### `LocalJSONParser.inputStreamToString(context: Context): ProductResponse`
+
+Reads and parses the bundled `productDetails.json` asset. Always succeeds as long as the AAR is
+intact.
+
+---
+
+#### Permissions
+
+Add the following to your `AndroidManifest.xml` to allow reading from the public Downloads folder:
+
+```xml
+<!-- AndroidManifest.xml -->
+<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+    android:maxSdkVersion="28" />
+<!-- Android 10+ requires MANAGE_EXTERNAL_STORAGE for public Downloads access -->
+<uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+```
+---
 
 ## Interfaces
 
