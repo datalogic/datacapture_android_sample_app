@@ -217,9 +217,9 @@ The SDK bundles `productDetails.json` inside its AAR assets. This file maps USB 
 supported scanner models and their connection interfaces. Integrators can place a custom version of
 this file in the public Downloads directory to:
 
-* inspect the currently active configuration,
-* override it with a custom version **without rebuilding the SDK**, and
-* update supported product entries in the field without an SDK release.
+* inspect the currently active configuration
+* override it with a custom version **without rebuilding the SDK**
+* update supported product entries in the field without an SDK release
 
 ---
 
